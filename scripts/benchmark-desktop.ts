@@ -1,4 +1,4 @@
-import { Sandbox } from '@e2b/desktop';
+import { CommandExitError, Sandbox } from '@e2b/desktop';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { loadEnvFile } from 'node:process';
@@ -21,9 +21,15 @@ try {
   await desktop.stream.start({requireAuth:true});
   report.streamServerStarted=Boolean(desktop.stream.getAuthKey()); // Interactive authenticated playback still requires a browser check.
   const renderStart=Date.now();
-  const result=await desktop.commands.run('timeout 780s blender --background --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision 1',{timeoutMs:790000});
-  report.renderSeconds=(Date.now()-renderStart)/1000;report.exitCode=result.exitCode;
-  report.renderComplete=result.exitCode===0;
+  try {
+    const result=await desktop.commands.run('timeout 780s blender --background --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision 1',{timeoutMs:790000});
+    report.exitCode=result.exitCode; report.renderStdout=result.stdout.slice(-8000); report.renderStderr=result.stderr.slice(-8000);
+    report.renderComplete=result.exitCode===0;
+  } catch (error) {
+    if (!(error instanceof CommandExitError)) throw error;
+    report.exitCode=error.exitCode; report.renderStdout=error.stdout.slice(-8000); report.renderStderr=error.stderr.slice(-8000); report.error=error.message;
+  }
+  report.renderSeconds=(Date.now()-renderStart)/1000;
   for(const name of ['design.blend','design.glb','presentation.png']) {try{await writeFile(`.atelier/benchmark/${name}`,await desktop.files.read(`/home/user/project/output/${name}`,{format:'bytes'}));}catch{/* Record missing output without inventing a completed render. */}}
   await writeFile('.atelier/benchmark/desktop.png',await desktop.screenshot());
 }catch(error){report.error=error instanceof Error ? error.name : 'BenchmarkError';}
