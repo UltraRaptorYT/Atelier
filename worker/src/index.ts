@@ -190,6 +190,15 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     return Response.json(path[4] === 'heartbeat' ? { active: true } : await openDesktopStream(env, id, agent));
   }
   if (path[2] === 'voice') {
+    if (method === 'PUT' && path[3]) {
+      const input = z.object({ agent: AgentIdSchema, elementId: z.string().nullable(), meeting: z.boolean() }).parse(await bodyJSON(request));
+      const voice = await env.DB.prepare('SELECT id FROM voice_sessions WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first();
+      if (!voice) throw new HttpError(404, 'Voice session not found.');
+      if (input.elementId && !(await designFromRow(env, row))?.elements.some(e => e.id === input.elementId)) throw new HttpError(409, 'Selected element no longer exists.');
+      const result = await env.PROJECTS.getByName(id).moveVoice(path[3], owner, input.agent, input.elementId, input.meeting);
+      if (!result.ok) throw new HttpError(409, 'Reconnect live voice to continue.');
+      return Response.json(result);
+    }
     if (method === 'DELETE' && path[3]) {
       const voice = await env.DB.prepare('SELECT id FROM voice_sessions WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first(); if (!voice) throw new HttpError(404, 'Voice session not found.');
       await env.PROJECTS.getByName(id).closeVoice(path[3]);

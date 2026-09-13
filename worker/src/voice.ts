@@ -5,19 +5,20 @@ import type { Bindings, ProjectRow } from './types';
 import { bodyText, credential, HttpError, ownedProject } from './security';
 import { designFromRow, emit } from './store';
 import { queueChange } from './steering';
+import { reviewMeeting } from './meeting';
 
-export function voiceSessionConfig(env: Pick<Bindings, 'VOICE_MODEL' | 'OPENAI_MODEL'>, agent: AgentId): MediaSessionConfig {
+export function voiceSessionConfig(env: Pick<Bindings, 'VOICE_MODEL' | 'OPENAI_MODEL'>, agent: AgentId, meeting = false): MediaSessionConfig {
   return {
     model: env.VOICE_MODEL,
     store: false,
     audio: { output: { voice: 'marin' } },
-    instructions: `You are ${agents[agent].name}, the ${agents[agent].role} at Atelier, an architecture studio. Help the user brief and steer the shared design team. Speak briefly and naturally. Ask at most two high-impact questions at a time.
+    instructions: `You are ${agents[agent].name}, the ${agents[agent].role} at Atelier, an architecture studio. ${meeting ? 'You are at the meeting table, facilitating the whole team briefing.' : 'You are at your specialist workstation.'} Help the user brief and steer the shared design team. Speak briefly and naturally. Ask at most two high-impact questions at a time.
 Backchannel policy: Acknowledge naturally without competing with the user.
 Interruption policy: Stop your answer when interrupted and listen to the correction.
 Delegation policy:
 Backend tools: Read current project facts, save spoken brief details, and queue contextual design changes for the team.
 Delegate to the backend when: The user supplies requirements or corrections, asks about project progress, or requests a design change. Delegate before claiming any action or current project fact. Saved, queued, applied and reviewed are different states.
-Do not delegate to the backend when: Greeting the user or asking a short clarification. Never invent task results. Design work is performed by the existing specialist team. The user starts generation with Start team briefing and cancels work with Stop work. Ending this voice call does not cancel design work.`,
+Do not delegate to the backend when: Greeting the user or asking a short clarification. Never invent task results. Design work is performed by the existing specialist team. At the meeting table you facilitate the whole team. Save the brief, consult review_team, ask their high-impact unanswered questions, and use finish_meeting only when the user explicitly says to begin work. Location updates change your specialist identity. Stop work cancels design work. Ending this voice call does not cancel design work.`,
     client: { data_channel: {
       allowed_client_events: [],
       allowed_server_events: ['session.started', 'session.closed', 'session.input_transcript.delta', 'session.output_transcript.delta', 'error'].map(type => ({ type })),
@@ -26,12 +27,14 @@ Do not delegate to the backend when: Greeting the user or asking a short clarifi
       model: env.OPENAI_MODEL,
       parallel_tool_calls: false,
       max_output_tokens: 1800,
-      instructions: `You route voice input to Atelier's existing project system, speaking for ${agents[agent].role}. You do not own or directly regenerate the design.
+      instructions: `You route voice input to Atelier's existing project system, speaking for the currentAgent returned by get_project_context. You do not own or directly regenerate the design.
 Use get_project_context before answering project questions or choosing a mutation. Read the latest brief, revision, selection, pending work and accepted changes. User speech can contain unfinished phrases and corrections; clarify ambiguous targets.
 Before a first design exists, use save_brief for the user's new requirements or clarification answers. Supply only new details; the server appends them without deleting earlier requirements. Do not save speculation, questions, or assistant suggestions as requirements.
 After a design exists, use request_change for explicit changes. Use baseRevision from your latest context. Use the selected element only when the user refers to it; use null for a whole-building request. Never infer an element ID that is absent from context. Scope and work ownership are resolved by the existing project workflow.
-Answer questions without queuing changes. Check tool results. Report saved or queued work precisely; never claim the model changed until current project state confirms it. Do not retry an action with altered parameters just to bypass a conflict. If generation is paused, explain that the brief can still be saved and voice can continue. The user starts or cancels design work with the project controls. Return concise facts for the voice model.`,
+Answer questions without queuing changes. Check tool results. Report saved or queued work precisely; never claim the model changed until current project state confirms it. Do not retry an action with altered parameters just to bypass a conflict. If generation is paused, explain that the brief can still be saved and voice can continue. At the meeting table use review_team after saving a substantive brief. Present actual specialist perspectives and unanswered high-impact questions. Only when the user explicitly says start or proceed, call finish_meeting with confirmed=true. Never start merely because requirements were mentioned. Return concise facts for the voice model.`,
       tools: [
+        { type: 'function', name: 'review_team', description: 'Gather actual specialist perspectives on the saved brief. Meeting room only.', strict: true, parameters: { type: 'object', properties: {}, required: [], additionalProperties: false } },
+        { type: 'function', name: 'finish_meeting', description: 'Start specialist work after explicit user approval. Meeting room only.', strict: true, parameters: { type: 'object', properties: { confirmed: { type: 'boolean' } }, required: ['confirmed'], additionalProperties: false } },
         { type: 'function', name: 'get_project_context', description: 'Read the current saved brief, design revision, selected element and task/change status.', strict: true, parameters: { type: 'object', properties: {}, required: [], additionalProperties: false } },
         { type: 'function', name: 'save_brief', description: 'Append newly spoken requirements or clarification answers before the first design. Preserve existing details.', strict: true, parameters: { type: 'object', properties: { details: { type: 'string' } }, required: ['details'], additionalProperties: false } },
         { type: 'function', name: 'request_change', description: 'Queue an explicit change against the latest design revision.', strict: true, parameters: { type: 'object', properties: { instruction: { type: 'string' }, elementId: { type: ['string', 'null'] }, baseRevision: { type: 'integer' } }, required: ['instruction', 'elementId', 'baseRevision'], additionalProperties: false } },
@@ -41,6 +44,7 @@ Answer questions without queuing changes. Check tool results. Report saved or qu
 }
 
 export async function startVoice(request: Request, env: Bindings, row: ProjectRow, owner: string, agent: AgentId) {
+  const meeting = request.headers.get('X-Atelier-Location') === 'reception';
   if (String(env.VOICE_ENABLED) !== 'true') throw new HttpError(503, 'Live voice is disabled for this studio.');
   if (!request.headers.get('Content-Type')?.startsWith('application/sdp')) throw new HttpError(415, 'An SDP voice offer is required.');
   const sdp = await bodyText(request);
@@ -53,7 +57,7 @@ export async function startVoice(request: Request, env: Bindings, row: ProjectRo
   const key = await credential(env, owner);
   const upstream = await fetch('https://api.openai.com/v1/live/sessions', {
     method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session: voiceSessionConfig(env, agent), transport: { type: 'webrtc', sdp } }),
+    body: JSON.stringify({ session: voiceSessionConfig(env, agent, meeting), transport: { type: 'webrtc', sdp } }),
     signal: AbortSignal.timeout(25000),
   });
   if (!upstream.ok) {
@@ -65,7 +69,7 @@ export async function startVoice(request: Request, env: Bindings, row: ProjectRo
   try {
     const transport = z.object({ transport: z.object({ type: z.literal('webrtc'), sdp: z.string().regex(/^v=0/) }) }).parse(result).transport;
     await env.DB.prepare('INSERT INTO voice_sessions(id,project_id,owner_id,agent,created_at) VALUES(?,?,?,?,?)').bind(sessionId, row.id, owner, agent, Date.now()).run();
-    await env.PROJECTS.getByName(row.id).attachVoice(row.id, owner, sessionId, agent, elementId);
+    await env.PROJECTS.getByName(row.id).attachVoice(row.id, owner, sessionId, agent, elementId, meeting);
     if (request.signal.aborted) throw new Error('Voice connection cancelled.');
     return new Response(transport.sdp, { headers: { 'Content-Type': 'application/sdp', 'X-Voice-Session': sessionId } });
   } catch {
@@ -129,7 +133,7 @@ export async function voiceOperationId(sessionId: string, callId: string) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export async function executeVoiceTool(env: Bindings, projectId: string, owner: string, sessionId: string, agent: AgentId, selected: string | null, call: VoiceToolCall): Promise<unknown> {
+export async function executeVoiceTool(env: Bindings, projectId: string, owner: string, sessionId: string, agent: AgentId, selected: string | null, call: VoiceToolCall, meeting = false): Promise<unknown> {
   const operationId = await voiceOperationId(sessionId, call.call_id);
   const receipt = await env.DB.prepare('SELECT result FROM voice_tool_results WHERE operation_id = ? AND project_id = ?').bind(operationId, projectId).first<{ result: string }>();
   if (receipt) return JSON.parse(receipt.result);
@@ -144,12 +148,23 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
         env.DB.prepare('SELECT agent,title,status,detail FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
         env.DB.prepare('SELECT instruction,status,base_revision FROM changes WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
       ]);
-      return { brief: JSON.parse(project.brief), revision: project.revision, status: project.status, generationEnabled: String(env.GENERATION_ENABLED) === 'true', selectedElementId: selected,
+      return { currentAgent: agents[agent], location: meeting ? 'meeting room (whole team)' : agents[agent].role + ' workstation', brief: JSON.parse(project.brief), revision: project.revision, status: project.status, generationEnabled: String(env.GENERATION_ENABLED) === 'true', selectedElementId: selected,
         design: design ? { title: design.title, floors: design.floors, spaces: design.spaces, elements: design.elements.map(({ id, name, materialId }) => ({ id, name, materialId })), materials: design.materials } : null,
         tasks: tasks.results, changes: changes.results };
     }
     let result: unknown;
-    if (call.name === 'request_change') {
+    if (call.name === 'review_team') {
+      if (!meeting || project.design_key) throw new HttpError(409, 'Meet at the team table before the first design.');
+      return { perspectives: await reviewMeeting(env, projectId, owner, BriefSchema.parse(JSON.parse(project.brief))) };
+    } else if (call.name === 'finish_meeting') {
+      if (!meeting) throw new HttpError(409, 'Return to the meeting table to start the team.');
+      z.object({confirmed:z.literal(true)}).parse(args);
+      if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Design generation is paused.');
+      if (project.design_key) throw new HttpError(409, 'Use a contextual change for an existing design.');
+      if (JSON.parse(project.brief).request === 'Awaiting your spoken project brief.') throw new HttpError(409, 'Save the user brief first.');
+      await credential(env, owner);
+      result = await env.PROJECTS.getByName(projectId).begin({projectId,userId:owner,runId:operationId,kind:'generate',baseRevision:project.revision});
+    } else if (call.name === 'request_change') {
       if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Design generation is paused. Your spoken brief can still be saved before generation.');
       if (!project.design_key) throw new HttpError(409, 'Save the requirements as brief details, then use Start team briefing.');
       const change = ChangeSchema.parse({ ...args, operationId, agent });
@@ -164,7 +179,7 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
       const brief = BriefSchema.parse(JSON.parse(project.brief));
       const request = brief.request === 'Awaiting your spoken project brief.' ? details : `${brief.request}\n\nSpoken requirements / clarification:\n${details}`;
       const updated = BriefSchema.parse({ ...brief, request, summary: request.slice(0, 2000) });
-      result = { saved: true, next: 'Use Start team briefing when the brief is ready.' };
+      result = { saved: true, next: 'Consult review_team; finish_meeting only after explicit user approval.' };
       // Receipt and append share one D1 transaction; never overwrite concurrent edits or an active run.
       const now = new Date().toISOString();
       const saved = await env.DB.batch([

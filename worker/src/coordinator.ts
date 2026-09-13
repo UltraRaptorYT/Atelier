@@ -8,6 +8,7 @@ import { executeVoiceTool, hangupVoice, LiveResponseTools } from './voice';
 import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collaboration';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
+  private voiceTargets = new Map<string, { agent: AgentId; elementId: string | null; meeting: boolean }>();
   private closingVoices = new Set<string>();
   async publish(projectId: string, baseRevision: number, operationId: string, design: Design) {
     try { return { ok: true as const, revision: await this.commit(projectId, baseRevision, operationId, design) }; }
@@ -19,7 +20,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     await this.ctx.storage.put('pending-project', { projectId,owner });
     await this.ctx.storage.setAlarm(Date.now()+1000);
   }
-  async attachVoice(projectId: string, owner: string, callId: string, agent: AgentId, elementId: string | null = null) {
+  async attachVoice(projectId: string, owner: string, callId: string, agent: AgentId, elementId: string | null = null, meeting = false) {
     const key = await credential(this.env, owner);
     const response = await fetch(`https://api.openai.com/v1/live/sessions/${encodeURIComponent(callId)}/attach`, {
       headers: { Upgrade: 'websocket', Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000),
@@ -28,13 +29,14 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     if (!socket) throw new HttpError(502, 'Could not attach server controls to the voice session.');
     socket.accept(); this.voices.set(callId, socket);
     const send = (event: unknown) => { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(event)); };
-    const router = new LiveResponseTools(call => executeVoiceTool(this.env, projectId, owner, callId, agent, elementId, call), send);
+    const target = { agent, elementId, meeting }; this.voiceTargets.set(callId, target);
+    const router = new LiveResponseTools(call => executeVoiceTool(this.env, projectId, owner, callId, target.agent, target.elementId, call, target.meeting), send);
     let pending: { role: 'user' | 'assistant'; text: string; id: string } | null = null;
     let transcriptTimer: ReturnType<typeof setTimeout> | undefined;
     const flushTranscript = async () => {
       clearTimeout(transcriptTimer);
       const chunk = pending; pending = null;
-      if (chunk?.text.trim()) await emit(this.env, projectId, chunk.role === 'user' ? 'user_message' : 'agent_message', chunk.text, agent, null, `voice-${callId}-${chunk.id}`);
+      if (chunk?.text.trim()) await emit(this.env, projectId, chunk.role === 'user' ? 'user_message' : 'agent_message', chunk.text, target.agent, null, `voice-${callId}-${chunk.id}`);
     };
     let processing = Promise.resolve();
     socket.addEventListener('message', event => {
@@ -51,7 +53,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
           transcriptTimer = setTimeout(() => this.ctx.waitUntil(flushTranscript()), 1500);
         }
         if (data.type === 'session.closed') { await flushTranscript(); await this.closeVoice(callId); return; }
-        if (data.type === 'error') throw new Error('Live provider error');
+        if (data.type === 'error') { const problem = data.error as {code?:string;type?:string} | undefined; console.error(JSON.stringify({type:'live_provider_error',code:problem?.code?.slice(0,100),category:problem?.type?.slice(0,100)})); throw new Error('Live provider error'); }
         await router.handle(data);
       }).catch(async () => {
         await emit(this.env, projectId, 'error', 'Live voice lost project controls. Reconnect to continue speaking.', agent);
@@ -67,6 +69,15 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     await this.ctx.storage.put(`voice-${callId}`, { owner, created: Date.now() });
     const alarm = await this.ctx.storage.getAlarm();
     if (!alarm || alarm > Date.now() + 60000) await this.ctx.storage.setAlarm(Date.now() + 60000);
+  }
+  async moveVoice(callId: string, owner: string, agent: AgentId, elementId: string | null, meeting: boolean) {
+    const session = await this.env.DB.prepare('SELECT id FROM voice_sessions WHERE id = ? AND owner_id = ?').bind(callId, owner).first();
+    const socket = this.voices.get(callId), target = this.voiceTargets.get(callId);
+    if (!session || !socket || socket.readyState !== WebSocket.OPEN || !target) return { ok: false };
+    await this.env.DB.prepare('UPDATE voice_sessions SET agent = ? WHERE id = ? AND owner_id = ?').bind(agent, callId, owner).run();
+    Object.assign(target, { agent, elementId, meeting });
+    socket.send(JSON.stringify({ type: 'session.instructions.append', delegation_id: null, content: `The user walked to ${meeting ? 'the meeting table. Speak as the Principal facilitating the entire team' : agent + "'s workstation. Speak as that specialist"}. This supersedes the previous speaking role. Read get_project_context before facts or actions. Preserve the existing project. Briefly acknowledge only when the user speaks.` }));
+    return { ok: true };
   }
   async closeVoice(callId: string, owner?: string) {
     // Startup rollback can happen before D1 insertion or sideband attachment.
@@ -84,7 +95,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     const session = await this.env.DB.prepare('SELECT owner_id FROM voice_sessions WHERE id = ?').bind(callId).first<{owner_id:string}>();
     // Remove local authority before closing the socket, whose close callback can re-enter here.
     await this.env.DB.prepare('DELETE FROM voice_sessions WHERE id = ?').bind(callId).run();
-    const socket = this.voices.get(callId); this.voices.delete(callId);
+    const socket = this.voices.get(callId); this.voices.delete(callId); this.voiceTargets.delete(callId);
     if (socket && socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) socket.close();
     if (session) {
       try { await hangupVoice(await credential(this.env, session.owner_id), callId); }

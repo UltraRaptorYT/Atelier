@@ -6,6 +6,7 @@ import { Physics, RigidBody } from '@react-three/rapier';
 import { Vector3, Group, PCFShadowMap, Mesh, MeshStandardMaterial, SRGBColorSpace } from 'three';
 import { agents, type AgentId, type Design, type Task } from '@/shared/design';
 import { geometryParts } from '@/shared/geometry';
+import { meetingSeats, workSeats, officeRoute } from '@/shared/office';
 import ClickNavigation from './ClickNavigation';
 import FirstPersonNavigation from './FirstPersonNavigation';
 
@@ -19,7 +20,7 @@ export const rooms: { id: RoomId; label: string; position: [number, number, numb
   { id: 'presentation', label: 'Presentation', position: [7.5, 0, 4], camera: [7.5, 1.7, 7] },
 ];
 type Preview = {agent:AgentId;url:string;createdAt:string};
-type Props = { room: RoomId; mode: 'office' | 'model'; walking: boolean; clickToWalk: boolean; paused: boolean; onWalkStatus: (status: string) => void; design: Design | null; projectId: string | null; previews:Preview[]; onFrameRate:(fps:number)=>void; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
+type Props = { meeting: boolean; onProximity: (id: RoomId | null) => void; onWorkstation: (agent: AgentId) => void; room: RoomId; mode: 'office' | 'model'; walking: boolean; clickToWalk: boolean; paused: boolean; onWalkStatus: (status: string) => void; design: Design | null; projectId: string | null; previews:Preview[]; onFrameRate:(fps:number)=>void; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
 function FrameRate({onMeasure}:{onMeasure:(fps:number)=>void}) {
   const sample=useRef({frames:0,elapsed:0});
   useFrame((_,delta)=>{if(document.hidden){sample.current={frames:0,elapsed:0};return;}sample.current.frames++;sample.current.elapsed+=delta;if(sample.current.elapsed>=3){onMeasure(Math.round(sample.current.frames/sample.current.elapsed));sample.current={frames:0,elapsed:0};}});
@@ -42,23 +43,46 @@ function Chair({ p, angle = 0 }: { p: [number, number, number]; angle?: number }
 function Desk({ p, accent }: { p: [number, number, number]; accent: string }) {
   return <group position={p}><Box p={[0, .8, 0]} s={[2.6, .12, 1.05]} color="#ad885d" collision /><Box p={[-1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[0, 1.35, -.28]} s={[1.02, .66, .06]} color="#333b37" /><Box p={[0, 1.35, -.24]} s={[.91, .54, .015]} color={accent} /><Box p={[0, .87, .18]} s={[.7, .03, .25]} color="#e0ded4" /><Box p={[0, 1.02, -.28]} s={[.05, .35, .05]} color="#42463f" /><Box p={[.9, .91, .1]} s={[.38, .06, .5]} color="#eeebdf" /><Chair p={[0, 0, 1]} angle={Math.PI} /></group>;
 }
-function Avatar({ agent, active, at }: { agent: AgentId; active: boolean; at: [number, number, number] }) {
-  const group = useRef<Group>(null);
-  const target = useRef(new Vector3(...at));
-  useEffect(() => { target.current.set(...(active ? at : [at[0] * .5, 0, 3] as [number, number, number])); }, [active, at]);
+function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active: boolean; meeting: boolean; positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>> }) {
+  const group = useRef<Group>(null), pose = useRef<Group>(null), hands = useRef<Group>(null);
+  const initial = useRef(meeting ? meetingSeats[agent] : workSeats[agent]);
+  const route = useRef<Vector3[]>([]);
+  useEffect(() => {
+    const p = group.current?.position;
+    route.current = officeRoute(p ? [p.x,0,p.z] : initial.current, agent, meeting).map(p => new Vector3(...p));
+  }, [agent, meeting]);
   useFrame((state, dt) => {
-    if (!group.current) return;
-    const moving = group.current.position.distanceTo(target.current) > .05;
-    group.current.position.lerp(target.current, Math.min(dt * 1.1, 1));
-    group.current.position.y = moving ? Math.abs(Math.sin(state.clock.elapsedTime * 6)) * .06 : 0;
+    const g = group.current; if (!g) return;
+    const target = route.current[0];
+    const distance = target ? Math.hypot(g.position.x-target.x,g.position.z-target.z) : 0;
+    const moving = distance > .035;
+    if (target && !moving) { g.position.copy(target); route.current.shift(); }
+    if (target && moving) {
+      const step = Math.min(distance, dt * 1.7);
+      const dx = (target.x-g.position.x)/distance, dz = (target.z-g.position.z)/distance;
+      g.position.x += dx*step; g.position.z += dz*step;
+      g.rotation.y = Math.atan2(-dx,-dz);
+    } else if (!target) g.rotation.y = meeting && meetingSeats[agent][2] < 3 ? Math.PI : 0;
+    const seated = !target;
+    if (pose.current) pose.current.position.y = seated ? -.32 : Math.abs(Math.sin(state.clock.elapsedTime*8))*.045;
+    if (hands.current) {
+      hands.current.rotation.x = seated ? -.9 : Math.sin(state.clock.elapsedTime*8)*(moving ? .25 : 0);
+      hands.current.position.y = seated && active && !meeting ? Math.sin(state.clock.elapsedTime*12)*.015 : 0;
+    }
+    positions.current[agent] = [g.position.x,0,g.position.z];
   });
-  return <group ref={group} position={at}><mesh position={[0, 1.37, 0]} castShadow><sphereGeometry args={[.18, 16, 16]} /><meshStandardMaterial color="#bc9274" /></mesh><mesh position={[0, .96, 0]} castShadow><capsuleGeometry args={[.2, .4, 4, 8]} /><meshStandardMaterial color={agents[agent].color} /></mesh>{[-.12, .12].map(x => <Box key={x} p={[x, .36, 0]} s={[.16, .65, .19]} color="#424741" />)}</group>;
+  return <group ref={group} position={initial.current}><group ref={pose}>
+    <mesh position={[0,1.37,0]} castShadow><sphereGeometry args={[.18,16,16]}/><meshStandardMaterial color="#bc9274"/></mesh>
+    <mesh position={[0,.96,0]} castShadow><capsuleGeometry args={[.2,.4,4,8]}/><meshStandardMaterial color={agents[agent].color}/></mesh>
+    <group ref={hands}>{[-.26,.26].map(x=><Box key={x} p={[x,.82,-.12]} s={[.12,.4,.12]} color={agents[agent].color}/>)}</group>
+    {[-.12,.12].map(x=><Box key={x} p={[x,.36,0]} s={[.16,.65,.19]} color="#424741"/>)}
+    </group><Html position={[0,1.9,0]} center distanceFactor={7}><span className="monitor-stamp" style={{borderBottom:`3px solid ${agents[agent].color}`}}>{agents[agent].name.split(' ')[0]} · {meeting ? 'Meeting' : active ? 'Working' : 'At desk'}</span></Html></group>;
 }
 function Maquette({design}:{design:Design}) {
   const radius=Math.max(...design.elements.map(e=>Math.max(Math.abs(e.position[0])+e.size[0]/2,Math.abs(e.position[2])+e.size[2]/2)),1);
   return <group position={[7.5,1.12,4]} scale={1.2/radius}>{design.elements.filter(e=>e.kind!=='roof').map(e=><group key={e.id} position={e.position} rotation={[0,e.rotation,0]}>{geometryParts(e).map((p,i)=><mesh key={i} position={p.position} castShadow><boxGeometry args={p.size}/><meshStandardMaterial color={design.materials.find(m=>m.id===e.materialId)?.color}/></mesh>)}</group>)}</group>;
 }
-function Office({ onRoom, room, tasks, design, previews }: Pick<Props, 'onRoom' | 'room' | 'tasks' | 'design' | 'previews'>) {
+function Office({ onRoom, room, tasks, design, previews, meeting, onWorkstation, positions }: Pick<Props, 'onRoom' | 'room' | 'tasks' | 'design' | 'previews' | 'meeting' | 'onWorkstation'> & {positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>>}) {
   return <group>
     <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision surface />
     <Box p={[0, -.38, 0]} s={[24.4, .1, 17.4]} color="#9a927e" />
@@ -78,7 +102,7 @@ function Office({ onRoom, room, tasks, design, previews }: Pick<Props, 'onRoom' 
       const r = rooms.find(r => r.id === agent)!;
       const active = tasks.some(t => t.agent === agent && t.status === 'in_progress');
       const preview=previews.find(p=>p.agent===agent);
-      return <group key={agent}><Desk p={[r.position[0], 0, r.position[2] - 1]} accent={active ? '#afbc9d' : '#64776d'} />{preview && <group position={[r.position[0],0,r.position[2]-1]}><Suspense fallback={null}><MonitorPreview preview={preview}/></Suspense></group>}<Avatar agent={agent} active={active} at={[r.position[0] + 1.8, 0, r.position[2] - .5]} /><Box p={[r.position[0] - 2.5, 1.1, r.position[2] - 2.6]} s={[.9, 2.2, .5]} color="#a88b65" />{[.5, 1, 1.5].map(y => <Box key={y} p={[r.position[0] - 2.5, y, r.position[2] - 2.32]} s={[.75, .06, .08]} color="#e1dac6" />)}</group>;
+      return <group key={agent}><group onClick={event => { event.stopPropagation(); onWorkstation(agent); }}><Desk p={[r.position[0], 0, r.position[2] - 1]} accent={active ? '#afbc9d' : '#64776d'} /></group>{preview && <group position={[r.position[0],0,r.position[2]-1]}><Suspense fallback={null}><MonitorPreview preview={preview}/></Suspense></group>}<Avatar agent={agent} active={active} meeting={meeting} positions={positions} /><Box p={[r.position[0] - 2.5, 1.1, r.position[2] - 2.6]} s={[.9, 2.2, .5]} color="#a88b65" />{[.5, 1, 1.5].map(y => <Box key={y} p={[r.position[0] - 2.5, y, r.position[2] - 2.32]} s={[.75, .06, .08]} color="#e1dac6" />)}</group>;
     })}
     <Box p={[7.5, .55, 4]} s={[3.8, 1.1, 2.8]} color="#dfd9cb" collision />
     {design && <Maquette design={design}/>}
@@ -111,12 +135,13 @@ function CameraRig({ walking, mode, captureRef }: Pick<Props, 'walking' | 'mode'
 }
 export default function World(props: Props) {
   const [quality, setQuality] = useState(1.5);
+  const positions = useRef<Partial<Record<RoomId, [number, number, number]>>>({});
   useEffect(()=>{if(!props.walking && document.pointerLockElement) document.exitPointerLock();},[props.walking]);
   const target = props.mode === 'model' && props.design ? props.design.spawn : rooms.find(r => r.id === props.room)!.camera;
   const geometry = props.mode === 'office'
-    ? <Office onRoom={props.onRoom} room={props.room} tasks={props.tasks} design={props.design} previews={props.previews} />
+    ? <Office positions={positions} meeting={props.meeting} onWorkstation={props.onWorkstation} onRoom={props.onRoom} room={props.room} tasks={props.tasks} design={props.design} previews={props.previews} />
     : props.design && <Building projectId={props.projectId} design={props.design} selected={props.selected} onSelect={props.onSelect} cutaway={props.cutaway} clickToWalk={props.clickToWalk} />;
-  return <Canvas fallback={<div className="loading-world"><p>3D is unavailable in this browser. Your project panel, conversations and files are still available.</p></div>} shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+  return <Canvas fallback={<div className="loading-world"><p>3D is unavailable in this browser. Your project panel, conversations and files are still available.</p></div>} shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: props.walking ? 65 : 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
     <color attach="background" args={['#e4e3d9']} /><fog attach="fog" args={['#e4e3d9', 50, 110]} />
     <ambientLight intensity={.9} /><hemisphereLight args={['#fff7df', '#939783', 1.6]} />
     <directionalLight position={[10, 25, 8]} intensity={2.2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-25} shadow-camera-right={25} shadow-camera-top={25} shadow-camera-bottom={-25} shadow-bias={-.0005} />
@@ -124,7 +149,7 @@ export default function World(props: Props) {
     <FrameRate onMeasure={props.onFrameRate}/>
     <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
       {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
-      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} onRoom={props.onRoom} onExit={props.onUnlock} office={props.mode === 'office'} />}
+      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} positions={positions} meeting={props.meeting} onProximity={props.onProximity} onRoom={id => { if (id in agents) props.onWorkstation(id as AgentId); else props.onRoom(id); }} onExit={props.onUnlock} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
     {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={65} maxPolarAngle={Math.PI / 2.1} target={[0, 0, 0]} />}

@@ -27,7 +27,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     const origin = request.headers.get('origin');
     if (origin && !matchesOrigin(request, origin)) return Response.json({ error: 'Invalid request origin.' }, { status: 403 });
   }
-  for (const key of ['content-type', 'x-atelier-agent', 'x-atelier-element', 'last-event-id']) { const value = request.headers.get(key); if (value) headers.set(key, value); }
+  for (const key of ['content-type', 'x-atelier-agent', 'x-atelier-element', 'x-atelier-location', 'last-event-id']) { const value = request.headers.get(key); if (value) headers.set(key, value); }
   const upstream = process.env.ATELIER_WORKER_URL || (local ? 'http://127.0.0.1:8787' : '');
   if (!upstream) return Response.json({ error: 'The studio backend is not connected yet.' }, { status: 503 });
   let payload:Uint8Array<ArrayBuffer>|undefined;

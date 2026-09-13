@@ -10,25 +10,28 @@ import type { RoomId } from './World';
 import styles from './FirstPersonNavigation.module.css';
 
 type Point = { x: number; y: number; z: number };
-type Room = { id: RoomId; label: string; camera: [number, number, number] };
+type Room = { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] };
 type Props = {
   target: [number, number, number];
   rooms: Room[];
   office: boolean;
   revision: string;
   paused: boolean;
+  positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>>;
+  meeting: boolean;
+  onProximity: (id: RoomId | null) => void;
   onRoom: (id: RoomId) => void;
   onExit: () => void;
 };
 
 const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
-const INTERACTION_DISTANCE = 2.2;
+const INTERACTION_DISTANCE = 2.8;
 
 function editing(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('input, textarea, select, [role="textbox"]')));
 }
 
-export default function FirstPersonNavigation({ target, rooms, office, revision, paused, onRoom, onExit }: Props) {
+export default function FirstPersonNavigation({ target, rooms, office, revision, paused, onRoom, onExit, positions, meeting, onProximity }: Props) {
   const body = useRef<RapierRigidBody>(null);
   const collider = useRef<RapierCollider>(null);
   const controller = useRef<WalkController | null>(null);
@@ -36,6 +39,7 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
   const verticalSpeed = useRef(0);
   const geometryCheck = useRef(2);
   const blocked = useRef(false);
+  const voiceRoom = useRef<RoomId | null>(null);
   const nearbyRoom = useRef<Room | null>(null);
   const [roomLabel, setRoomLabel] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -58,7 +62,6 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
   function exit() {
     keys.current.clear();
     if (document.pointerLockElement === gl.domElement) document.exitPointerLock();
-    onExit();
   }
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
   }, [target[0], target[1], target[2], camera]);
 
   useEffect(() => { geometryCheck.current = 2; }, [revision]);
-  useEffect(() => { if (paused) keys.current.clear(); }, [paused]);
+  useEffect(() => { if (paused) { keys.current.clear(); if (document.pointerLockElement) document.exitPointerLock(); } }, [paused]);
 
   useEffect(() => {
     const clear = () => keys.current.clear();
@@ -121,7 +124,7 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
     };
     const lock = () => {
       const locked = document.pointerLockElement === gl.domElement;
-      if (!locked && wasLocked) { keys.current.clear(); onExit(); }
+      if (!locked && wasLocked) { keys.current.clear(); }
       wasLocked = locked;
     };
     gl.domElement.addEventListener('mousedown', down);
@@ -184,17 +187,25 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
     if (!body.current) return;
     const p = body.current.translation();
     camera.position.set(p.x, p.y + EYE_OFFSET, p.z);
+    if (paused) return;
     const room = office && !paused && !blocked.current ? rooms.reduce<Room | null>((closest, candidate) => {
-      const distance = Math.hypot(p.x - candidate.camera[0], p.z - candidate.camera[2]);
-      return distance <= INTERACTION_DISTANCE && (!closest || distance < Math.hypot(p.x - closest.camera[0], p.z - closest.camera[2])) ? candidate : closest;
+      const point = candidate.id === 'reception' ? [0,0,5.8] : positions.current[candidate.id];
+      if (!point || (meeting && candidate.id !== 'reception')) return closest;
+      const distance = Math.hypot(p.x-point[0],p.z-point[2]);
+      const previous = closest?.id === 'reception' ? [0,0,5.8] : closest ? positions.current[closest.id] : null;
+      return distance <= (candidate.id === 'reception' ? 3.2 : INTERACTION_DISTANCE) && (!previous || distance < Math.hypot(p.x-previous[0],p.z-previous[2])) ? candidate : closest;
     }, null) : null;
-    if (room?.id !== nearbyRoom.current?.id) { nearbyRoom.current = room; setRoomLabel(room?.label || null); }
+    if ((room?.id || null) !== voiceRoom.current) { voiceRoom.current = room?.id || null; onProximity(voiceRoom.current); }
+    const interaction = office ? rooms.filter(r => r.id !== 'presentation').find(r => r.id === 'reception'
+      ? Math.hypot(p.x, p.z-5.8) < 2.8
+      : Math.hypot(p.x-r.position[0],p.z-r.position[2]) < 2.8) || null : null;
+    if (interaction?.id !== nearbyRoom.current?.id) { nearbyRoom.current = interaction; setRoomLabel(interaction?.label || null); }
   });
 
   return <>
     <RigidBody ref={body} type="kinematicPosition" colliders={false} enabledRotations={[false, false, false]} position={[spawn.x, spawn.y, spawn.z]}>
       <CapsuleCollider ref={collider} args={[CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS]} />
     </RigidBody>
-    {!paused && (unavailable || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{unavailable ? 'No clear place to stand here. Press Esc and choose another room or review the model.' : <><kbd>E</kbd> Open {roomLabel}</>}</div></Html>}
+    {!paused && (unavailable || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{unavailable ? 'No clear place to stand here. Press Esc and choose another room or review the model.' : <><kbd>E</kbd> Talk / workstation: {roomLabel}</>}</div></Html>}
   </>;
 }

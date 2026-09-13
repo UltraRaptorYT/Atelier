@@ -36,7 +36,7 @@ export default {
         .setIssuer('atelier-sites').setAudience('atelier-api').setIssuedAt().setExpirationTime('90s')
         .sign(new TextEncoder().encode(env.SITES_PROXY_SECRET));
       const headers = new Headers({ Authorization: `Bearer ${token}` });
-      for (const name of ['content-type', 'x-atelier-agent', 'x-atelier-element', 'last-event-id']) {
+      for (const name of ['content-type', 'x-atelier-agent', 'x-atelier-element', 'x-atelier-location', 'last-event-id']) {
         const value = request.headers.get(name); if (value) headers.set(name, value);
       }
       // Limit uploads before forwarding; captures legitimately exceed the JSON command limit.

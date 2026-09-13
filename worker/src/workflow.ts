@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BriefSchema, type AgentId } from '../../shared/design';
 import type { Bindings, RunParams } from './types';
 import { modelJSON } from './ai';
+import { reviewMeeting } from './meeting';
 import { generateStudy, loadImageReference } from './images';
 import { artifact, designFromRow, emit } from './store';
 import { createDesktop, idleDesktop, syncDesktop, checkpointDesktop } from './desktop';
@@ -79,12 +80,13 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('designer', 'Render presentation', `Presentation files for revision ${row.revision} are ready.`, 'completed');
         });
       } else {
+        const perspectives = p.kind === 'generate' ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
         const brief = await step.do('principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId);
           const original = BriefSchema.parse(JSON.parse(row.brief));
           await task('principal', 'Prepare the project brief', p.kind === 'change' ? 'Assessing the requested design change.' : 'Interpreting the brief and assigning specialists.');
           if (p.kind === 'change') return original;
-          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Preserve request exactly. Infer reasonable defaults. Only ask questions when requirements conflict or exceed 4 floors/40 spaces.`, BriefSchema);
+          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the brief. If the user explicitly asks you to choose defaults, do so.`, BriefSchema);
           await this.env.DB.prepare('UPDATE projects SET brief = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(parsed), new Date().toISOString(), p.projectId).run();
           if (parsed.questions.length) await emit(this.env, p.projectId, 'clarification_requested', parsed.questions.join('\n'), 'principal');
           return parsed;

@@ -21,7 +21,7 @@ export function parseLiveDisplayEvent(raw: unknown): DisplayEvent | null {
 }
 
 type VoiceOptions = {
-  projectId: string; agent: string; elementId: string | null; agentName: string;
+  projectId: string; agent: string; elementId: string | null; agentName: string; meeting?: boolean;
   onStatus: (status: VoiceStatus) => void;
   onTranscript: (text: string) => void;
   onError: (message: string) => void;
@@ -43,6 +43,8 @@ export class LiveVoiceSession {
   private channel: RTCDataChannel | null = null;
   private sessionId: string | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private proximityRevision = 0;
+  private disconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private cancelIceWait: (() => void) | null = null;
   private readonly transcript = new TranscriptGrouper({ backchannelMaxDurationMs: 0 });
   private readonly url: string;
@@ -81,9 +83,11 @@ export class LiveVoiceSession {
       const channel = pc.createDataChannel('oai-events'); this.channel = channel;
       channel.onmessage = event => this.receive(event.data);
       channel.onclose = () => this.fail('Live voice disconnected. Start live voice to reconnect.');
-      channel.onerror = () => this.fail('Live voice disconnected. Start live voice to reconnect.');
+      channel.onerror = () => { /* Connection state decides whether a transient error needs recovery. */ };
       pc.onconnectionstatechange = () => {
-        if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) this.fail('Live voice disconnected. Your saved design is available.');
+        clearTimeout(this.disconnectTimer);
+        if (pc.connectionState === 'disconnected') this.disconnectTimer = setTimeout(() => { if (pc.connectionState !== 'connected') this.fail('The voice network connection did not recover. Please reconnect.'); }, 12000);
+        else if (['failed', 'closed'].includes(pc.connectionState)) this.fail('The voice network connection ended. Your saved project is available.');
       };
       const offer = await pc.createOffer();
       if (this.closed) return;
@@ -93,7 +97,7 @@ export class LiveVoiceSession {
       if (this.closed) return;
       const localSdp = pc.localDescription?.sdp;
       if (!localSdp) throw new Error('Your browser could not prepare the voice connection. Please reconnect.');
-      const headers: Record<string, string> = { 'Content-Type': 'application/sdp', 'X-Atelier-Agent': this.options.agent };
+      const headers: Record<string, string> = { 'Content-Type': 'application/sdp', 'X-Atelier-Agent': this.options.agent, 'X-Atelier-Location': this.options.meeting ? 'reception' : this.options.agent };
       if (this.options.elementId) headers['X-Atelier-Element'] = this.options.elementId;
       // Let an in-flight response finish after stop so its newly allocated server
       // session can be deleted. Aborting here would lose the returned session ID.
@@ -112,6 +116,21 @@ export class LiveVoiceSession {
     } catch (error) {
       if (!this.closed) this.fail(error instanceof Error ? error.message : 'Microphone unavailable.');
     }
+  }
+
+  async setProximity(agent: string, agentName: string, elementId: string | null, meeting: boolean, inRange: boolean): Promise<void> {
+    const update = ++this.proximityRevision;
+    this.stream?.getAudioTracks().forEach(track => { track.enabled = false; });
+    if (this.audio) this.audio.muted = !inRange;
+    if (this.closed || !this.sessionId || !inRange) return;
+    const changed = agent !== this.options.agent || elementId !== this.options.elementId || meeting !== Boolean(this.options.meeting);
+    if (changed) {
+      this.transcript.close();
+      const response = await this.environment.fetch(`${this.url}/${encodeURIComponent(this.sessionId)}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({agent, elementId, meeting}) });
+      if (!response.ok) { this.fail('Voice handoff could not complete. Reconnect near your teammate.'); return; }
+      Object.assign(this.options, {agent, agentName, elementId, meeting});
+    }
+    if (!this.closed && update === this.proximityRevision) this.stream?.getAudioTracks().forEach(track => { track.enabled = true; });
   }
 
   private waitForIce(pc: RTCPeerConnection): Promise<void> {
@@ -161,6 +180,7 @@ export class LiveVoiceSession {
     if (this.closed) return;
     this.closed = true;
     clearTimeout(this.timer);
+    clearTimeout(this.disconnectTimer);
     this.cancelIceWait?.();
     this.transcript.close();
     if (this.channel) { this.channel.onmessage = null; this.channel.onclose = null; this.channel.onerror = null; this.channel.close(); this.channel = null; }

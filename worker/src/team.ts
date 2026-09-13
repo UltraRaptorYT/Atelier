@@ -158,7 +158,7 @@ The graph must be acyclic. It needs a design-writing task and a final review tha
         await emit(env, p.projectId, 'task_created', `${task.title}: ${task.objective}`, task.agent, rowId, `${rowId}-created`);
       }
       await updateTask(`${p.runId}-principal`, 'completed', next.summary);
-      await emit(env, p.projectId, round ? 'meeting_ended' : 'agent_message', next.summary, 'principal', null, `${p.runId}-${phase}-delegated`);
+      await emit(env, p.projectId, 'meeting_ended', next.summary, 'principal', null, `${p.runId}-${phase}-delegated`);
       return next;
     });
     const completed = new Set<string>();
