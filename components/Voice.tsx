@@ -11,7 +11,7 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
   onTranscript: (text: string) => void; onError: (message: string) => void;
 }) {
   const [status, setStatus] = useState<VoiceStatus>('off');
-  const wanted = useRef(false), generation = useRef(0), retries = useRef(0);
+  const wanted = useRef(false), recoverable = useRef(false), generation = useRef(0), retries = useRef(0);
   const microphone = useRef<MediaStream | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const stableTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -42,10 +42,12 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
 
   useEffect(() => {
     const call = active.current;
-    if (!call || status !== 'live') return;
-    const update = () => void call.setProximity(agent, meeting ? 'Team / Alex' : agents[agent].name, elementId, meeting, inRange);
-    if (!inRange) { update(); return; }
-    const timer = setTimeout(update, 500);
+    if (!call || status === 'off') return;
+    // Mute immediately in corridors; debounce valid targets at room boundaries.
+    const name = meeting ? 'Team / Alex' : agents[agent].name;
+    void call.setProximity(agent, name, elementId, meeting, false);
+    if (!inRange) return;
+    const timer = setTimeout(() => { void call.setProximity(agent, name, elementId, meeting, true).catch(() => { call.stop(); latest.current.onError('Voice handoff failed. Please reconnect.'); }); }, 500);
     return () => clearTimeout(timer);
   }, [agent, elementId, meeting, inRange, status]);
 
@@ -53,6 +55,7 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
     const snapshot = latest.current;
     if (!wanted.current || active.current || !snapshot.projectId) return;
     const attempt = ++generation.current;
+    recoverable.current = false;
     setStatus('connecting');
     try {
       // Keep the original capture alive across transport renewal. Each call owns
@@ -75,18 +78,19 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
             void call.setProximity(target.agent, target.meeting ? 'Team / Alex' : agents[target.agent].name, target.elementId, target.meeting, target.inRange);
           } else if (next === 'off') {
             active.current = null; clearTimeout(stableTimer.current);
-            if (wanted.current) {
+            // Renew only after a transient failure; a deliberate or permanent close ends the call.
+            if (wanted.current && recoverable.current) {
               setStatus('connecting');
               const delay = Math.min(30000, 1000 * 2 ** Math.min(retries.current++, 5));
               retryTimer.current = setTimeout(() => startLatest.current(), delay);
-            } else { releaseMicrophone(); setStatus('off'); }
+            } else { wanted.current = false; releaseMicrophone(); setStatus('off'); }
           } else setStatus(next);
         },
         onTranscript: text => { if (active.current === call) latest.current.onTranscript(text); },
-        onError: (message, retryable) => {
+        onError: (message, details) => {
           if (active.current !== call) return;
-          if (retryable === false) wanted.current = false;
-          latest.current.onError(wanted.current && retryable !== undefined ? 'Voice interrupted. Reconnecting automatically; your project keeps running.' : message);
+          recoverable.current = details?.retryable === true;
+          latest.current.onError(wanted.current && recoverable.current ? 'Voice interrupted. Reconnecting automatically; your project keeps running.' : message);
         },
       }, {
         getUserMedia: async () => {

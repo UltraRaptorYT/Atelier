@@ -1,5 +1,5 @@
-export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  const response = await fetch(`/api/studio${path}`, { method, headers: body === undefined ? undefined : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
+export async function api<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`/api/studio${path}`, { method, headers: body === undefined ? undefined : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store', signal });
   if (!response.ok) {
     const data = await response.json().catch(() => ({ error: 'The studio service is unavailable.' }));
     throw new Error(data.error || 'The request could not be completed.');

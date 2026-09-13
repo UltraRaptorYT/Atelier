@@ -8,8 +8,8 @@ function deferred<T>() {
 }
 
 function setup() {
-  const track = { stop: vi.fn() };
-  const stream = { getTracks: () => [track] } as unknown as MediaStream;
+  const track = { stop: vi.fn(), enabled: true };
+  const stream = { getTracks: () => [track], getAudioTracks: () => [track] } as unknown as MediaStream;
   const channel = { onmessage: null, onclose: null, onerror: null, close: vi.fn() } as unknown as RTCDataChannel;
   const peerEvents = new EventTarget();
   const peer = {
@@ -54,6 +54,83 @@ describe('GPT-Live display events', () => {
 });
 
 describe('live voice lifecycle', () => {
+  it('keeps media and the session alive after a rejected command, without exposing provider diagnostics', async () => {
+    const x = setup(); await x.call.start(); x.send({ type: 'session.started' });
+    x.send({ type: 'error', error: { type: 'invalid_request_error', message: 'Private upstream diagnostic' } });
+    expect(x.onStatus).toHaveBeenLastCalledWith('live');
+    expect(x.track.stop).not.toHaveBeenCalled();
+    expect(x.peer.close).not.toHaveBeenCalled();
+    expect(x.onError).toHaveBeenCalledWith('A voice action could not complete. You can keep talking.', { retryable: false });
+    x.send({ type: 'session.input_transcript.delta', event_id: 'after-error', delta: 'Still connected', start_ms: 0, end_ms: 1000 });
+    x.call.stop();
+    expect(x.onTranscript).toHaveBeenCalledWith('You: Still connected');
+  });
+
+  it('classifies an unexpected final connection loss for recovery but does not retry a deliberate close', async () => {
+    const x = setup(); await x.call.start(); x.send({ type: 'session.started' });
+    x.send({ type: 'session.closed', reason: 'connection_lost' });
+    expect(x.onError).toHaveBeenCalledWith(expect.any(String), { retryable: true });
+    expect(x.track.stop).toHaveBeenCalledOnce();
+    const next = setup(); await next.call.start(); next.send({ type: 'session.closed', reason: 'close_requested' });
+    expect(next.onError).not.toHaveBeenCalled();
+    expect(next.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it('allows a transient peer disconnection to recover without ending the call', async () => {
+    vi.useFakeTimers(); const x = setup(); await x.call.start(); x.send({ type: 'session.started' });
+    Object.defineProperty(x.peer, 'connectionState', { value: 'disconnected', configurable: true });
+    x.peer.onconnectionstatechange?.call(x.peer, new Event('connectionstatechange'));
+    await vi.advanceTimersByTimeAsync(11000);
+    Object.defineProperty(x.peer, 'connectionState', { value: 'connected' });
+    x.peer.onconnectionstatechange?.call(x.peer, new Event('connectionstatechange'));
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(x.onError).not.toHaveBeenCalled(); expect(x.peer.close).not.toHaveBeenCalled(); x.call.stop();
+  });
+
+  it('serializes handoffs, skips superseded targets, and mutes until the latest target is acknowledged', async () => {
+    const x = setup(); await x.call.start(); x.send({ type: 'session.started' });
+    await x.call.setProximity('designer', 'Sofia', 'roof', false, true);
+    expect(x.track.enabled).toBe(true);
+    const first = deferred<Response>(), last = deferred<Response>();
+    x.fetcher.mockImplementationOnce(() => first.promise).mockImplementationOnce(() => last.promise);
+    const a = x.call.setProximity('architect', 'Kai', null, false, true);
+    await vi.waitFor(() => expect(x.fetcher).toHaveBeenCalledTimes(2));
+    const b = x.call.setProximity('critic', 'Morgan', null, false, true);
+    const c = x.call.setProximity('principal', 'Team / Alex', null, true, true);
+    expect(x.fetcher).toHaveBeenCalledTimes(2);
+    expect(x.track.enabled).toBe(false); expect(x.audio.muted).toBe(true);
+    first.resolve(new Response('{}')); await a; await b;
+    await vi.waitFor(() => expect(x.fetcher).toHaveBeenCalledTimes(3));
+    expect(x.fetcher).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: 'PUT', body: JSON.stringify({ agent: 'principal', elementId: null, meeting: true }) }));
+    expect(x.track.enabled).toBe(false); expect(x.audio.muted).toBe(true);
+    last.resolve(new Response('{}')); await c;
+    expect(x.track.enabled).toBe(true); expect(x.audio.muted).toBe(false);
+    x.call.stop();
+  });
+
+  it('keeps the microphone paused when the user leaves during connection or an in-flight handoff', async () => {
+    const x = setup(); await x.call.start();
+    await x.call.setProximity('principal', 'Alex', null, false, false);
+    x.send({ type: 'session.started' }); await Promise.resolve();
+    expect(x.track.enabled).toBe(false); expect(x.audio.muted).toBe(true);
+    const pending = deferred<Response>(); x.fetcher.mockImplementationOnce(() => pending.promise);
+    const handoff = x.call.setProximity('architect', 'Kai', null, false, true);
+    await vi.waitFor(() => expect(x.fetcher).toHaveBeenCalledTimes(2));
+    const leaving = x.call.setProximity('principal', 'Alex', null, false, false);
+    pending.resolve(new Response('{}')); await handoff; await leaving;
+    expect(x.track.enabled).toBe(false); expect(x.audio.muted).toBe(true);
+    expect(x.track.stop).not.toHaveBeenCalled(); x.call.stop();
+  });
+
+  it('ignores a stale failed handoff after the call was stopped', async () => {
+    const x = setup(); await x.call.start(); x.send({ type: 'session.started' });
+    const pending = deferred<Response>(); x.fetcher.mockImplementationOnce(() => pending.promise);
+    const handoff = x.call.setProximity('architect', 'Kai', null, false, true);
+    await vi.waitFor(() => expect(x.fetcher).toHaveBeenCalledTimes(2));
+    x.call.stop(); pending.resolve(new Response('{}', { status: 503 })); await handoff;
+    expect(x.onError).not.toHaveBeenCalled(); expect(x.track.stop).toHaveBeenCalledOnce();
+  });
+
   it('waits for session.started and includes the chosen specialist and element', async () => {
     const x = setup(); await x.call.start();
     expect(x.onStatus.mock.calls).toEqual([['connecting']]);
@@ -104,7 +181,7 @@ describe('live voice lifecycle', () => {
     vi.useFakeTimers(); const x = setup(); Object.defineProperty(x.peer, 'iceGatheringState', { value: 'gathering' });
     const starting = x.call.start(); await vi.advanceTimersByTimeAsync(8000); await starting;
     expect(x.fetcher).not.toHaveBeenCalled();
-    expect(x.onError).toHaveBeenCalledWith('Your network took too long to prepare voice. Please reconnect.');
+    expect(x.onError).toHaveBeenCalledWith('Your network took too long to prepare voice. Please reconnect.', { retryable: false });
     expect(x.track.stop).toHaveBeenCalledOnce();
     expect(x.peer.removeEventListener).toHaveBeenCalledOnce();
   });
@@ -122,7 +199,7 @@ describe('live voice lifecycle', () => {
   it('releases the allocated session if applying SDP fails', async () => {
     const x = setup(); vi.mocked(x.peer.setRemoteDescription).mockRejectedValueOnce(new Error('Invalid SDP'));
     await x.call.start();
-    expect(x.onError).toHaveBeenCalledWith('Invalid SDP');
+    expect(x.onError).toHaveBeenCalledWith('Invalid SDP', { retryable: false });
     expect(x.track.stop).toHaveBeenCalledOnce();
     expect(x.fetcher).toHaveBeenLastCalledWith('/api/studio/projects/project-a/voice/live_123', { method: 'DELETE', keepalive: true });
   });

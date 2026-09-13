@@ -1,5 +1,5 @@
 .board {
-  margin: 22px 22px 0;
+  margin: 18px 0 0;
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line, #e3e5dc);
   color: var(--ink, #30382e);
@@ -68,6 +68,11 @@
 
 .card[data-status='failed'],
 .card[data-status='blocked'] { border-color: #e2d2b8; }
+
+.preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 7px; color: #718066; font-size: 11px; line-height: 1.5; }
+.taskDetails { margin-top: 10px; }
+.taskDetails summary { width: fit-content; color: #6a7a5b; font-size: 10px; cursor: pointer; }
+.taskDetails summary:focus-visible { outline: 2px solid #6c805e; outline-offset: 3px; }
 
 .cardTop {
   display: flex;
@@ -224,7 +229,7 @@
 .completed .card { background: #fafbf7; }
 
 @media (max-width: 800px) {
-  .board { margin: 23px 25px 0; }
+  .board { margin: 18px 0 0; }
   .agent, .objective, .detail { font-size: 12px; }
   .status { font-size: 10px; }
 }

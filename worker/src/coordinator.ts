@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { DesignSchema, type AgentId, type Design } from '../../shared/design';
+import { hasMeaningfulBrief } from '../../shared/brief-validation';
 import type { Bindings, ProjectRow, RunParams } from './types';
 import { HttpError, credential, ownedProject } from './security';
 import { emit } from './store';
@@ -9,6 +10,7 @@ import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collabora
 import { originalConceptId } from './images';
 import { changeFailedStatement } from './changes';
 import { dispatchClarification } from './clarifications';
+import { isRecoverableLiveError } from '../../shared/live-errors';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private voiceTargets = new Map<string, { agent: AgentId; elementId: string | null; meeting: boolean }>();
@@ -25,15 +27,15 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
   }
   async attachVoice(projectId: string, owner: string, callId: string, agent: AgentId, elementId: string | null = null, meeting = false) {
     const key = await credential(this.env, owner);
-    // Clear the handshake deadline before using the long-lived upgraded socket.
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    // Bound the upgrade handshake, not the lifetime of the accepted WebSocket.
+    const connecting = new AbortController();
+    const deadline = setTimeout(() => connecting.abort(), 15000);
     let response: Response;
     try {
       response = await fetch(`https://api.openai.com/v1/live/sessions/${encodeURIComponent(callId)}/attach`, {
-        headers: { Upgrade: 'websocket', Authorization: `Bearer ${key}` }, signal: controller.signal,
+        headers: { Upgrade: 'websocket', Authorization: `Bearer ${key}` }, signal: connecting.signal,
       });
-    } finally { clearTimeout(timeout); }
+    } finally { clearTimeout(deadline); }
     const socket = response.webSocket;
     if (!socket) throw new HttpError(502, 'Could not attach server controls to the voice session.');
     socket.accept(); this.voices.set(callId, socket);
@@ -62,7 +64,15 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
           transcriptTimer = setTimeout(() => this.ctx.waitUntil(flushTranscript()), 1500);
         }
         if (data.type === 'session.closed') { await flushTranscript(); await this.closeVoice(callId); return; }
-        if (data.type === 'error') { const problem = data.error as {code?:string;type?:string} | undefined; console.error(JSON.stringify({type:'live_provider_error',code:problem?.code?.slice(0,100),category:problem?.type?.slice(0,100)})); throw new Error('Live provider error'); }
+        if (data.type === 'error') {
+          const problem = data.error as {code?:unknown;type?:unknown} | undefined;
+          console.error(JSON.stringify({type:'live_provider_error',code:typeof problem?.code === 'string' ? problem.code.slice(0,100) : undefined,category:typeof problem?.type === 'string' ? problem.type.slice(0,100) : undefined}));
+          if (isRecoverableLiveError(data)) {
+            await emit(this.env, projectId, 'voice_warning', 'A voice command was not accepted. The call is still connected; check the saved project before repeating a change.', target.agent);
+            return;
+          }
+          throw new Error('Live provider error');
+        }
         await router.handle(data);
       }).catch(async () => {
         await emit(this.env, projectId, 'error', 'Live voice lost project controls. Reconnect to continue speaking.', agent);
@@ -207,6 +217,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     }
     const row = await this.env.DB.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ?').bind(params.projectId, params.userId).first<ProjectRow>();
     if (!row) throw new HttpError(404, 'Project not found.');
+    if (params.kind === 'generate' && !row.design_key && !hasMeaningfulBrief(JSON.parse(row.brief).request)) throw new HttpError(409, 'Save a full project brief before starting the team. Your spoken requirements have not been saved yet.');
     if (row.revision !== params.baseRevision) throw new HttpError(409, 'Refresh the project before starting work on a previous revision.');
     const selected = params.kind === 'generate' && row.concept_artifact_id ? await this.env.DB.prepare('SELECT id FROM image_studies WHERE id = ? AND project_id = ? AND revision = ?').bind(row.concept_artifact_id, params.projectId, params.baseRevision).first<{id:string}>() : null;
     const referenceArtifactId = params.resumesRunId ? params.referenceArtifactId || null : params.referenceArtifactId || (params.kind === 'generate' ? selected?.id || null : null);

@@ -39,6 +39,18 @@ beforeEach(() => { vi.clearAllMocks(); env.GENERATION_ENABLED = 'false'; });
 afterAll(async () => { await mf?.dispose(); });
 
 describe('shared conversation routing with real persistence', () => {
+  it('asks for an unsaved brief instead of treating start building as requirements or queuing a generic design', async () => {
+    env.GENERATION_ENABLED = 'true';
+    const id = await project(), request = message('Please start building now!');
+    const placeholder = { ...brief, request: 'Awaiting your spoken project brief.', summary: 'Awaiting your spoken project brief.', goals: [], constraints: [] };
+    await env.DB.prepare('UPDATE projects SET brief = ? WHERE id = ?').bind(JSON.stringify(placeholder), id).run();
+    const result = await handleInteraction(env, id, 'owner', request);
+    expect(result).toMatchObject({ intent: 'ask', reply: expect.stringContaining('not been saved') });
+    expect(await handleInteraction(env, id, 'owner', request)).toEqual(result);
+    expect(modelJSON).not.toHaveBeenCalled(); expect(scheduleChanges).not.toHaveBeenCalled(); expect(begin).not.toHaveBeenCalled();
+    expect(await count('runs', id)).toBe(0); expect(await count('changes', id)).toBe(0);
+    expect(JSON.parse((await env.DB.prepare('SELECT brief FROM projects WHERE id = ?').bind(id).first<{ brief: string }>())!.brief)).toEqual(placeholder);
+  });
   it('answers a design question while generation is paused, without opening a run or changing the design', async () => {
     const id = await project(true), request = message('Why is the roof sloped?', { baseRevision: 1 });
     vi.mocked(modelJSON).mockResolvedValueOnce({ intent: 'ask', reply: 'No roof-slope rationale is recorded. I can explain possible reasons.', answers: [] });

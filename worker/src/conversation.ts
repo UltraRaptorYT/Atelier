@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ChangeSchema } from '../../shared/design';
+import { hasMeaningfulBrief, isStartOnlyInstruction } from '../../shared/brief-validation';
 import { ClarificationAnswerSchema, InteractionIntentSchema, InteractionRequestSchema, type InteractionRequest, type InteractionResult } from '../../shared/conversation';
 import { modelJSON } from './ai';
 import { answerClarification, getClarification, saveBriefDetails } from './clarifications';
@@ -63,13 +64,15 @@ async function finishTurn(env: Bindings, projectId: string, request: Interaction
 /** Text and voice share validated operations; conversation never reserves a computer. */
 export async function handleInteraction(env: Bindings, projectId: string, owner: string, input: InteractionRequest): Promise<InteractionResult> {
   const request = InteractionRequestSchema.parse(input);
-  await ownedProject(env, projectId, owner);
+  const project = await ownedProject(env, projectId, owner);
   const serialized = JSON.stringify(request);
   let turn = await env.DB.prepare('SELECT project_id,request_json,decision_json,result_json FROM conversation_turns WHERE id = ?').bind(request.operationId).first<TurnRow>();
   if (turn && (turn.project_id !== projectId || turn.request_json !== serialized)) throw new HttpError(409, 'This message ID was already used for another request.');
   if (turn?.result_json) return finishTurn(env, projectId, request, JSON.parse(turn.result_json));
   if (!turn) {
-    const proposed = await decide(env, projectId, owner, request);
+    const proposed: Decision = !project.design_key && !hasMeaningfulBrief(JSON.parse(project.brief).request) && isStartOnlyInstruction(request.instruction)
+      ? { intent: 'ask', reply: 'Before we start, describe the home you want: its occupants, rooms and style. Your spoken brief has not been saved yet. You can enter the full brief here.', answers: [], changeInstruction: null }
+      : await decide(env, projectId, owner, request);
     const decision = request.intent === 'ask' ? { ...proposed, intent: 'ask' as const, answers: [] } : proposed;
     await env.DB.prepare('INSERT OR IGNORE INTO conversation_turns(id,project_id,request_json,decision_json,created_at) VALUES(?,?,?,?,?)')
       .bind(request.operationId, projectId, serialized, JSON.stringify(decision), new Date().toISOString()).run();

@@ -7,10 +7,12 @@ import { agents, type AgentId, type Design, type Snapshot, type Project, type Br
 import type { ConversationTurn, InteractionRequest, InteractionResult } from '@/shared/conversation';
 import { exampleDesign } from '@/shared/example';
 import { api, download } from '@/lib/client';
+import { isCurrentSnapshot, subscribeToProject, type ProjectConnection } from '@/lib/project-feed';
 import { rooms, type RoomId } from './World';
 import Voice from './Voice';
 import ImageStudio from './ImageStudio';
 import TaskBoard from './TaskBoard';
+import WorkOverview from './WorkOverview';
 import ChangeTracker, { RequirementsHistory } from './ChangeTracker';
 import ClarificationCard from './ClarificationCard';
 import conversationStyles from './ClarificationCard.module.css';
@@ -56,6 +58,7 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
   const inputClarification = useRef<{ id: string; version: number } | null>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
   const [fps,setFps]=useState(0);
+  const [projectConnection, setProjectConnection] = useState<ProjectConnection>('connecting');
   const [finish,setFinish]=useState('#cc3344');
   const [compare, setCompare] = useState(false), [previous, setPrevious] = useState<Design | null>(null);
   const captureRef = useRef<(() => string) | null>(null);
@@ -121,10 +124,24 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
   useEffect(() => {
     if (!snapshot?.project.id || snapshot.project.id.startsWith('local_')) return;
     const id = snapshot.project.id;
-    let mounted=true;
-    const events = new EventSource(`/api/studio/projects/${id}/events?after=${snapshot.events.at(-1)?.id || 0}`);
-    events.onmessage = () => { void api<Snapshot>(`/projects/${id}`).then(next => { if(!mounted)return; setSnapshot(next); if (next.design) setDesign(next.design); setPrevious(null); setCompare(false); }).catch(() => {}); };
-    return () => {mounted=false;events.close();};
+    return subscribeToProject({
+      projectId: id, after: snapshot.events.at(-1)?.id || 0,
+      read: signal => api<Snapshot>(`/projects/${id}`, 'GET', undefined, signal),
+      onConnection: setProjectConnection,
+      onSnapshot: next => {
+        const current = snapshotRef.current;
+        if (current?.project.id !== id || !isCurrentSnapshot(next, current)) return;
+        const modelChanged = next.project.revision !== current.project.revision;
+        // Progress events should not rebuild the scene or reset a comparison.
+        const updated = modelChanged ? next : { ...next, design: current.design };
+        snapshotRef.current = updated;
+        setSnapshot(updated);
+        if (modelChanged) {
+          if (updated.design) setDesign(updated.design);
+          setPrevious(null); setCompare(false);
+        }
+      },
+    });
   }, [snapshot?.project.id]);
   useEffect(() => { if (!desktop || !snapshot || !desktopAgent) return; const timer = setInterval(() => { void api(`/projects/${snapshot.project.id}/desktop/${desktopAgent}/heartbeat`, 'POST', {}).catch(() => { setDesktop(null); notify('The desktop session ended. Saved artifacts remain available.'); }); }, 30000); return () => clearInterval(timer); }, [desktop, desktopAgent, snapshot?.project.id]);
   async function action(fn: () => Promise<void>) { setBusy(true); try { await fn(); } catch (e) { notify(e instanceof Error ? e.message : 'Something went wrong.'); } finally { setBusy(false); } }
@@ -138,7 +155,8 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
       return;
     }
     const next = await api<Snapshot>(`/projects/${projectId}`);
-    if (snapshotRef.current?.project.id !== projectId || snapshotRef.current.project.revision > next.project.revision) return;
+    if (snapshotRef.current?.project.id !== projectId || !isCurrentSnapshot(next, snapshotRef.current)) return;
+    snapshotRef.current = next;
     setSnapshot(next);
     if (next.design) setDesign(next.design);
   }
@@ -242,7 +260,7 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
   }
   async function openWorkstation(target: AgentId) {
     const request = ++desktopRequest.current;
-    setWorkstationView('desktop'); setDesktopAgent(target); setDesktop(null); setDesktopMessage('Connecting to the real E2B computer...');
+    setWorkstationView('desktop'); setDesktopAgent(target); setDesktop(null); setDesktopMessage('Connecting to the agent computer…');
     if (document.pointerLockElement) document.exitPointerLock();
     if (!projectId || localProject) { setDesktopMessage('Create an online project and give the team a task to start this computer.'); return; }
     try {
@@ -250,6 +268,10 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
       if (request !== desktopRequest.current) return;
       setDesktop(result.url); setDesktopMessage('');
     } catch (error) { if (request === desktopRequest.current) setDesktopMessage(error instanceof Error ? error.message : 'Computer unavailable. Saved activity is shown below.'); }
+  }
+  function viewLatestDesign() {
+    if (!snapshot?.design) return;
+    setDesign(snapshot.design); setCompare(false); setPrevious(null); setMode('model'); setNavigation('orbit');
   }
   const displayed = compare && previous ? previous : design;
   return <main className="studio-shell">
@@ -266,7 +288,7 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
         <div className="scene-bottom"><div className="view-controls"><button className={navigation === 'orbit' ? 'selected' : ''} onClick={() => setNavigation('orbit')}><MousePointer2 size={16} />Orbit</button><button id="click-to-walk" className={clickToWalk ? 'selected' : ''} onClick={() => setNavigation('click')}><Footprints size={17} />Click to walk</button><button id="enter-walk" className={walking ? 'selected' : ''} onClick={() => { setWalking(true); (document.activeElement as HTMLElement | null)?.blur(); const canvas = document.querySelector('canvas'); void canvas?.requestPointerLock()?.catch(() => notify('Mouse capture is unavailable in this browser. Drag the scene to look around, and use WASD to walk.')); }}><Footprints size={17} />Walk inside</button>{mode === 'model' && <button className={cutaway ? 'selected' : ''} onClick={() => setCutaway(v => !v)}><Layers3 size={16} />Cutaway</button>}</div><span className="navigation-hint">{walking ? 'W A S D  move · E interact · Esc release' : clickToWalk ? 'Click floor · Drag to orbit · Esc stop' : 'Drag to orbit · Scroll to zoom'}</span><button className="icon-button" title="Save viewport image" onClick={() => { const url = captureRef.current?.(); if (url) { const a = document.createElement('a'); a.href = url; a.download = 'atelier-viewport.png'; a.click(); } }}><Maximize2 size={18} /></button></div>
         <div className="room-strip">{rooms.map((r, i) => <button key={r.id} className={room === r.id ? 'selected' : ''} onClick={() => { chooseRoom(r.id); setMode('office'); }}><span>0{i+1}</span>{r.label}</button>)}</div>
       </section>
-      {<aside className="side-panel" style={{display: panel ? undefined : 'none'}}><div className="panel-heading"><div><span className="eyebrow">THE PEOPLE BEHIND YOUR PROJECT</span><h2>Your studio team <span>04</span></h2></div></div><div className="tabs" role="tablist">{(['team', 'activity', 'files'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'selected' : ''} onClick={() => setTab(t)}>{t === 'team' ? <Users size={15} /> : t === 'activity' ? <Clock3 size={15} /> : <FolderOpen size={15} />}{t[0].toUpperCase()+t.slice(1)}</button>)}</div>
+      {<aside className="side-panel" style={{display: panel ? undefined : 'none'}}><div className="panel-heading"><div><span className="eyebrow">YOUR SHARED PROJECT</span><h2>Project workspace</h2></div></div><WorkOverview snapshot={sample ? null : snapshot} connection={projectConnection} viewingLatest={mode === 'model' && !compare} onViewDesign={viewLatestDesign} onActivity={() => { setTab('activity'); panelScrollRef.current?.scrollTo({ top: 0 }); }} /><div className="tabs" role="tablist">{(['team', 'activity', 'files'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'selected' : ''} onClick={() => setTab(t)}>{t === 'team' ? <Users size={15} /> : t === 'activity' ? <Clock3 size={15} /> : <FolderOpen size={15} />}{t[0].toUpperCase()+t.slice(1)}</button>)}</div>
       <div className="panel-scroll" ref={panelScrollRef}>
         {clarification && (waitingForAnswers || continuingBrief) && <ClarificationCard
           key={`${projectId}:${clarification.id}`} clarification={clarification} revision={revision} busy={busy}
@@ -275,7 +297,7 @@ export default function Studio({ authConfigured }: { authConfigured: boolean }) 
         {tab === 'team' && <><div className="team-list">{(Object.keys(agents) as AgentId[]).map(id => {
         const a = agents[id], task = tasks.find(t => t.agent === id && (['in_progress', 'queued', 'review'].includes(t.status) || (waitingForAnswers && t.runId === clarification?.runId && t.status === 'blocked')));
         return <button key={id} className={`agent-card ${agent === id ? 'selected' : ''}`} onClick={() => chooseRoom(id)}><span className="agent-avatar" style={{ background: a.color }}>{a.initials}</span><span className="agent-copy"><strong>{a.name}</strong><span>{a.role}</span></span><span className={`agent-status ${task?.status === 'in_progress' ? 'working' : ''}`}>{task ? task.status.replaceAll('_', ' ') : 'Available'}</span><ArrowRight size={14} /></button>;
-      })}</div><div className="selected-agent"><div className="section-label">AT {agent === 'principal' ? 'THE PRINCIPAL’S' : agents[agent].name.split(' ')[0].toUpperCase()+"’S"} DESK</div><h3>{agents[agent].description}</h3><p>{tasks.find(t => t.agent === agent && t.status === 'in_progress')?.detail || 'Bring an idea, ask a question, or talk through a change.'}</p><button className="text-button" onClick={() => void openWorkstation(agent)}><Maximize2 size={14} />Open live workstation<ArrowRight size={14} /></button></div><div className="brief-card"><span className="section-label">PROJECT BRIEF</span><p>{sample ? 'A light-filled home where natural materials and generous spaces bring everyday life together.' : snapshot?.project.brief.summary}</p><button className="text-button" onClick={() => { if (snapshot) { setBrief(snapshot.project.brief.request); setName(snapshot.project.name); } setModal('brief'); }}><FileText size={14} />{sample ? 'Write your brief' : 'View & edit brief'}<ArrowRight size={14} /></button></div></>}
+      })}</div><div className="selected-agent"><div className="section-label">AT {agent === 'principal' ? 'THE PRINCIPAL’S' : agents[agent].name.split(' ')[0].toUpperCase()+"’S"} DESK</div><h3>{agents[agent].description}</h3><p>{tasks.find(t => t.agent === agent && t.status === 'in_progress')?.detail || 'Bring an idea, ask a question, or talk through a change.'}</p><button className="text-button" onClick={() => void openWorkstation(agent)}><Maximize2 size={14} />Open agent computer<ArrowRight size={14} /></button><p>Computer view shows tools and saved design data. Use View latest design to explore the model.</p></div><div className="brief-card"><span className="section-label">PROJECT BRIEF</span><p>{sample ? 'A light-filled home where natural materials and generous spaces bring everyday life together.' : snapshot?.project.brief.summary}</p><button className="text-button" onClick={() => { if (snapshot) { setBrief(snapshot.project.brief.request); setName(snapshot.project.name); } setModal('brief'); }}><FileText size={14} />{sample ? 'Write your brief' : 'View & edit brief'}<ArrowRight size={14} /></button></div></>}
       {tab === 'activity' && <div className="activity-list">{projectId && <ChangeTracker projectId={projectId} changes={snapshot?.changes || []} design={snapshot?.design || null} activeRunId={activeRuns.find(run => run.status === 'in_progress')?.id || activeRuns[0]?.id || null} />}<RequirementsHistory requirements={snapshot?.requirements} /><TaskBoard tasks={tasks.filter(task => task.runId === (activeRuns[0]?.id || snapshot?.runs?.[0]?.id))} />{!snapshot?.events.length && <div className="empty-state"><Clock3 size={24} /><h3>A quiet moment before we begin.</h3><p>Real task progress, decisions, and tool results will appear here once your team starts working.</p><button className="button" onClick={() => setModal('brief')}>Brief your team<ArrowRight size={15} /></button></div>}{snapshot?.events.slice().reverse().map(e => <article className="event" key={e.id}><span className="event-marker" /><div><span className="event-meta">{e.agent ? agents[e.agent].role : 'Studio'} · {new Date(e.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><p>{e.message}</p></div></article>)}</div>}
       {tab === 'files' && <div className="files-panel">{projectId && !localProject && <ImageStudio key={projectId} projectId={projectId} revision={revision} hasDesign={Boolean(snapshot?.design)} selectedConceptId={snapshot?.project.selectedConceptId || null} images={snapshot?.images || []} runs={snapshot?.runs || []} imageEnabled={Boolean(capability?.images)} generationEnabled={Boolean(capability?.generation)} captureView={captureCurrentModel} onRefresh={refreshProject} onError={notify} />}<span className="section-label">{sample ? 'SAMPLE DESIGN' : 'CURRENT DESIGN'} · REV {revision}</span>{hasDesign ? <><button className="file-row" onClick={() => download(JSON.stringify(displayed, null, 2), 'design.json')}><FileText size={20} /><span><strong>Canonical design</strong><small>JSON · editable source</small></span><ArrowDownToLine size={16} /></button><button className="file-row" onClick={() => void action(exportModel)}><Box size={20} /><span><strong>Building model</strong><small>GLB · browser geometry</small></span><ArrowDownToLine size={16} /></button>{Array.from({ length: displayed.floors }, (_, floor) => <button key={floor} className="file-row" onClick={() => void action(async () => { const { floorPlanSVG } = await import('@/lib/export'); download(floorPlanSVG(displayed, floor), `floor-${floor+1}.svg`, 'image/svg+xml'); })}><Layers3 size={20} /><span><strong>Floor {floor+1} plan</strong><small>SVG · spatial arrangement</small></span><ArrowDownToLine size={16} /></button>)}</> : <div className="empty-state"><Box size={24}/><h3>Your design starts with a brief.</h3><p>{localProject ? 'Your brief is saved in this browser. Connect the studio service to generate the first design.' : 'Generated models and floor plans will be saved here after your first design run.'}</p></div>}{snapshot?.artifacts.map(a => <a className="file-row" key={a.id} href={`/api/studio/projects/${projectId}/artifacts/${a.id}`} download><FileText size={20} /><span><strong>{a.name}</strong><small>{a.kind} · rev {a.revision}{a.revision !== revision ? ' · earlier design' : ''}</small></span><ArrowDownToLine size={16} /></a>)}<button className="button subtle full" disabled={localProject} onClick={() => void action(comparison)}><RotateCcw size={15} />{compare ? 'Return to current design' : 'Compare previous revision'}</button><button className="button full" disabled={busy || !hasDesign || sample || localProject} onClick={() => void action(() => startRun('render'))}>Request Blender render<ArrowRight size={15} /></button><p className="fine-print">Final renders use a queued remote computer. Completed images and Blender source appear here.</p></div>}
       {selected && mode === 'model' && <div className="selection-card"><span className="section-label">SELECTED ELEMENT</span><strong>{design.elements.find(e => e.id === selected)?.name}</strong><button className="text-button" onClick={() => { setInput(`Change ${design.elements.find(e => e.id === selected)?.name} to red.`); chooseRoom('designer'); }}>Ask Sofia to change this<ArrowRight size={14} /></button></div>}</div>

@@ -83,14 +83,30 @@ describe('persistent steering lifecycle with real D1 and R2', () => {
 
   it('saves duplicate requests once and rejects reuse for changed instructions or another owner', async () => {
     const p = await project(), scheduleChanges = vi.fn();
+    await revision(p, 1, `${p.projectId}-initial-design`);
+    p.baseRevision = 1;
     const connected = { ...env, PROJECTS: { getByName: () => ({ scheduleChanges }) } } as unknown as Bindings;
-    const request = { operationId: p.runId, instruction: p.instruction!, agent: p.agent!, elementId: null, baseRevision: 0 };
+    const request = { operationId: p.runId, instruction: p.instruction!, agent: p.agent!, elementId: null, baseRevision: p.baseRevision };
     await queueChange(connected, p.projectId, p.userId, request);
     await queueChange(connected, p.projectId, p.userId, request);
     expect((await snapshot(env, await ownedProject(env, p.projectId, p.userId))).changes).toHaveLength(1);
     expect(await record(p)).toMatchObject({ status: 'pending', startedAt: null, appliedAt: null, reviewedAt: null });
     await expect(queueChange(connected, p.projectId, p.userId, { ...request, instruction: 'Make it blue.' })).rejects.toMatchObject({ status: 409 });
     await expect(queueChange(connected, p.projectId, 'other-owner', request)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('rejects direct change queuing before a design exists without scheduling work', async () => {
+    const p = await project(), scheduleChanges = vi.fn();
+    const connected = { ...env, PROJECTS: { getByName: () => ({ scheduleChanges }) } } as unknown as Bindings;
+    await expect(queueChange(connected, p.projectId, p.userId, {
+      operationId: p.runId, instruction: 'Start building.', agent: 'principal', elementId: null, baseRevision: 0,
+    })).rejects.toMatchObject({ status: 409, message: expect.stringContaining('no generated design') });
+    expect(scheduleChanges).not.toHaveBeenCalled();
+    const saved = await snapshot(env, await ownedProject(env, p.projectId, p.userId));
+    expect(saved.changes).toEqual([]);
+    expect(saved.runs).toEqual([]);
+    expect(saved.events).toEqual([]);
+    expect(saved.design).toBeNull();
   });
 
   it('keeps accepted queued work queued and starts exactly when its run starts', async () => {

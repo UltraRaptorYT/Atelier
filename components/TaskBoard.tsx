@@ -36,9 +36,10 @@ function TaskCard({ task, byId }: { task: Task; byId: Map<string, Task> }) {
     </div>
     <span className={styles.role}>{agent.role}</span>
     <h4 className={styles.title}>{task.title}</h4>
+    {detail && detail !== objective && <p className={styles.preview}>{detail}</p>}
+    <details className={styles.taskDetails}><summary>Task details</summary>
     {objective && <p className={styles.objective}>{objective}</p>}
     {detail && detail !== objective && <p className={styles.detail}>{detail}</p>}
-
     {dependencies.length > 0 && <div className={styles.dependencies}>
       <span className={styles.label}>Dependencies</span>
       <ul className={styles.dependencyList}>{dependencies.map(dependency => <li key={dependency.id}>
@@ -57,6 +58,7 @@ function TaskCard({ task, byId }: { task: Task; byId: Map<string, Task> }) {
       {task.artifactRevision != null && <span>Saved revision {task.artifactRevision}</span>}
       {task.artifactId && <span className={styles.artifact}><span>Saved artifact</span><span>{task.artifactId}</span></span>}
     </div>}
+    </details>
   </li>;
 }
 

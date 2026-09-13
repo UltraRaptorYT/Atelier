@@ -1,0 +1,24 @@
+.overview { margin: 0 20px 16px; border: 1px solid #dce3d3; border-radius: 10px; background: #f4f7ed; overflow: hidden; }
+.work { padding: 12px 14px; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.heading strong { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+.heading i { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #929b86; }
+.heading i[data-state='working'] { background: #617f48; }
+.heading i[data-state='review'], .heading i[data-state='stopped'] { background: #ad8554; }
+.heading button { display: flex; align-items: center; gap: 4px; padding: 3px 0; color: #637457; font-size: 10px; }
+.work p, .saved p { margin-top: 6px; color: #738168; font-size: 11px; line-height: 1.5; }
+.tasks { display: grid; gap: 7px; list-style: none; padding: 0; margin: 9px 0 0; }
+.tasks li { font-size: 11px; line-height: 1.45; color: #43563b; }
+.tasks li span { display: block; margin-bottom: 1px; font-size: 9px; color: #7c886f; }
+.connection { display: block; margin-top: 8px; font-size: 9px; color: #8b957f; }
+.connection[data-offline='true'] { color: #966b36; }
+.saved { display: flex; gap: 10px; padding: 12px 14px; border-top: 1px solid #e0e6d8; background: #fafbf7; }
+.saved > svg { margin-top: 3px; color: #7b896d; flex-shrink: 0; }
+.saved > div { min-width: 0; }
+.label { display: block; margin-bottom: 3px; font-size: 8px; letter-spacing: 1.1px; color: #8c967f; }
+.saved strong { font-size: 12px; font-weight: 550; }
+.saved p { margin-top: 4px; overflow-wrap: anywhere; }
+.view { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border-top: 1px solid #dce3d3; background: #e8efdd; color: #4e663e; font-size: 11px; font-weight: 550; }
+.view:hover { background: #dfe9d1; }
+.sample { margin: 0 24px 16px; color: #859276; font-size: 11px; }
+@media(max-height:800px) and (min-width:801px) { .overview { margin-bottom: 10px; } .work, .saved { padding-top: 9px; padding-bottom: 9px; } .connection { margin-top: 5px; } }

@@ -14,6 +14,7 @@ export async function queueChange(env: Bindings, projectId: string, owner: strin
     if (duplicate.status === 'pending') await env.PROJECTS.getByName(projectId).scheduleChanges(projectId, owner);
     return { queued: true, operationId: change.operationId };
   }
+  if (!project.design_key) throw new HttpError(409, 'There is no generated design to change yet. Save your full brief and use Start team briefing.');
   if (change.baseRevision !== project.revision) throw new HttpError(409, 'The design changed. Refresh it and send your change against the current revision.');
   if (change.referenceArtifactId) await loadImageReference(env, projectId, change.referenceArtifactId, change.baseRevision);
   await env.DB.prepare('INSERT INTO changes(id,project_id,agent,instruction,element_id,base_revision,reference_artifact_id,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(change.operationId, projectId, change.agent, change.instruction, change.elementId, change.baseRevision, change.referenceArtifactId || null, 'pending', new Date().toISOString()).run();
