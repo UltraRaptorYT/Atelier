@@ -37,14 +37,14 @@ describe('safe runtime generation fingerprint',()=>{
     expect(b.fingerprint).not.toBe(a.fingerprint);
     for(const name of ['schema','prompts','authoring','compiler'] as const)expect(b.components[name]===a.components[name]).toBe(name!==component);
   });
-  it.each([{OPENAI_MODEL:'another-model'},{OPENAI_REASONING_EFFORT:'high'},{GENERATION_ENABLED:'false'},{RENDER_ENABLED:'false'},{E2B_TEMPLATE:'another-template'}])('detects configured runtime differences %j',async change=>{
+  it.each([{OPENAI_MODEL:'another-model'},{OPENAI_REASONING_EFFORT:'max'},{GENERATION_ENABLED:'false'},{RENDER_ENABLED:'false'},{E2B_TEMPLATE:'another-template'}])('detects configured runtime differences %j',async change=>{
     const original=await runtimeProfile(environment(),fixtureSources()),changed=await runtimeProfile({...environment(),...change},fixtureSources());
     expect(changed.fingerprint).not.toBe(original.fingerprint);
   });
   it('returns only allowlisted nonsecret identifiers, hashes and configuration readiness',async()=>{
     const env=environment(),profile=await runtimeProfile(env,fixtureSources()),raw=JSON.stringify(profile);
     expect(profile.models).toEqual({design:'gpt-6-astra',voice:'gpt-live-1',conceptImage:'gpt-image-2.5-flare',imageEdit:'gpt-image-2.5-sunburst'});
-    expect(profile.reasoning).toEqual({design:'max'});
+    expect(profile.reasoning).toEqual({design:'high'});
     expect(profile.limits).toEqual({modelOutputTokens:64000,taskWorkSeconds:720,proposalModelRounds:24});
     expect(profile.readiness).toEqual({designModelConfigured:true,designReasoningConfigured:true,desktopKeyConfigured:true,environmentModelKeyConfigured:true,savedKeyEncryptionConfigured:true,projectServicesBound:true,providerConnectivityChecked:false});
     for(const secret of [env.OPENAI_API_KEY!,env.E2B_API_KEY!,env.KEY_ENCRYPTION_KEYS!,env.CLERK_SECRET_KEY!,env.SITES_PROXY_SECRET!,'private-encryption-value'])expect(raw).not.toContain(secret);

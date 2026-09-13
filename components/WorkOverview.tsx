@@ -11,6 +11,7 @@ type Props = { snapshot: Snapshot | null; connection: ProjectConnection; viewing
 export default function WorkOverview({ snapshot, connection, viewingLatest, onViewDesign, onActivity }: Props) {
   if (!snapshot) return <div className={styles.sample}>Sample studio · no AI work is running</div>;
   const work = summarizeWork(snapshot);
+  const firstDraft = Boolean(snapshot.design && snapshot.events.some(event => event.type === 'draft_ready' && event.revision === snapshot.project.revision));
   const local = snapshot.project.id.startsWith('local_');
   const offline = !local && connection === 'offline';
   const connectionLabel = { connecting: 'Connecting to updates…', live: 'Updates connected', polling: 'Checking for updates', offline: 'Updates paused · reconnecting' }[connection];
@@ -23,8 +24,8 @@ export default function WorkOverview({ snapshot, connection, viewingLatest, onVi
     </div>
     <div className={styles.saved}>
       <Box size={17} aria-hidden="true" />
-      <div><span className={styles.label}>SAVED MODEL</span><strong>{snapshot.design ? `Revision ${snapshot.project.revision}` : 'No model saved yet'}</strong><p>{snapshot.design ? work.state === 'working' ? 'The team is working beyond this saved version.' : snapshot.design.title : 'Geometry appears here after the first save.'}</p></div>
+      <div><span className={styles.label}>{firstDraft ? 'FIRST DRAFT · NOT FINAL' : 'SAVED MODEL'}</span><strong>{snapshot.design ? `Revision ${snapshot.project.revision}` : 'No model saved yet'}</strong><p>{firstDraft ? work.state === 'working' ? 'Explore or export this draft now. The team is continuing refinement.' : 'This draft is saved; final review is still outstanding.' : snapshot.design ? work.state === 'working' ? 'The team is working beyond this saved version.' : snapshot.design.title : 'Geometry appears here after the first save.'}</p></div>
     </div>
-    {snapshot.design && <button className={styles.view} type="button" onClick={onViewDesign}>{viewingLatest ? 'Viewing latest design' : 'View latest design'}<ArrowRight size={14} /></button>}
+    {snapshot.design && <button className={styles.view} type="button" onClick={onViewDesign}>{viewingLatest ? 'Viewing latest design' : firstDraft ? 'View first draft' : 'View latest design'}<ArrowRight size={14} /></button>}
   </section>;
 }

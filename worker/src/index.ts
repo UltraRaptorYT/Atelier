@@ -27,7 +27,11 @@ async function beginRun(env: Bindings, params: RunParams) {
     if (previous.project_id !== params.projectId || previous.owner_id !== params.userId) throw new HttpError(409, 'Operation ID already used.');
     if (previous.status === 'failed' || previous.status === 'cancelled') throw new HttpError(409, `This request ${previous.status === 'failed' ? 'failed' : 'was cancelled'}. Start a new request to try again.`);
   }
-  try { return await env.PROJECTS.getByName(params.projectId).begin(params); }
+  try {
+    const result = await env.PROJECTS.getByName(params.projectId).requestRun(params);
+    if (!result.ok) throw new HttpError(result.status, result.message);
+    return { runId: result.runId };
+  }
   catch (error) {
     if (error instanceof HttpError) throw error;
     // Durable Object RPC does not retain a custom Error prototype or status.
@@ -71,7 +75,7 @@ async function route(request: Request, env: Bindings): Promise<Response> {
   }
   if (path[0] !== 'projects') throw new HttpError(404, 'Not found.');
   if (path.length === 1) {
-    if (method === 'GET') return Response.json((await env.DB.prepare('SELECT * FROM projects WHERE owner_id = ? ORDER BY updated_at DESC LIMIT 100').bind(owner).all<ProjectRow>()).results.map(projectFromRow));
+    if (method === 'GET') return Response.json((await env.DB.prepare('SELECT * FROM projects WHERE owner_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 100').bind(owner).all<ProjectRow>()).results.map(projectFromRow));
     if (method === 'POST') {
       const data = CreateSchema.parse(await bodyJSON(request));
       const fingerprint = JSON.stringify({ name: data.name, brief: data.brief });
@@ -85,17 +89,42 @@ async function route(request: Request, env: Bindings): Promise<Response> {
       const previous = await replay();
       if (previous) return Response.json(previous);
       const id = data.operationId || crypto.randomUUID(), now = new Date().toISOString();
-      const create = env.DB.prepare('INSERT OR IGNORE INTO projects(id,owner_id,name,brief,created_at,updated_at) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM projects WHERE owner_id = ?) < 10').bind(id, owner, data.name, JSON.stringify(data.brief), now, now, owner);
+      // Saving a project is not a compute reservation. Keep API rate limits and
+      // generation budgets, but do not block meetings after ten saved briefs.
+      const create = env.DB.prepare('INSERT OR IGNORE INTO projects(id,owner_id,name,brief,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id, owner, data.name, JSON.stringify(data.brief), now, now);
       const statements = [create];
-      if (data.operationId) statements.push(env.DB.prepare('INSERT OR IGNORE INTO project_creation_requests(operation_id,owner_id,project_id,request_json,created_at) SELECT ?,?,?,?,? WHERE changes() = 1').bind(data.operationId, owner, id, fingerprint, now));
+      // Also repair pre-receipt connections, but only for the same owner and
+      // exact unchanged request. Never adopt another account's ID or overwrite
+      // a newer brief. The batch makes creation and receipt persistence atomic.
+      if (data.operationId) statements.push(env.DB.prepare('INSERT OR IGNORE INTO project_creation_requests(operation_id,owner_id,project_id,request_json,created_at) SELECT ?,owner_id,id,?,? FROM projects WHERE id = ? AND owner_id = ? AND name = ? AND brief = ?').bind(data.operationId, fingerprint, now, id, owner, data.name, JSON.stringify(data.brief)));
       statements.push(env.DB.prepare("INSERT OR IGNORE INTO events(project_id,type,revision,message,created_at,operation_id) SELECT id,'project_created',revision,'Project created. Your brief is ready for the principal.',?,? FROM projects WHERE id = ? AND owner_id = ? AND changes() = 1").bind(now, `project-created-${id}`, id, owner));
       const saved = await env.DB.batch(statements);
       const result = await replay();
-      if (!saved[0].meta.changes && !result) throw new HttpError(429, 'The beta allows ten projects per account, or this project connection is already in use.');
+      if (!saved[0].meta.changes && !result) throw new HttpError(409, 'This connection cannot be reused for this brief. Open your saved project from Projects to continue. Your browser draft is preserved.');
       return Response.json(result || projectFromRow(await ownedProject(env, id, owner)), { status: saved[0].meta.changes ? 201 : 200 });
     }
   }
-  const id = path[1], row = await ownedProject(env, id, owner);
+  const id = path[1];
+  if (path.length === 2 && method === 'DELETE') {
+    const project = await env.DB.prepare('SELECT deleted_at FROM projects WHERE id = ? AND owner_id = ?').bind(id, owner).first<{ deleted_at: string | null }>();
+    if (!project) throw new HttpError(404, 'Project not found.');
+    if (project.deleted_at) return Response.json({ deleted: true, recoverable: true });
+    const now = new Date().toISOString();
+    const deleted = await env.DB.batch([
+      env.DB.prepare("UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ? AND owner_id = ? AND deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM runs WHERE project_id = projects.id AND status IN ('queued','in_progress')) AND NOT EXISTS (SELECT 1 FROM desktop_sessions WHERE project_id = projects.id) AND NOT EXISTS (SELECT 1 FROM voice_sessions WHERE project_id = projects.id)")
+        .bind(now, now, id, owner),
+      env.DB.prepare("UPDATE changes SET status = 'cancelled', failure_detail = 'Project deleted.' WHERE project_id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL)").bind(id, id, owner),
+      env.DB.prepare("UPDATE project_clarifications SET status = 'cancelled', detail = 'Project deleted.', updated_at = ? WHERE project_id = ? AND status IN ('awaiting_input','queued') AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL)").bind(now, id, id, owner),
+      env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE project_id = ? AND status = 'awaiting_input' AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL)").bind(id, id, owner),
+      env.DB.prepare("UPDATE tasks SET status = 'cancelled', detail = 'Project deleted.' WHERE project_id = ? AND status IN ('queued','blocked','review') AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL)").bind(id, id, owner),
+    ]);
+    if (!deleted[0].meta.changes) {
+      const saved = await env.DB.prepare('SELECT deleted_at FROM projects WHERE id = ? AND owner_id = ?').bind(id, owner).first<{ deleted_at: string | null }>();
+      if (!saved?.deleted_at) throw new HttpError(409, 'Stop this project’s work and end its live voice call before deleting it. If computers are closing, wait a moment and retry.');
+    }
+    return Response.json({ deleted: true, recoverable: true });
+  }
+  const row = await ownedProject(env, id, owner);
   if (path.length === 2 && method === 'GET') return Response.json(await snapshot(env, row));
   if (path[2] === 'material' && method === 'PUT') {
     const data=z.object({elementId:z.string().max(80),color:z.string().regex(/^#[0-9a-fA-F]{6}$/),baseRevision:z.number().int().min(1),operationId:z.string().uuid()}).parse(await bodyJSON(request));

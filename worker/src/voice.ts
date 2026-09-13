@@ -9,6 +9,9 @@ import { reviewMeeting } from './meeting';
 import { readEffectiveRequirements } from './requirements';
 import { getClarification } from './clarifications';
 import { handleInteraction } from './conversation';
+import { hasMeaningfulBrief } from '../../shared/brief-validation';
+
+const meetingHandoffInstructions = `Meeting handoff: Never silently finish the question-and-answer stage. When the team has no more high-impact questions, explicitly say, "That answers our questions for now. We're ready to work. Say start working when you're ready." If the user has already approved starting, do not ask for approval again: call finish_meeting and wait for its result. After a successful start, speak the returned announcement once, including that the briefing is finished and the team is preparing to move to its rooms. If answer_clarification saves the final required answer, explicitly acknowledge that all current questions are answered and speak its returned reply. A queued continuation is not running yet: explain that it will resume automatically, without asking for another start command. For partial answers, acknowledge what was saved and ask only the remaining questions. If starting fails or generation is paused, explain the blocker instead of announcing that anyone is working. Keep the microphone session open for steering.`;
 
 export function voiceSessionConfig(env: Pick<Bindings, 'VOICE_MODEL' | 'OPENAI_MODEL'>, agent: AgentId, meeting = false): MediaSessionConfig {
   return {
@@ -18,6 +21,7 @@ export function voiceSessionConfig(env: Pick<Bindings, 'VOICE_MODEL' | 'OPENAI_M
     instructions: `You are ${agents[agent].name}, the ${agents[agent].role} at Atelier, an architecture studio. ${meeting ? 'You are at the meeting table, facilitating the whole team briefing.' : 'You are at your specialist workstation.'} Help the user brief and steer the shared design team. Speak briefly and naturally. Ask at most two high-impact questions at a time.
 Backchannel policy: Acknowledge naturally without competing with the user.
 Interruption policy: Stop your answer when interrupted and listen to the correction.
+${meetingHandoffInstructions}
 Delegation policy:
 Backend tools: Read current project facts, save spoken brief details, answer pending Principal questions, and queue contextual design changes for the team.
 Delegate to the backend when: The user supplies requirements or corrections, asks about project progress, or requests a design change. Delegate before claiming any action or current project fact. Saved, queued, applied and reviewed are different states.
@@ -30,18 +34,22 @@ Do not delegate to the backend when: Greeting the user or asking a short clarifi
       model: env.OPENAI_MODEL,
       parallel_tool_calls: false,
       max_output_tokens: 1800,
+      // This backend routes short voice commands; specialist design reasoning
+      // remains separately configured. Do not spend the whole cap on reasoning.
+      reasoning: { effort: 'low' },
       instructions: `You route voice input to Atelier's existing project system, speaking for the currentAgent returned by get_project_context. You do not own or directly regenerate the design.
 Use get_project_context before answering project questions or choosing a mutation. Read the latest brief, revision, selection, pending work, clarification and accepted changes. User speech can contain unfinished phrases and corrections; clarify ambiguous targets.
+${meetingHandoffInstructions}
 The effectiveRequirements record contains every applied amendment in order. Later amendments replace earlier requirements only on overlapping subject and scope; preserve unrelated requirements. Never restore an original brief choice superseded by applied feedback. Use application and review milestones separately when reporting progress.
 When clarification contains pending questions, use answer_clarification for actual user answers. Copy the clarification ID, current version and matching question IDs from context; include only questions the user has answered. Partial answers remain saved. Once every required question is answered, the server requests continuation of the work the user already started. Report the returned continuation status precisely. Asking "What would you recommend?" is a question, not an answer; give advice without saving it as a requirement. Never infer an answer from your own suggestion. Never call finish_meeting to bypass unanswered questions, stale answers or cancelled work.
-Before a first design exists and no clarification is pending, use save_brief for the user's new requirements. Supply only new details; the server appends them without deleting earlier requirements. Do not save speculation, questions, or assistant suggestions as requirements. Saving an initial brief does not start generation.
+Before a first design exists, use save_brief for the user's new requirements, including extra requirements unrelated to pending questions. Use answer_clarification instead for actual answers to those questions. Supply only new details, never the whole discussion or a copy of the saved brief; the server appends them without deleting earlier requirements. Read fresh context after saving because question versions may change. Do not save speculation, questions, or assistant suggestions as requirements. Saving an initial brief does not start generation. Say a detail is saved only when the result contains saved=true. If saving fails, do not call finish_meeting against an older brief; explain that specific blocker and preserve the user's intended requirements. Do not claim a general inability to save briefs or perform work.
 After a design exists, use request_change for explicit changes. Use baseRevision from your latest context. Use the selected element only when the user refers to it; use null for a whole-building request. Never infer an element ID that is absent from context. Scope and work ownership are resolved by the existing project workflow.
 Answer questions without queuing changes. Check tool results. Report saved or queued work precisely; never claim the model changed until current project state confirms it. Do not retry an action with altered parameters just to bypass a conflict. If generation is paused, explain that the brief can still be saved and voice can continue. At the meeting table use review_team after saving a substantive brief. Present actual specialist perspectives and unanswered high-impact questions. The phrase "start working" (also "go ahead" or "begin work") is explicit approval: save any remaining user-provided brief details, then call finish_meeting with confirmed=true immediately. Do not ask them to click a button or repeat approval. Do not close or restart voice; say the team is starting and remain available for steering. This command works from any nearby teammate. Never start merely because requirements were mentioned. Return concise facts for the voice model.`,
       tools: [
         { type: 'function', name: 'review_team', description: 'Gather actual specialist perspectives on the saved brief. Meeting room only.', strict: true, parameters: { type: 'object', properties: {}, required: [], additionalProperties: false } },
         { type: 'function', name: 'finish_meeting', description: 'Start the team when the user says start working. Preserve the voice call.', strict: true, parameters: { type: 'object', properties: { confirmed: { type: 'boolean' } }, required: ['confirmed'], additionalProperties: false } },
         { type: 'function', name: 'get_project_context', description: 'Read the current saved brief, design revision, selected element and task/change status.', strict: true, parameters: { type: 'object', properties: {}, required: [], additionalProperties: false } },
-        { type: 'function', name: 'save_brief', description: 'Append newly spoken requirements before the first design when no Principal clarification is pending. Preserve existing details without starting work.', strict: true, parameters: { type: 'object', properties: { details: { type: 'string' } }, required: ['details'], additionalProperties: false } },
+        { type: 'function', name: 'save_brief', description: 'Append only new user requirements (1–4000 characters) before the first design. Extra details may be saved while questions are open; actual answers use answer_clarification. Preserve existing details without starting work.', strict: true, parameters: { type: 'object', properties: { details: { type: 'string' } }, required: ['details'], additionalProperties: false } },
         { type: 'function', name: 'answer_clarification', description: 'Save actual user answers to pending Principal questions. All required answers request continuation of an already-started briefing.', strict: true, parameters: { type: 'object', properties: {
           clarificationId: { type: 'string' }, clarificationVersion: { type: 'integer' },
           answers: { type: 'array', items: { type: 'object', properties: { questionId: { type: 'string' }, answer: { type: 'string' } }, required: ['questionId', 'answer'], additionalProperties: false } },
@@ -188,7 +196,7 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
       const comparable = interaction.intent === 'change' ? interaction : { ...interaction, baseRevision: original.baseRevision };
       if (JSON.stringify(comparable) !== JSON.stringify(original)) throw new HttpError(409, 'This voice call ID was already used for another request.');
       const recovered = await handleInteraction(env, projectId, owner, original);
-      return await remember(recovered.intent === 'brief_update' ? { ...recovered, saved: true } : recovered);
+      return await remember(recovered);
     }
     if (call.name === 'get_project_context') {
       const design = await designFromRow(env, project);
@@ -212,14 +220,18 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
       if (clarification && ['awaiting_input', 'queued'].includes(clarification.status)) throw new HttpError(409, 'Read the current clarification and answer its pending questions. The existing briefing continues when its required answers are saved.');
       if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Design generation is paused.');
       if (project.design_key) throw new HttpError(409, 'Use a contextual change for an existing design.');
-      if (JSON.parse(project.brief).request === 'Awaiting your spoken project brief.') throw new HttpError(409, 'Save the user brief first.');
+      if (!hasMeaningfulBrief(JSON.parse(project.brief).request)) throw new HttpError(409, 'Save the user brief first.');
       await credential(env, owner);
+      if (!env.E2B_API_KEY) throw new HttpError(503, 'Your brief can be saved, but remote computers are not configured for design work.');
       const active = await env.DB.prepare("SELECT id,project_id FROM runs WHERE owner_id = ? AND status IN ('queued','in_progress')").bind(owner).first<{id:string;project_id:string}>();
       if (active) return active.project_id === projectId
         ? {runId:active.id, alreadyStarted:true, message:'The team is already working. Keep the voice call open for steering.'}
         : {error:'Another project is still working. Wait for it to finish or stop that project from its panel; this voice call remains available.'};
-      result = await env.PROJECTS.getByName(projectId).begin({projectId,userId:owner,runId:operationId,kind:'generate',baseRevision:project.revision,instruction:'[VOICE_START] The user explicitly said start working. Proceed with the saved brief. Infer reasonable defaults for unresolved preferences; only pause for impossible requirements or platform limits.'});
-      await emit(env, projectId, 'meeting_ended', 'Brief accepted. The team is heading to its rooms to start work; live voice stays connected.', 'principal', null, operationId + '-start');
+      const started = await env.PROJECTS.getByName(projectId).requestRun({projectId,userId:owner,runId:operationId,kind:'generate',baseRevision:project.revision,instruction:'[VOICE_START] The user explicitly said start working. Proceed with the saved brief. Infer reasonable defaults for unresolved preferences; only pause for impossible requirements or platform limits.'});
+      if (!started.ok) throw new HttpError(started.status, started.message);
+      const announcement = "That wraps up our questions for now. Your project is queued, and we're getting ready to head to our rooms and work. You can visit us and keep talking to steer the design.";
+      result = { ...started, queued: true, announcement };
+      await emit(env, projectId, 'meeting_ended', announcement, 'principal', null, operationId + '-start');
     } else if (call.name === 'request_change') {
       if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Design generation is paused. Your spoken brief can still be saved before generation.');
       if (!project.design_key) throw new HttpError(409, 'Save the requirements as brief details, then use Start team briefing.');
@@ -236,10 +248,17 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
       // The shared handler saves the append and its operation receipt atomically.
       // A replay after losing this voice receipt therefore cannot append twice.
       const saved = await handleInteraction(env, projectId, owner, interaction!);
-      result = { ...saved, saved: true };
+      result = saved;
     } else throw new HttpError(400, 'Unknown voice tool.');
     return await remember(result);
   } catch (error) {
-    return { error: error instanceof HttpError ? error.message : 'The action could not be applied. Check the project panel and clarify the request.' };
+    const message = error instanceof HttpError ? error.message : error instanceof z.ZodError
+      ? 'The voice tool supplied invalid or incomplete details. Read the current project context and send only the new requirement (1–4000 characters), or the exact current question IDs and user answers. No success is confirmed.'
+      : 'The studio could not confirm this action. Check the saved brief and Activity before retrying; do not assume the requirements were saved or work started.';
+    // Failures must be visible outside speech, without logging speech, keys,
+    // provider payloads or raw database errors. Do not cache a failed receipt.
+    console.warn(JSON.stringify({ event: 'voice_tool_failed', tool: call.name, status: error instanceof HttpError ? error.status : error instanceof z.ZodError ? 400 : 500 }));
+    await emit(env, projectId, 'error', `Voice action ${call.name}: ${message}`, agent, null, `voice-tool-failed-${operationId}`).catch(() => {});
+    return { error: message };
   }
 }

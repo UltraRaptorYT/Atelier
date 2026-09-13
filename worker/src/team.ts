@@ -17,6 +17,7 @@ import { loadImageReference, validatePNG, visualReferenceInstructions } from './
 import { requirementsPrompt, type EffectiveRequirements } from '../../shared/requirements';
 import { readEffectiveRequirements } from './requirements';
 import { changeAppliedStatement, changeReviewedStatement } from './changes';
+import { draftFirstPlan, FIRST_DRAFT_TASK } from '../../shared/draft-plan';
 
 const ReviewSchema = z.object({ findings: z.array(z.string().max(1000)).max(20), summary: z.string().max(3000) });
 const VisualSpecSchema = z.object({
@@ -196,7 +197,8 @@ Return 1–7 concrete landmarks that make this design recognizable: massing, set
       if (persisted) return persisted;
       const sandboxId = usesComputer ? await desktopFor(task, key, rowId) : null;
       const completed = await checkedWorkflowStep(step, `${key}-work`, options, async () => {
-        const timeBudget = new TaskTimeBudget();
+        const firstDraft = task.id === FIRST_DRAFT_TASK && !base.design;
+        const timeBudget = new TaskTimeBudget(firstDraft ? 6 * 60_000 : task.kind === 'visual_direction' ? 2 * 60_000 : undefined);
         await checkCancelled();
         const cached = await savedArtifact<Result>(`${p.runId}-${key}-result.json`);
         if (cached) return cached;
@@ -213,6 +215,7 @@ read_design returns the exact assigned canonical snapshot from /home/user/projec
 Accepted change for this round: ${p.instruction || 'none'}.
 Completed dependencies and their saved outputs: ${JSON.stringify(dependencySummaries)}.
 ${extraInstruction} ${visual}
+${firstDraft ? 'FIRST DRAFT PASS: this is a six-minute work allowance, not a final presentation. Author one useful bounded candidate promptly; start inspection with at least three minutes remaining. Prefer canonical construction helpers. Skip optional Blender GUI setup, custom asset sculpting, alternative studies and cosmetic polishing in this pass. Required inspect_proposal and submit_proposal still apply. The next tasks will refine this saved draft in parallel; leave clear limitations instead of pretending it is finished.' : ''}
 ${visualSpec ? `Visual specification: ${JSON.stringify(visualSpec)}\nMap each required feature to actual stable element IDs and geometry; a name or note is not implementation. Use the accepted current change to resolve any conflict with the reference. Preserve unrelated existing design during scoped repairs.` : ''}
 Use dependency outputs to coordinate your work. Preserve unrelated elements and stable IDs. Your output is a proposal; the coordinator publishes the canonical revision after checking conflicts.`;
         let desktop;
@@ -323,7 +326,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
       const next = cached ? validatePlan(cached, Boolean(initial.design)) : local && round === 0 ? validatePlan({ summary: 'The Designer applies the selected finish; the Critic reviews the resulting revision.', tasks: [
         { id: 'finish', kind: 'interior', agent: 'designer', title: 'Update selected finish', objective: p.instruction || 'Apply the selected colour.', dependencies: [], deliverables: ['Updated element material'] },
         { id: 'review', kind: 'review', agent: 'critic', title: 'Review changed finish', objective: 'Verify the accepted colour change and preserve other requirements.', dependencies: ['finish'], deliverables: ['Design review'] },
-      ] }, Boolean(initial.design)) : validatePlan(await teamModel('principal', `Create a dependency plan for the specialist team.
+      ] }, Boolean(initial.design)) : !initial.design && round === 0 ? draftFirstPlan() : validatePlan(await teamModel('principal', `Create a dependency plan for the specialist team.
 ${requirementsText}
 Brief: ${JSON.stringify(brief)}. Current design summary (rooms, materials and counts; detailed geometry remains in the canonical file): ${JSON.stringify(designContext(initial.design, p.elementId))}. Accepted change: ${p.instruction || 'none'}.
 ${visualSpec ? `Saved visual landmarks to realize in actual geometry and verify with model renders: ${JSON.stringify(visualSpec)}. Include concrete feature-to-element acceptance checks in the architecture objective and final review. The attached image is visual intent; accepted current changes override historical features.` : ''}
@@ -398,6 +401,9 @@ The graph must be acyclic. It needs a design-writing task and a final review tha
           await checkCancelled();
           await updateTask(rowId, 'completed', result.proposal ? `${task.title}: saved design revision ${revision}.` : result.summary, null, result.artifactId, revision);
           await emit(env, p.projectId, 'task_completed', result.proposal ? `${task.title}: design revision ${revision} saved.` : result.summary, task.agent, rowId, `${rowId}-completed`);
+          if (task.id === FIRST_DRAFT_TASK && !base.design && result.proposal) {
+            await emit(env, p.projectId, 'draft_ready', `Your first draft is saved as revision ${revision}. View it in Design or the Presentation room, or export it from Files. Architecture refinement and interiors are next; this is not the final reviewed model.`, 'architect', rowId, `${rowId}-draft-ready`);
+          }
         });
         completed.add(task.id); outputs[task.id] = result;
       }

@@ -14,7 +14,7 @@ export async function reviewMeeting(env: Bindings, projectId: string, owner: str
     const operation = key + '-' + agent;
     const saved = await env.DB.prepare('SELECT message FROM events WHERE project_id = ? AND operation_id = ?').bind(projectId, operation).first<{message:string}>();
     if (saved) return { agent, message: saved.message };
-    const view = await modelJSON(env, owner, agent, `You are attending the initial team meeting. Read this shared user brief: ${JSON.stringify(brief)}. In one concise statement explain what you understand and what your role will do. Ask ONE question only if an unresolved ambiguity materially changes occupancy, scale, feasibility or design direction. Do not ask details already provided or claim work has started. Otherwise question=null.`, Perspective, undefined, [], undefined, timeBudget);
+    const view = await modelJSON(env, owner, agent, `You are attending the initial team meeting. Read this shared user brief: ${JSON.stringify(brief)}. In one concise statement explain what you understand and what your role will do. Ask ONE question only if an unresolved ambiguity materially changes occupancy, scale, feasibility or design direction. Do not ask details already provided or claim work has started. Otherwise question=null, and explicitly end your understanding with "I have no more questions for now; I'm ready to work." This expresses readiness, not permission to start; the Principal handles the user's go-ahead.`, Perspective, undefined, [], undefined, timeBudget);
     const message = view.understanding + (view.question ? '\nQuestion: ' + view.question : '');
     await emit(env, projectId, 'agent_message', message, agent, null, operation);
     return { agent, message };

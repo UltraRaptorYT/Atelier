@@ -1,6 +1,6 @@
 import type { AgentId } from '../shared/design';
 
-export const WORKSTATION_CONNECT_MS = 20_000;
+export const WORKSTATION_CONNECT_MS = 45_000;
 export const WORKSTATION_REUSE_MS = 120_000;
 
 export type WorkstationSpec = Readonly<{ projectId: string; agent: AgentId; identity: string }>;
@@ -20,7 +20,7 @@ type Options = {
 type Pending = { generation: number; controller: AbortController; timer: ReturnType<typeof setTimeout> };
 
 const unavailable = 'Could not connect to this workstation. Retry, or view saved previews in Files.';
-const timedOut = 'The workstation did not connect within 20 seconds. Retry, or view saved previews in Files.';
+const timedOut = 'The workstation did not connect within 45 seconds. Retry, or view saved previews in Files.';
 const invalidAddress = 'The workstation returned an invalid viewer address. Retry, or view saved previews in Files.';
 
 /** A new task replaces the previous stream for this same project and agent. */

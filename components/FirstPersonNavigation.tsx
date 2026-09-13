@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { CapsuleCollider, RigidBody, useBeforePhysicsStep, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
+import { CapsuleCollider, RigidBody, useAfterPhysicsStep, useBeforePhysicsStep, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { Euler, Vector3 } from 'three';
 import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, clearWalkPosition, createWalkController, initialWalkLookTarget, stepWalk, type WalkController } from '@/shared/first-person';
 import type { Design } from '@/shared/design';
@@ -30,6 +30,8 @@ type Props = {
 
 const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
 const INTERACTION_DISTANCE = 2.8;
+const STARTUP_GRACE_SECONDS = 3;
+const RECOVERY_RETRY_SECONDS = .25;
 
 function editing(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('input, textarea, select, [role="textbox"]')));
@@ -41,12 +43,13 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
   const controller = useRef<WalkController | null>(null);
   const keys = useRef(new Set<string>());
   const verticalSpeed = useRef(0);
-  const geometryCheck = useRef(2);
-  const blocked = useRef(false);
+  const needsTeleport = useRef(true);
+  const recovery = useRef({ elapsed: 0, retryIn: 0 });
+  const blocked = useRef(true);
   const voiceRoom = useRef<RoomId | null>(null);
   const nearbyRoom = useRef<Room | null>(null);
   const [roomLabel, setRoomLabel] = useState<string | null>(null);
-  const [unavailable, setUnavailable] = useState(false);
+  const [walkStatus, setWalkStatus] = useState<'loading' | 'ready' | 'blocked'>('loading');
   const { camera, gl } = useThree();
   const { world, rapier } = useRapier();
   const spawn: Point = { x: target[0], y: target[1] - EYE_OFFSET, z: target[2] };
@@ -71,6 +74,13 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
     if (document.pointerLockElement === gl.domElement) document.exitPointerLock();
   }
 
+  function requestRecovery() {
+    blocked.current = true;
+    recovery.current = { elapsed: 0, retryIn: 0 };
+    keys.current.clear();
+    setWalkStatus('loading');
+  }
+
   useEffect(() => {
     const next = createWalkController(world);
     controller.current = next;
@@ -78,20 +88,19 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
   }, [world]);
 
   useEffect(() => {
-    teleport(spawn);
-    camera.lookAt(...initialWalkLookTarget(target, office ? null : facingDesign.current));
-    geometryCheck.current = 2;
-    blocked.current = false;
-    setUnavailable(false);
+    // Initialize in the physics callback, where the body is guaranteed to exist.
+    // An effect can run before Rapier has mounted the player on a cold page load.
+    needsTeleport.current = true;
+    requestRecovery();
   }, [target[0], target[1], target[2], camera, office]);
 
-  useEffect(() => { geometryCheck.current = 2; }, [revision]);
+  useEffect(() => { requestRecovery(); }, [revision]);
   useEffect(() => { if (paused) { keys.current.clear(); if (document.pointerLockElement) document.exitPointerLock(); } }, [paused]);
 
   useEffect(() => {
     const clear = () => keys.current.clear();
     const down = (event: KeyboardEvent) => {
-      if (event.code === 'Escape') { event.preventDefault(); exit(); return; }
+      if (event.code === 'Escape') { event.preventDefault(); exit(); if (blocked.current && !paused) onExit(); return; }
       if (paused || blocked.current || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || editing(event.target)) return;
       if (movementKeys.has(event.code)) { event.preventDefault(); keys.current.add(event.code); }
       if (event.code === 'KeyE' && office && !event.repeat && nearbyRoom.current) {
@@ -152,29 +161,31 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
   }
 
   function recover() {
-    let position = clearPosition(spawn);
+    // Preserve the user's position after a revision if it is still safe.
+    let position = body.current && clearPosition(body.current.translation()) || clearPosition(spawn);
     for (let radius = .4; !position && radius <= 2; radius += .4) {
       for (let angle = 0; !position && angle < Math.PI * 2; angle += Math.PI / 4) {
         position = clearPosition({ x: spawn.x + Math.cos(angle) * radius, y: spawn.y, z: spawn.z + Math.sin(angle) * radius });
       }
     }
     blocked.current = !position;
-    setUnavailable(!position);
-    if (position) teleport(position);
+    if (position) {
+      teleport(position);
+      setWalkStatus('ready');
+    } else if (recovery.current.elapsed >= STARTUP_GRACE_SECONDS) {
+      setWalkStatus('blocked');
+    }
   }
 
   useBeforePhysicsStep(() => {
-    if (!body.current || !collider.current || !controller.current) return;
-    if (geometryCheck.current > 0) {
-      // Allow replacement colliders to reach Rapier's query structures first.
-      if (--geometryCheck.current === 0) {
-        const current = clearPosition(body.current.translation());
-        if (current) { blocked.current = false; setUnavailable(false); teleport(current); }
-        else recover();
-      }
+    if (paused || !body.current || !collider.current || !controller.current) return;
+    if (needsTeleport.current) {
+      teleport(spawn);
+      camera.lookAt(...initialWalkLookTarget(target, office ? null : facingDesign.current));
+      needsTeleport.current = false;
       return;
     }
-    if (body.current.translation().y < -3) { recover(); return; }
+    if (body.current.translation().y < -3 && !blocked.current) { requestRecovery(); return; }
     if (blocked.current) return;
     camera.getWorldDirection(forward.current);
     forward.current.y = 0; forward.current.normalize();
@@ -188,6 +199,18 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
     }
     const result = stepWalk(controller.current, body.current, collider.current, direction.current, verticalSpeed.current, world.timestep);
     verticalSpeed.current = result.verticalSpeed;
+  });
+
+  useAfterPhysicsStep(() => {
+    if (paused || needsTeleport.current || !blocked.current || !body.current || !collider.current || !controller.current) return;
+    // Query only after Rapier has stepped and indexed newly mounted colliders.
+    // Keep retrying if geometry is late; a failed cold-start check is not final.
+    const elapsed = Math.max(0, Math.min(world.timestep, .05));
+    recovery.current.elapsed += elapsed;
+    recovery.current.retryIn -= elapsed;
+    if (recovery.current.retryIn > 0) return;
+    recover();
+    recovery.current.retryIn = recovery.current.elapsed < STARTUP_GRACE_SECONDS ? RECOVERY_RETRY_SECONDS : 1;
   });
 
   useFrame(() => {
@@ -213,6 +236,6 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
     <RigidBody ref={body} type="kinematicPosition" colliders={false} enabledRotations={[false, false, false]} position={[spawn.x, spawn.y, spawn.z]}>
       <CapsuleCollider ref={collider} args={[CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS]} />
     </RigidBody>
-    {!paused && (unavailable || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{unavailable ? 'No clear place to stand here. Press Esc and choose another room or review the model.' : <><kbd>E</kbd> {nearbyRoom.current?.id === 'presentation' ? 'Walk inside saved design' : `Talk / workstation: ${roomLabel}`}</>}</div></Html>}
+    {!paused && (walkStatus !== 'ready' || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{walkStatus === 'loading' ? 'Preparing your walking position…' : walkStatus === 'blocked' ? 'Waiting for a clear place to stand. Retrying automatically — press Esc to choose another view.' : <><kbd>E</kbd> {nearbyRoom.current?.id === 'presentation' ? 'Walk inside saved design' : `Talk / workstation: ${roomLabel}`}</>}</div></Html>}
   </>;
 }

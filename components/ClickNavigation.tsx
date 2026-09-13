@@ -124,11 +124,11 @@ export default function ClickNavigation({ children, spawn, paused, onStatus }: P
     {children}
     <group ref={visitor} visible={ready} name="studio-visitor">
       <mesh position={[0, 1.48, 0]} castShadow><sphereGeometry args={[.18, 16, 12]} /><meshStandardMaterial color="#c39b7e" /></mesh>
-      <mesh position={[0, 1, 0]} castShadow><capsuleGeometry args={[.22, .45, 4, 12]} /><meshStandardMaterial color="#526b43" /></mesh>
-      {[-.12, .12].map(x => <mesh key={x} position={[x, .35, 0]} castShadow><boxGeometry args={[.17, .7, .2]} /><meshStandardMaterial color="#384437" /></mesh>)}
+      <mesh position={[0, 1, 0]} castShadow><capsuleGeometry args={[.22, .45, 4, 12]} /><meshStandardMaterial color="#d43f3a" /></mesh>
+      {[-.12, .12].map(x => <mesh key={x} position={[x, .35, 0]} castShadow><boxGeometry args={[.17, .7, .2]} /><meshStandardMaterial color="#8f2424" /></mesh>)}
       {ready && <Html position={[0, 2.05, 0]} center style={{ pointerEvents: 'none' }}><span className="visitor-label">You</span></Html>}
     </group>
     {route.length > 1 && <Line points={route.map(p => [p[0], p[1] + .04, p[2]] as NavigationPoint)} color="#65894e" lineWidth={2} raycast={() => {}} />}
-    {destination && <mesh position={[destination[0], destination[1] + .025, destination[2]]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}><ringGeometry args={[.23, .32, 32]} /><meshBasicMaterial color="#526b43" /></mesh>}
+    {destination && <mesh position={[destination[0], destination[1] + .025, destination[2]]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}><ringGeometry args={[.23, .32, 32]} /><meshBasicMaterial color="#d43f3a" /></mesh>}
   </group>;
 }

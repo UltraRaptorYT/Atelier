@@ -16,18 +16,23 @@ The [user journey guide](docs/user-journey.md) walks through entering the websit
 
 ## How the team works
 
-After a saved brief starts a team run, the Principal clarifies high-impact unknowns and plans only the necessary tasks. For a new house, a possible plan is:
+After a saved brief starts a team run, the Principal clarifies high-impact unknowns. New designs use a bounded draft-first delivery graph; existing-design changes and corrections use Principal-authored plans:
 
 ```mermaid
 flowchart LR
-  P[Principal: task plan] --> A[Architect: layout]
+  P[Principal: structured brief] --> A[Architect: first draft]
   P --> V[Designer: visual direction]
   A --> I[Designer: interior placement]
   V --> I
+  A --> D[Architect: refinement]
+  V --> D
+  D --> R
   I --> R[Critic: combined review]
 ```
 
 Up to two distinct specialists run together when their dependencies are complete. Each batch uses the same saved design revision and produces separate results. The coordinator merges compatible proposals into versioned canonical JSON; downstream tasks receive their prerequisites' saved outputs and coordination messages.
+
+The first draft has a six-minute work allowance and still requires inspection/submission; this is not an end-to-end latency promise. Visual direction runs alongside it with a two-minute allowance. Once committed, the draft is visible in Design and Presentation and exportable as JSON, browser GLB and floor plans from Files. Architecture refinement and interior placement then run concurrently against that draft, preserving agreed room bounds. Optional Blender GUI polishing is deferred to refinement. Final review and the existing single correction round remain required before readiness.
 
 Conflicting proposals trigger a Principal decision and one targeted retry. Final review can trigger one correction plan and another review; unresolved findings leave the project in `review`. A finishes-only change can involve just the Designer and Critic. A selected single-element colour edit uses a deterministic patch without a Designer workstation.
 
@@ -58,6 +63,12 @@ Open **http://127.0.0.1:3000**. Without Clerk configuration, loopback developmen
 
 For an existing checkout, run `npm run worker:types` and `npm run db:local` after pulling binding or migration changes. Apply [migration 0008](worker/migrations/0008_project_creation_requests.sql) before using this Worker version: it makes browser-draft connection retries reuse the original project. **Connect & start team** reconnects a browser draft to the available studio API with stable project and run identities; failed replies preserve the draft for retry. The project picker combines browser drafts and shared projects without duplicating a connected copy.
 
+Saved project creation no longer has the old ten-project beta cap. Reconnection reuses the saved server project ID; an older missing creation receipt is recovered only when owner, name and brief still match exactly. API rate limits, active-run limits and model/sandbox spending controls remain in force.
+
+Job starts return structured coordinator errors to both the API and live voice, preserving specific blockers such as an unsaved brief. Accepted jobs use the existing `runs.workflow_dispatched` outbox for every job kind: a durable alarm retries unconfirmed dispatch with the same Workflow ID and frozen inputs. Lost provider confirmations do not mark the job failed or allocate a second job. Stopping work cancels the saved request and fences dispatch; failed/cancelled runs are never restarted by that alarm. No additional schema is needed beyond the existing migrations. Deploy the Worker and required migrations together; a frontend-only publish cannot update this path.
+
+The **Projects → Delete** button asks for confirmation. Browser drafts live in `localStorage` under `atelier-local-projects`; deleting one removes only that draft and its local connection receipt, not any connected server project. Connected projects are stored in the backend: deletion hides the project and removes linked drafts on this device, while retaining server files and usage records for administrative recovery (there is no restore UI). Stop active work and end live voice before deleting a connected project. API keys and unrelated projects are preserved. Apply [migration 0009](worker/migrations/0009_project_deletion.sql) before deploying this Worker version; it adds recoverable deletion and prevents new work from being admitted to deleted projects.
+
 ### Build targets
 
 `npm run build` creates the standard Next.js production application; `npm start` serves it at **http://127.0.0.1:3000**. Configure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` before building, and `CLERK_SECRET_KEY` plus `ATELIER_WORKER_URL` for the server. The backend must accept that Clerk identity and the frontend origin. Production mode requires sign-in even on loopback; use `npm run dev` for the development identity without Clerk. The standard build explicitly disables Sites authentication so a shell setting cannot accidentally put ChatGPT sign-in into a Next deployment.
@@ -87,7 +98,7 @@ Once that selected-element change is applied, later work receives it as a scoped
 
 The code contains a Cloudflare Worker backend with D1 metadata, R2 artifacts, Durable Object coordination and Workflow execution. Standard Next deployments use Clerk; the Sites build uses ChatGPT sign-in through its hosting adapter. OpenAI calls use a personal key saved through Settings, falling back to the server's `OPENAI_API_KEY`. Agent desktops use E2B, and Blender rendering runs on those desktops.
 
-The configured defaults are `gpt-6-astra` with explicit `max` reasoning for the design team, `gpt-6-astra` with `low` reasoning for delegated voice tools, and `gpt-live-1` for native speech. Structured agent calls allow up to 64,000 output tokens per response, including reasoning; existing task deadlines still apply. See [the environment guide](docs/ENVIRONMENT.md) for exact files and model settings.
+The configured defaults are `gpt-6-astra` with explicit `high` reasoning for the design team, `gpt-6-astra` with API-default effort for delegated voice tools, and `gpt-live-1` for native speech. Structured agent calls allow up to 64,000 output tokens per response, including reasoning; existing task deadlines still apply. See [the environment guide](docs/ENVIRONMENT.md) for exact files and model settings.
 
 ### GPT-Live 1 voice input
 
@@ -96,6 +107,8 @@ After `npm run setup:local`, add `OPENAI_API_KEY=...` to **`worker/.dev.vars.loc
 Local voice is enabled independently of design generation. You can save a spoken brief and discuss a project while `GENERATION_ENABLED=false`; generating or applying changes still requires generation and E2B to be configured. Apply the database migrations when upgrading (`npm run db:local` locally).
 
 Create a project (or choose **Use voice to brief**), select a specialist, and click **Live voice**. Allow the microphone on HTTPS or localhost. Select a model element before calling to include its context. Changing specialist, project or selected element ends the call; reconnect for the new context. End call stops the microphone; design work continues separately.
+
+Spoken requirements are saved incrementally, including short first details. Extra requirements can be appended while Principal questions are open without erasing answers or starting work; the voice backend refreshes the question version before answering. The brief retains its 8,000-character limit and reports a specific capacity error instead of silently dropping new details. Failed voice tool actions appear in Activity, and only confirmed saves are announced as saved. Voice routing uses low reasoning effort with its existing 1,800-token cap; specialist design effort and caps are unchanged. See [Responses delegation settings](https://developers.openai.com/api/docs/guides/live-delegation#reduce-backend-latency).
 
 The browser exchanges SDP through the authenticated backend. GPT-Live 1 handles speech; a Responses backend reads project context and routes brief details, clarification answers and explicit changes through the same domain operations as typed messages. Pending questions carry stable IDs and a version; voice saves only the user's actual answers. Partial answers remain saved, and completing the required answers requests continuation without another Start action. Saving the initial brief still requires an explicit **Start team briefing** or meeting instruction before generation. Questions receive answers without entering the change queue. Server controls validate every action and revision, and the browser receives only voice status and transcripts. Calls close after 15 minutes. [Official WebRTC setup](https://developers.openai.com/api/docs/guides/voice-webrtc?api=live), [GPT-Live delegation](https://developers.openai.com/api/docs/guides/live-delegation).
 

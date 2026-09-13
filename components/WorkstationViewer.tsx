@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Activity, ArrowDownToLine, ArrowRight, Check, Clock3, FileText, FolderOpen, LoaderCircle, Maximize2, Minimize2, Monitor, RefreshCw, Square, Users, X } from 'lucide-react';
 import { agents, type AgentId, type Artifact, type Snapshot, type StudioEvent } from '@/shared/design';
 import { api } from '@/lib/client';
+import { useFullscreen } from '@/lib/use-fullscreen';
 import { workstationView } from '@/lib/workstation-view';
 import { createWorkstationSessions, workstationKey } from '@/lib/workstation-session';
 import styles from './WorkstationViewer.module.css';
@@ -28,7 +29,9 @@ export default function WorkstationViewer({ snapshot, agent, onAgent, onClose, o
   const [manager] = useState(() => createWorkstationSessions({ connect: (projectId, target, signal) => api<{ url: string }>(`/projects/${projectId}/desktop/${target}`, 'POST', {}, signal) }));
   const sessions = useSyncExternalStore(manager.subscribe, manager.getSnapshot, manager.getSnapshot);
   const [view, setView] = useState<View>('desktop');
-  const [expanded, setExpanded] = useState(false);
+  const fullscreen = useFullscreen<HTMLElement>();
+  const expanded = fullscreen.isFullscreen;
+  const reconnects = useRef({ identity: '', attempts: 0 });
   const [loaded, setLoaded] = useState<Record<number, boolean>>({});
   const [slow, setSlow] = useState<number | null>(null);
   const [badPreview, setBadPreview] = useState<string | null>(null);
@@ -45,13 +48,14 @@ export default function WorkstationViewer({ snapshot, agent, onAgent, onClose, o
   const connecting = work.live && (!session || session.status === 'connecting' || (session.status === 'ready' && !displayed));
   const files = [...(snapshot?.artifacts || [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const preview = work.preview && work.preview.id !== badPreview ? work.preview : null;
-  const retry = () => { if (spec) manager.ensure(spec, true); };
+  const retry = () => { if (spec) { reconnects.current.attempts = 0; manager.ensure(spec, true); } };
 
   useEffect(() => () => manager.clear(), [manager]);
   useEffect(() => {
     if (agent && !wasOpen.current) setView('desktop');
     wasOpen.current = Boolean(agent);
     if (agent) return;
+    void fullscreen.exit();
     manager.cancelPending();
     // A brief close/reopen keeps a healthy screen, but never retains a hidden
     // authenticated desktop indefinitely or heartbeats an unwatched machine.
@@ -70,21 +74,35 @@ export default function WorkstationViewer({ snapshot, agent, onAgent, onClose, o
     if (agent && view === 'desktop' && projectId && work.live) manager.ensure({ projectId, agent, identity: work.identity });
   }, [agent, view, projectId, work.live, work.identity, manager]);
   useEffect(() => {
-    if (!agent || !session || session.status !== 'ready') return;
+    if (!agent || view !== 'desktop' || !spec) return;
+    const identity = `${workstationKey(spec)}:${spec.identity}`;
+    if (reconnects.current.identity !== identity) reconnects.current = { identity, attempts: 0 };
+    if (displayed) reconnects.current.attempts = 0;
+    if (session?.status !== 'error' || reconnects.current.attempts >= 4) return;
+    // Task status can arrive before E2B finishes opening its desktop.
+    const timer = setTimeout(() => {
+      reconnects.current.attempts++;
+      manager.ensure(spec, true);
+    }, [3000, 7000, 15000, 30000][reconnects.current.attempts]);
+    return () => clearTimeout(timer);
+  }, [agent, view, projectId, work.live, work.identity, session?.status, session?.generation, displayed, manager]);
+  useEffect(() => {
+    if (!agent || view !== 'desktop' || !session || session.status !== 'ready') return;
     const { key, generation } = session;
     const controller = new AbortController();
     let checking = false;
+    let failures = 0;
     const heartbeat = async () => {
       if (checking) return;
       checking = true;
-      try { await api(`/projects/${session.projectId}/desktop/${session.agent}/heartbeat`, 'POST', {}, controller.signal); }
-      catch { if (!controller.signal.aborted) manager.invalidate(key, 'The live computer is no longer available. Try reconnecting, or open its saved activity and files.', generation); }
+      try { await api(`/projects/${session.projectId}/desktop/${session.agent}/heartbeat`, 'POST', {}, controller.signal); failures = 0; }
+      catch { if (!controller.signal.aborted && ++failures >= 3) manager.invalidate(key, 'The live computer is no longer available. Try reconnecting, or open its saved activity and files.', generation); }
       finally { checking = false; }
     };
     void heartbeat();
     const timer = setInterval(() => void heartbeat(), 30_000);
     return () => { clearInterval(timer); controller.abort(); };
-  }, [agent, session?.generation, session?.status, manager]);
+  }, [agent, view, session?.generation, session?.status, manager]);
   useEffect(() => {
     if (!session || session.status !== 'ready' || displayed) return;
     const timer = setTimeout(() => setSlow(session.generation), 15_000);
@@ -99,10 +117,10 @@ export default function WorkstationViewer({ snapshot, agent, onAgent, onClose, o
   }, [agent, sessions, manager]);
 
   return <div className={styles.backdrop} hidden={!agent} onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className={`${styles.dialog} ${expanded ? styles.expanded : ''}`} role={agent ? 'dialog' : undefined} aria-modal={agent ? true : undefined} aria-labelledby="workstation-heading">
+    <section ref={fullscreen.ref} className={`${styles.dialog} ${expanded ? styles.expanded : ''}`} role={agent ? 'dialog' : undefined} aria-modal={agent ? true : undefined} aria-labelledby="workstation-heading">
       <header className={styles.header}>
         <span className={styles.brand}>a</span><div><span className={styles.eyebrow}>ATELIER / TEAM WORKSPACE</span><h2 id="workstation-heading">{view === 'meeting' ? 'Around the meeting table' : `${person.name.split(' ')[0]}’s workspace`}</h2></div>
-        <div className={styles.headerActions}>{onStop && <button className={styles.stop} disabled={stopping} onClick={onStop}><Square size={12} />{stopping ? 'Stopping…' : 'Stop work'}</button>}<button className={styles.iconButton} aria-label={expanded ? 'Restore workspace size' : 'Expand workspace'} onClick={() => setExpanded(value => !value)}>{expanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button><button className={styles.iconButton} aria-label="Close workspace" onClick={onClose}><X size={21} /></button></div>
+        <div className={styles.headerActions}>{onStop && <button className={styles.stop} disabled={stopping} onClick={onStop}><Square size={12} />{stopping ? 'Stopping…' : 'Stop work'}</button>}<button className={styles.iconButton} aria-label={expanded ? 'Restore workspace size' : 'Expand workspace'} onClick={() => void fullscreen.toggle()}>{expanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button><button className={styles.iconButton} aria-label="Close workspace" onClick={onClose}><X size={21} /></button></div>
       </header>
       <div className={styles.layout}>
         <nav className={styles.people} aria-label="Team workspaces"><span className={styles.eyebrow}>YOUR TEAM</span>{people.map(id => {
@@ -114,9 +132,9 @@ export default function WorkstationViewer({ snapshot, agent, onAgent, onClose, o
           <div className={styles.tabs} role="tablist" aria-label="Workspace content">{([{ id: 'desktop', label: 'Screen', icon: Monitor }, { id: 'activity', label: 'Activity', icon: Activity }, { id: 'output', label: 'Files', icon: FolderOpen }] as const).map(item => <button key={item.id} id={`workspace-tab-${item.id}`} role="tab" aria-selected={view === item.id} aria-controls={`workspace-panel-${item.id}`} onClick={() => setView(item.id)}><item.icon size={15} />{item.label}{item.id === 'output' && files.length > 0 && <span>{files.length}</span>}</button>)}<span className={styles.tabsHint}>Actual work, as it happens</span></div></>}
           <div className={styles.screenPanel} id="workspace-panel-desktop" role="tabpanel" aria-labelledby="workspace-tab-desktop" hidden={view !== 'desktop'}>
             <div className={styles.screenArea}>
-              <div className={styles.screenToolbar}><span><Monitor size={13} />{person.name.split(' ')[0]}’s computer</span><span>{displayed ? 'Screen connected' : connecting ? 'Opening screen…' : preview ? 'Saved preview' : 'No live screen'}</span>{work.live && <button onClick={retry} disabled={session?.status === 'connecting'} aria-label={`Reconnect ${person.name.split(' ')[0]}’s screen`}><RefreshCw size={13} />Reconnect</button>}</div>
+              <div className={styles.screenToolbar}><span><Monitor size={13} />{person.name.split(' ')[0]}’s computer</span><span>{displayed ? 'Viewer opened' : connecting ? 'Opening screen…' : preview ? 'Saved preview' : 'No live screen'}</span>{session?.url && <a href={session.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Open in new tab</a>}{work.live && <button onClick={retry} disabled={session?.status === 'connecting'} aria-label={`Reconnect ${person.name.split(' ')[0]}’s screen`}><RefreshCw size={13} />Reconnect</button>}</div>
               <div className={styles.screen} aria-busy={connecting}>
-                {sessions.filter(item => item.status === 'ready' && item.url).map(item => <iframe key={`${item.key}:${item.generation}`} hidden={!agent || view !== 'desktop' || item.key !== session?.key || item.generation !== session?.generation} src={item.url} title={`${agents[item.agent].name}’s live computer`} onLoad={() => setLoaded(current => ({ ...current, [item.generation]: true }))} onError={() => manager.invalidate(item.key, 'The screen could not open. Reconnect to try again; saved work is still available.', item.generation)} allow="clipboard-read; clipboard-write" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" />)}
+                {sessions.filter(item => item.status === 'ready' && item.url).map(item => <iframe key={`${item.key}:${item.generation}`} hidden={!agent || view !== 'desktop' || item.key !== session?.key || item.generation !== session?.generation} src={item.url} title={`${agents[item.agent].name}’s live computer`} onLoad={() => setLoaded(current => ({ ...current, [item.generation]: true }))} onError={() => manager.invalidate(item.key, 'The screen could not open. Reconnect to try again; saved work is still available.', item.generation)} allow="clipboard-read; clipboard-write; fullscreen" allowFullScreen sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" />)}
                 {!displayed && <div className={styles.screenFallback}>
                   {preview && projectId && <img className={styles.preview} src={`/api/studio/projects/${projectId}/artifacts/${preview.id}?inline=1`} alt={`Saved preview from ${time(preview.createdAt)}; not a live screen`} onError={() => setBadPreview(preview.id)} />}
                   <div className={styles.emptyCard} data-loading={connecting} role="status"><span className={styles.emptyIcon}>{connecting ? <LoaderCircle className={styles.spinner} size={25} /> : <Monitor size={27} />}</span><span className={styles.eyebrow}>{connecting ? 'CONNECTING TO THE WORKSPACE' : session?.status === 'error' ? 'CONNECTION PAUSED' : 'WORKSPACE STATUS'}</span><h3>{connecting ? slow === session?.generation ? 'The screen is taking a moment' : `Opening ${person.name.split(' ')[0]}’s screen` : session?.status === 'error' ? 'Let’s reconnect the screen' : work.title}</h3><p>{connecting ? 'You can check Activity or Files while the live view connects.' : session?.status === 'error' ? session.message : work.description}</p><div className={styles.emptyActions}>{(session?.status === 'error' || (connecting && slow === session?.generation)) && <button className={styles.primary} onClick={retry}><RefreshCw size={14} />Retry connection</button>}<button className={styles.secondary} onClick={() => setView(work.runStatus === 'failed' && !work.task ? 'meeting' : 'activity')}>{work.runStatus === 'failed' && !work.task ? 'Review team activity' : 'View activity'}<ArrowRight size={14} /></button></div></div>

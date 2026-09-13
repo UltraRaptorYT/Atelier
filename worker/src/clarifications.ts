@@ -77,7 +77,7 @@ export async function answerClarification(env: Bindings, projectId: string, owne
   const updated = BriefSchema.parse({ ...brief, request: expandedRequest.length <= 8000 ? expandedRequest : brief.request,
     clarificationAnswers: [...(brief.clarificationAnswers || []), ...accepted], questions: questions.filter(question => question.answer === null).map(question => question.question) });
   const ready = updated.questions.length === 0, continuationId = ready ? crypto.randomUUID() : null;
-  const reply = ready ? 'Your answers are saved. The team will continue automatically when generation is available and your current work has finished.' : 'Your answer is saved. Please answer the remaining questions so the team can continue.';
+  const reply = ready ? "That answers all our current questions. Your answers are saved, and we're ready to get back to work. The continuation is queued and will start automatically when generation is available and your current work has finished; you don't need to say start again." : 'Your answer is saved. Please answer the remaining questions so the team can continue.';
   const result: InteractionResult = { intent: 'answer_clarification', reply, operationId: data.operationId, saved: true, queued: ready, ...(continuationId ? { runId: continuationId } : {}) };
   await env.PROJECTS.getByName(projectId).scheduleChanges(projectId, owner);
   const now = new Date().toISOString();
@@ -97,24 +97,34 @@ export async function answerClarification(env: Bindings, projectId: string, owne
 }
 
 export async function saveBriefDetails(env: Bindings, projectId: string, owner: string, input: {operationId:string;details:string}): Promise<InteractionResult> {
-  const data = z.object({ operationId: z.string().uuid(), details: z.string().trim().min(2).max(4000) }).parse(input);
+  const data = z.object({ operationId: z.string().uuid(), details: z.string().trim().min(1).max(4000) }).parse(input);
   const project = await ownedProject(env, projectId, owner), request = JSON.stringify({ intent: 'brief_update', ...data });
   const duplicate = await receipt(env, projectId, data.operationId, request); if (duplicate) return duplicate;
   if (project.design_key) throw new HttpError(409, 'Use a contextual change request to update an existing design.');
   const brief = BriefSchema.parse(JSON.parse(project.brief));
   const placeholder = brief.request === 'Awaiting your spoken project brief.';
-  const updated = BriefSchema.parse({ ...brief, request: placeholder ? data.details : `${brief.request}\n\nClient requirements:\n${data.details}`, summary: (placeholder ? data.details : `${brief.summary}\n${data.details}`).slice(0, 2000) });
-  const result: InteractionResult = { intent: 'brief_update', reply: 'Saved to your project brief. Start team briefing when you are ready.', operationId: data.operationId, saved: true };
+  // A first spoken detail ("4 people", "a house") need not be a complete
+  // ten-character brief. Preserve it verbatim with a descriptive label.
+  const nextRequest = placeholder ? (data.details.length < 10 ? `Client requirements:\n${data.details}` : data.details) : `${brief.request}\n\nClient requirements:\n${data.details}`;
+  if (nextRequest.length > 8000) throw new HttpError(409, 'Your saved brief is full (8,000 characters). Earlier requirements are safe. Shorten it in View & edit brief, then repeat this new detail; it has not been added yet.');
+  const updated = BriefSchema.parse({ ...brief, request: nextRequest, summary: (placeholder ? data.details : `${brief.summary}\n${data.details}`).slice(0, 2000) });
+  const clarification = await getClarification(env, projectId);
+  const pending = clarification?.status === 'awaiting_input';
+  const result: InteractionResult = { intent: 'brief_update', reply: pending ? 'The extra requirement is saved. Your existing answers and open questions are unchanged. Read the current questions and answer those still open so the team can continue.' : 'Saved to your project brief. Start team briefing when you are ready.', operationId: data.operationId, saved: true };
   const now = new Date().toISOString();
   const saved = await env.DB.batch([
-    env.DB.prepare("UPDATE projects SET brief = ?, updated_at = ? WHERE id = ? AND owner_id = ? AND brief = ? AND design_key IS NULL AND NOT EXISTS (SELECT 1 FROM interaction_receipts WHERE operation_id = ?) AND NOT EXISTS (SELECT 1 FROM runs WHERE project_id = ? AND status IN ('queued','in_progress','awaiting_input')) AND NOT EXISTS (SELECT 1 FROM project_clarifications WHERE project_id = ? AND status IN ('awaiting_input','queued'))")
+    env.DB.prepare("UPDATE projects SET brief = ?, updated_at = ? WHERE id = ? AND owner_id = ? AND brief = ? AND design_key IS NULL AND NOT EXISTS (SELECT 1 FROM interaction_receipts WHERE operation_id = ?) AND NOT EXISTS (SELECT 1 FROM runs WHERE project_id = ? AND status IN ('queued','in_progress')) AND NOT EXISTS (SELECT 1 FROM project_clarifications WHERE project_id = ? AND status = 'queued') AND NOT EXISTS (SELECT 1 FROM runs r WHERE r.project_id = projects.id AND r.status = 'awaiting_input' AND NOT EXISTS (SELECT 1 FROM project_clarifications c WHERE c.run_id = r.id AND c.project_id = projects.id AND c.status = 'awaiting_input' AND c.brief_json = projects.brief AND c.base_revision = projects.revision))")
       .bind(JSON.stringify(updated), now, projectId, owner, project.brief, data.operationId, projectId, projectId),
     env.DB.prepare('INSERT OR IGNORE INTO interaction_receipts(operation_id,project_id,request_json,result_json,created_at) SELECT ?,?,?,?,? WHERE changes() = 1').bind(data.operationId, projectId, request, JSON.stringify(result), now),
+    // Keep the waiting checkpoint aligned atomically, without answering,
+    // cancelling or auto-starting it. Old question versions must refresh.
+    env.DB.prepare("UPDATE project_clarifications SET brief_json = ?, version = version + 1, updated_at = ? WHERE project_id = ? AND status = 'awaiting_input' AND brief_json = ? AND EXISTS (SELECT 1 FROM interaction_receipts WHERE operation_id = ? AND project_id = ?)")
+      .bind(JSON.stringify(updated), now, projectId, project.brief, data.operationId, projectId),
     eventStatement(env, projectId, data.operationId, 'clarification_received', 'Requirements saved to the project brief.'),
   ]);
   if (!saved[0].meta.changes) {
     const replay = await receipt(env, projectId, data.operationId, request); if (replay) return replay;
-    throw new HttpError(409, 'Answer the current clarification questions, or wait for active work to finish before editing the brief.');
+    throw new HttpError(409, 'The brief changed or the team is already starting work. This detail was not added. Read the latest project context before retrying; wait for active work to finish before editing its brief.');
   }
   return result;
 }

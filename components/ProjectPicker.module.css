@@ -1,0 +1,8 @@
+.row { display: flex; align-items: center; gap: .5rem; }
+.row > :first-child { flex: 1; min-width: 0; }
+.row strong { overflow-wrap: anywhere; }
+.delete { flex-shrink: 0; padding: .65rem; border: 1px solid #b86859; border-radius: .5rem; background: transparent; color: #963e30; font: inherit; font-size: .875rem; cursor: pointer; }
+.delete:hover { background: #fae9e5; }
+.confirm { background: #963e30; color: white; }
+.delete:focus-visible, .confirm:focus-visible { outline: 2px solid #963e30; outline-offset: 3px; }
+.delete:disabled { opacity: .5; cursor: not-allowed; }

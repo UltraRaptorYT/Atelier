@@ -12,16 +12,23 @@ The user saves a brief and starts the team briefing. The Principal normalizes it
 
 The shared conversation handler separates read-only questions, initial brief additions, clarification answers and contextual design changes. Questions do not enter the steering queue, and saving initial requirements does not automatically start generation. Answering an already-started briefing continues its existing user authorization. Continuations respect the current generation configuration and owner-wide active-run limit.
 
+Extra pre-design requirements may be saved during `awaiting_input`: the brief and waiting clarification snapshot update in one batch, retaining answers and incrementing the question version. This does not answer questions or enqueue work. Active or already-queued generation remains fenced against brief edits. Short first voice details are preserved with a descriptive label; the 8,000-character brief cap remains bounded and full-brief failures are explicit.
+
+All newly accepted job kinds persist `workflow_dispatched=0` until Workflow creation or lookup confirms their stable ID. The coordinator arms an alarm before admission and retries only queued, undispatched records using their saved inputs. Ambiguous provider responses leave one accepted request pending, not failed. Cancellation removes dispatch eligibility, and a create/cancel race terminates the late Workflow while D1 continues to fence its work. Public API and voice starts use a structured RPC result so application errors retain their status and safe explanation.
+
 When enabled, an initial concept is generated if no reference is selected. The selected reference is frozen for the run and supplied to every dispatched specialist, including visual-direction and review tasks. Image generation/editing and Blender rendering also have separate requested workflows; their artifacts do not replace the canonical design.
 
-For example, a new house can use:
+New designs use the runtime's draft-first graph, with the actual Principal-prepared brief and accepted requirements supplied to every task:
 
 ```mermaid
 flowchart TD
-  P[Principal: brief and task plan] --> A[Architect: shell and room layout]
+  P[Principal: structured brief] --> A[Architect: inspected first draft]
   P --> V[Designer: visual direction]
   A --> I[Designer: interior placement]
   V --> I
+  A --> D[Architect: detail refinement]
+  V --> D
+  D --> R
   I --> R[Critic: combined design review]
   R -->|Actionable findings| C[Principal: correction plan]
   R -->|No findings| F[Saved design ready to explore]
@@ -33,7 +40,7 @@ flowchart TD
 
 For an existing house, independent structure and finish tasks may start from the same saved revision and run together. A finishes-only change can use the Designer and Critic without regenerating architecture. A selected single-element colour change retains its deterministic material patch and does not allocate a Designer workstation.
 
-The example above is one valid plan. An early Critic review can be added as a dependency when useful; the scheduler does not enforce a separate shell-review stage.
+The initial draft has six minutes of model/tool work; the parallel visual-direction task has two. Both must succeed before the draft's canonical commit, preserving batch failure semantics. The draft still uses the inspected-file proposal contract, but skips optional GUI polishing and custom asset sculpting. Its committed revision emits `draft_ready`, refreshes the existing model view and enables the existing JSON/GLB/floor-plan exports. Refinement and interiors share stable draft room bounds and run together. These are work allowances, not promises of wall-clock delivery: briefing, reference analysis, computer allocation and provider latency still apply. Existing-design and correction plans remain Principal-authored; saved in-flight plans are reused unchanged.
 
 | Task kind | Owner | Output |
 | --- | --- | --- |

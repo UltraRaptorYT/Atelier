@@ -16,6 +16,23 @@ export function saveLocalSnapshot(snapshot: Snapshot, storage: Storage = localSt
   const projects = readLocalProjects(storage).filter(item => item.project.id !== snapshot.project.id);
   storage.setItem(localProjectsKey, JSON.stringify([snapshot, ...projects]));
 }
+
+/** Remove only the selected draft, or browser copies linked to a deleted server
+ * project. Never clear account settings, other drafts or the whole localStorage. */
+export function forgetProject(id: string, storage: Pick<globalThis.Storage, 'getItem' | 'setItem' | 'removeItem'> = localStorage): string[] {
+  const drafts = readLocalProjects(storage);
+  const removed = drafts.filter(draft => {
+    if (draft.project.id === id) return true;
+    if (id.startsWith('local_')) return false;
+    const connection = draftConnection(draft.project.id, storage);
+    return connection?.projectId === id || connection?.operationId === id;
+  }).map(draft => draft.project.id);
+  storage.setItem(localProjectsKey, JSON.stringify(drafts.filter(draft => !removed.includes(draft.project.id))));
+  for (const draftId of new Set([...removed, ...(id.startsWith('local_') ? [id] : [])])) storage.removeItem(connectionKey(draftId));
+  const last = storage.getItem('atelier-last-project');
+  if (last === id || (last && removed.includes(last))) storage.removeItem('atelier-last-project');
+  return removed;
+}
 export function draftConnection(id: string, storage: Storage = localStorage): Connection | null {
   try { return JSON.parse(storage.getItem(connectionKey(id)) || 'null'); } catch { return null; }
 }
@@ -56,7 +73,12 @@ export async function connectDraft(draft: Snapshot, api: API, storage: Storage =
   const connection = prepareDraftConnection(draft, storage);
   const persist = () => storage.setItem(key, JSON.stringify(connection));
   persist();
-  const project = await api<Project>('/projects', 'POST', { ...connection.request, operationId: connection.operationId });
+  // Once the server ID is saved, reconnect that owned project directly. A
+  // retry after briefing failed must not re-enter project creation or require
+  // the original brief to still match a legacy project's current contents.
+  const project = connection.projectId
+    ? (await api<Snapshot>(`/projects/${connection.projectId}`)).project
+    : await api<Project>('/projects', 'POST', { ...connection.request, operationId: connection.operationId });
   connection.projectId = project.id;
   connection.baseRevision ??= project.revision;
   persist();

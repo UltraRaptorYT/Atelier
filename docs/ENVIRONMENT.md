@@ -49,7 +49,7 @@ These are already set in each environment's `vars` block:
 
 ```json
 "OPENAI_MODEL": "gpt-6-astra",
-"OPENAI_REASONING_EFFORT": "max",
+"OPENAI_REASONING_EFFORT": "high",
 "VOICE_MODEL": "gpt-live-1",
 "GENERATION_ENABLED": "false",
 "RENDER_ENABLED": "false",
@@ -57,7 +57,7 @@ These are already set in each environment's `vars` block:
 "E2B_TEMPLATE": "atelier-desktop"
 ```
 
-Astra uses Responses for the four specialists and the delegated voice tools. GPT-Live handles native speech and transcript deltas over WebRTC; no separate Whisper/STT/TTS service or key is needed. The design team uses explicit `max` reasoning for planning, architectural modeling, interior work, visual review, and conflict resolution. `max` is Astra’s highest documented API effort; `ultra` is not a supported Responses API value. Conversation routing, the initial clarification meeting, and brief normalization keep their existing API-default behavior; voice delegation uses `low`. Higher reasoning effort may take longer and use more tokens; it does not replace the canonical geometry contract or rendered checks.
+Astra uses Responses for the four specialists and the delegated voice tools. GPT-Live handles native speech and transcript deltas over WebRTC; no separate Whisper/STT/TTS service or key is needed. The design team uses explicit `high` reasoning for planning, architectural modeling, interior work, visual review, and conflict resolution to reduce reasoning cost and latency relative to `max`. The 64,000-token per-response ceiling and 24-round proposal limit remain unchanged so effort can be tuned independently. `max` remains a supported override; `ultra` is not a supported Responses API value. Conversation routing, the initial clarification meeting, brief normalization, and voice delegation keep their existing API-default behavior. Higher reasoning effort may take longer and use more tokens; it does not replace the canonical geometry contract or rendered checks.
 
 Keep generation and render gates false until setup is complete. The current generation workflow requires the verified E2B desktop template. Voice uses no E2B desktop but incurs GPT-LIVE-1 session usage plus any delegated Astra calls. Check the running `/capabilities` response for actual feature gates and `runtimeProfile` model/effort settings; local CLI overrides can differ from checked-in defaults. Each new run saves `generation-profile.json` so the actual configuration can be compared with the deployed Worker. These fingerprints are diagnostic evidence, not proof of matching generated quality or provider access.
 

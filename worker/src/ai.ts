@@ -117,6 +117,18 @@ export async function modelJSON<T>(
         },
         {
           type: "function",
+          name: "open_blender",
+          description: "Open the installed Blender GUI on your live desktop for real visual modeling and inspection. Pass a .blend filename in /home/user/project, or null for a new scene. Then use desktop_screenshot, desktop_click, desktop_key and desktop_type. Save original meshes and register_blender_asset; keep the canonical proposal as the source of truth. This does not submit a design.",
+          parameters: {
+            type: "object",
+            properties: { blendFile: { type: ["string", "null"] } },
+            required: ["blendFile"],
+            additionalProperties: false,
+          },
+          strict: true,
+        },
+        {
+          type: "function",
           name: "desktop_screenshot",
           description: "Inspect your current real desktop.",
           parameters: {
@@ -417,6 +429,27 @@ export async function modelJSON<T>(
           await context.desktop.files.write('/home/user/project/agent_task.py', code);
           const execution = await runVisible(context.desktop, 'python3 -u /home/user/project/agent_task.py', context.timeBudget?.allowance(45000, 20000) ?? 45000, code);
           output = JSON.stringify({ exitCode: execution.exitCode, stdout: execution.stdout.slice(0, 8000), stderr: execution.stderr.slice(0, 2000) });
+        } else if (call.name === 'open_blender') {
+          const { blendFile } = z.object({ blendFile: z.string().regex(/^[a-zA-Z0-9_-]+\.blend$/).nullable() }).strict().parse(args);
+          context.timeBudget?.allowance(15000, 20000);
+          // One GUI per workstation; repeated calls focus it rather than leaking
+          // Blender processes or replacing an unsaved scene behind the user.
+          const windows = await context.desktop.commands.run('xdotool search --onlyvisible --class blender || true', { timeoutMs: 3000 });
+          const windowId = windows.stdout.trim().split(/\s+/).find(value => /^\d+$/.test(value));
+          if (windowId) {
+            await context.desktop.commands.run(`xdotool windowactivate --sync ${windowId}`, { timeoutMs: 3000 });
+            output = 'Existing Blender window focused. Inspect it before editing. To open another file, use the File menu and preserve any unsaved work.';
+          } else {
+            const running = await context.desktop.commands.run('pgrep -x blender || true', { timeoutMs: 3000 });
+            if (running.stdout.trim()) throw new ProposalError('Blender is already starting or busy. Inspect the desktop and continue with that instance; do not launch another copy.');
+            const file = blendFile ? ` /home/user/project/${blendFile}` : ' --factory-startup';
+            if (blendFile) {
+              const exists = await context.desktop.commands.run(`if test -f /home/user/project/${blendFile}; then printf present; fi`, { timeoutMs: 3000 });
+              if (exists.stdout !== 'present') throw new ProposalError('That .blend file does not exist in /home/user/project. Save it first or use null for a new scene.');
+            }
+            await (await context.desktop.commands.run(`blender --disable-autoexec${file}`, { background: true, timeoutMs: 0 })).disconnect();
+            output = 'Blender launch requested on the live desktop. Use desktop_screenshot to confirm the window is ready before interacting; dismiss its splash if present. Save original components under /home/user/project and register them in your canonical proposal.';
+          }
         } else if (call.name === 'desktop_click') { const { x, y } = z.object({ x: z.number().int().min(0).max(1279), y: z.number().int().min(0).max(799) }).parse(args); await context.desktop.moveMouse(x, y); await context.desktop.leftClick(); output = 'Clicked.'; }
         else if (call.name === 'desktop_move') { const {x,y}=z.object({x:z.number().int().min(0).max(1279),y:z.number().int().min(0).max(799)}).parse(args); await context.desktop.moveMouse(x,y); output='Mouse moved to the requested UI position.'; }
         else if (call.name === 'desktop_key') { const {keys}=z.object({keys:z.array(z.string().regex(/^[A-Za-z0-9_]+$/).max(30)).min(1).max(3)}).parse(args); await context.desktop.press(keys); output='Key pressed.'; }

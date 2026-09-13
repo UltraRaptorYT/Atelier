@@ -20,7 +20,7 @@ export async function userId(request: Request, env: Bindings): Promise<string> {
   catch { throw new HttpError(401, 'Your sign-in has expired. Please sign in again.'); }
 }
 export async function ownedProject(env: Bindings, id: string, owner: string): Promise<ProjectRow> {
-  const row = await env.DB.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ?').bind(id, owner).first<ProjectRow>();
+  const row = await env.DB.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ? AND deleted_at IS NULL').bind(id, owner).first<ProjectRow>();
   if (!row) throw new HttpError(404, 'Project not found.'); return row;
 }
 const base64 = (data: Uint8Array) => btoa(String.fromCharCode(...data));

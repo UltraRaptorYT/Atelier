@@ -53,6 +53,8 @@ function Desk({ p, accent }: { p: [number, number, number]; accent: string }) {
 }
 function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active: boolean; meeting: boolean; positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>> }) {
   const group = useRef<Group>(null), pose = useRef<Group>(null), hands = useRef<Group>(null);
+  const forearms = useRef<(Group | null)[]>([]);
+  const thighs = useRef<(Group | null)[]>([]), knees = useRef<(Group | null)[]>([]);
   const initial = useRef(meeting ? meetingSeats[agent] : workSeats[agent]);
   const route = useRef<Vector3[]>([]);
   const [travelling, setTravelling] = useState(false);
@@ -74,18 +76,42 @@ function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active:
       g.rotation.y = Math.atan2(-dx,-dz);
     } else if (!target) g.rotation.y = meeting && meetingSeats[agent][2] < 3 ? Math.PI : 0;
     const seated = !target;
-    if (pose.current) pose.current.position.y = seated ? -.32 : Math.abs(Math.sin(state.clock.elapsedTime*8))*.045;
+    // Chair cushion top is .58 m: hip .66, thigh underside .58, feet .06.
+    if (pose.current) pose.current.position.y = seated ? -.26 : Math.abs(Math.sin(state.clock.elapsedTime*8))*.025;
+    thighs.current.forEach((leg, index) => {
+      if (leg) leg.rotation.x = seated ? Math.PI/2 : Math.sin(state.clock.elapsedTime*8 + index*Math.PI)*(moving ? .3 : 0);
+      const knee = knees.current[index];
+      if (knee) knee.rotation.x = seated ? -Math.PI/2 : 0;
+    });
     if (hands.current) {
-      hands.current.rotation.x = seated ? -.9 : Math.sin(state.clock.elapsedTime*8)*(moving ? .25 : 0);
-      hands.current.position.y = seated && active && !meeting ? Math.sin(state.clock.elapsedTime*12)*.015 : 0;
+      // Rotate around each shoulder, not the avatar's feet. Seated forearms
+      // reach forward at desk height instead of swinging through the tabletop.
+      hands.current.children.forEach((arm, index) => {
+        const typing = seated && active && !meeting ? Math.sin(state.clock.elapsedTime*12 + index*Math.PI)*.025 : 0;
+        arm.rotation.x = seated ? (meeting ? .2 : .5) + typing : Math.sin(state.clock.elapsedTime*8 + index*Math.PI)*(moving ? .3 : 0);
+        const forearm = forearms.current[index];
+        if (forearm) forearm.rotation.x = seated ? (meeting ? .65 : Math.PI/2 - .5) : .1;
+      });
     }
     positions.current[agent] = [g.position.x,0,g.position.z];
   });
   return <group ref={group} position={initial.current}><group ref={pose}>
-    <mesh position={[0,1.37,0]} castShadow><sphereGeometry args={[.18,16,16]}/><meshStandardMaterial color="#bc9274"/></mesh>
-    <mesh position={[0,.96,0]} castShadow><capsuleGeometry args={[.2,.4,4,8]}/><meshStandardMaterial color={agents[agent].color}/></mesh>
-    <group ref={hands}>{[-.26,.26].map(x=><Box key={x} p={[x,.82,-.12]} s={[.12,.4,.12]} color={agents[agent].color}/>)}</group>
-    {[-.12,.12].map(x=><Box key={x} p={[x,.36,0]} s={[.16,.65,.19]} color="#424741"/>)}
+    <mesh position={[0,1.62,0]} castShadow><sphereGeometry args={[.18,16,16]}/><meshStandardMaterial color="#bc9274"/></mesh>
+    <mesh position={[0,1.2,0]} castShadow><capsuleGeometry args={[.18,.3,4,8]}/><meshStandardMaterial color={agents[agent].color}/></mesh>
+    <group ref={hands}>{[-.24,.24].map((x,index)=><group key={x} position={[x,1.44,-.1]}>
+      <Box p={[0,-.15,0]} s={[.12,.3,.12]} color={agents[agent].color}/>
+      <group ref={node => { forearms.current[index] = node; }} position={[0,-.3,0]}>
+        <Box p={[0,-.2,0]} s={[.11,.4,.11]} color={agents[agent].color}/>
+        <Box p={[0,-.44,0]} s={[.13,.1,.1]} color="#bc9274"/>
+      </group>
+    </group>)}</group>
+    {[-.12,.12].map((x,index)=><group key={x} ref={node => { thighs.current[index] = node; }} position={[x,.92,0]}>
+      <Box p={[0,-.13,0]} s={[.16,.26,.16]} color="#424741"/>
+      <group ref={node => { knees.current[index] = node; }} position={[0,-.26,0]}>
+        <Box p={[0,-.275,0]} s={[.15,.55,.16]} color="#424741"/>
+        <Box p={[0,-.6,-.055]} s={[.18,.1,.29]} color="#333b37"/>
+      </group>
+    </group>)}
     </group><Html position={[0,1.9,0]} center distanceFactor={7}><span className="monitor-stamp" style={{borderBottom:`3px solid ${agents[agent].color}`}}>{agents[agent].name.split(' ')[0]} · {travelling ? meeting ? 'Joining meeting' : 'Going to desk' : meeting ? 'Meeting' : active ? 'Working' : 'At desk'}</span></Html></group>;
 }
 function Maquette({design}:{design:Design}) {
