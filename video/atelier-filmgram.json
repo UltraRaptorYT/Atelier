@@ -1,0 +1,285 @@
+{
+  "projectName": "atelier-launchpad-demo",
+  "goal": "Create a polished 90-second hackathon demo showing Atelier as an interactive AI architecture firm where GPT-6 Astra coordinates specialist work, observable tools, persistent design revisions and an explorable 3D result.",
+  "audience": [
+    "Launchpad 2026 AI Challenge judges",
+    "AI engineers",
+    "architects and designers",
+    "product builders",
+    "technical evaluators"
+  ],
+  "durationSeconds": 90,
+  "aspectRatio": "16:9",
+  "fps": 30,
+  "quality": "draft",
+  "prompt": "Create a fast, evidence-led 90-second product demo for Atelier. Open inside the real 3D office and establish the idea: the user enters an AI architecture firm instead of opening separate chatbots. Show the red visitor, key specialist rooms and a natural-language brief. Show GPT-6 Astra turning the brief into a dependency-aware task graph, differentiated specialists working concurrently, real Activity/tool events and saved revisions. Show project/design.json rendered by Three.js, then orbit, cutaway and Walk inside. Demonstrate contextual steering by selecting an exterior element and requesting a red finish while preserving unrelated work; show the revision only if it actually completes. Use the saved Yellow Aperture House browser, walkthrough, Blender, GLB and JSON evidence where helpful, but label it as an earlier GPT-5.6 Terra evidence run rather than Astra output. Do not fabricate workstation activity, review approval, steering completion or production readiness. End with: 'I hired an AI architecture firm—and walked into its office while the team was working.' and the Atelier URL.",
+  "creativeDirection": {
+    "format": "recorded product demo with restrained editorial overlays",
+    "tone": [
+      "architectural",
+      "confident",
+      "evidence-led",
+      "calm",
+      "slightly cinematic"
+    ],
+    "storyArc": [
+      "enter a living AI architecture studio",
+      "brief the firm naturally",
+      "watch Astra structure and delegate the work",
+      "inspect real concurrent tasks, tools and saved artifacts",
+      "explore the resulting design",
+      "steer one element without restarting the project",
+      "close on the architecture-firm experience"
+    ],
+    "visualMetaphor": "A thin red project line travels from the user's red character through each specialist room, becomes a dependency graph, then resolves into the edges of the finished building.",
+    "avoid": [
+      "generic AI brain imagery",
+      "independent chatbot-window layouts",
+      "fake agent conversations",
+      "invented performance metrics",
+      "fake workstation footage",
+      "dense paragraphs of on-screen text",
+      "construction-document or structural-safety claims",
+      "presenting sample geometry as AI-generated proof",
+      "presenting the saved Terra run as an Astra run",
+      "presenting the rejected image concept as the source of the direct 3D model"
+    ]
+  },
+  "narration": {
+    "provider": "local",
+    "voiceId": "am_adam",
+    "speed": 1.05,
+    "language": "en-us",
+    "script": "What if working with AI felt like entering a real architecture firm, instead of opening four separate chatbot windows? This is Atelier. The three-dimensional office is the interface, and every room represents real responsibility. I brief the firm naturally using text or voice. GPT-6 Astra structures the requirements and creates a dependency-aware task graph. The Architect develops space and structure while the Designer establishes the visual direction. Ready specialists work concurrently; dependent tasks consume their saved results, and the Critic reviews the combined design. This is real, observable work. Activity exposes task status, dependencies and tool events. Isolated E2B workstations can inspect files and use Blender, while validated proposals become persistent revisions instead of silently overwriting one another. The source of truth is machine-editable design JSON. Three.js turns it into an interactive model I can orbit, cut away and walk through. I can then select one exterior element and ask the Designer to make it red. Atelier preserves the unrelated geometry and furniture, reviews the update and records a new revision. The result includes canonical JSON, GLB, Blender source and rendered artifacts. Atelier combines agentic engineering, computer use and interactive three-dimensional design into one experience. I hired an AI architecture firm, and walked into its office while the team was working."
+  },
+  "music": {
+    "provider": "none",
+    "mood": "minimal architectural ambient pulse",
+    "volume": 0
+  },
+  "visual": {
+    "canvas": "#F6F7F1",
+    "ink": "#24301F",
+    "accent": "#D43F3A",
+    "paper": "#FAFBF7",
+    "muted": "#89917E",
+    "secondary": "#526B43",
+    "warning": "#C18B3A",
+    "fontStyle": "warm editorial serif headings with clean architectural sans serif labels",
+    "motionStyle": "slow architectural camera movement, restrained parallax, precise graph-line reveals and crisp interface cuts",
+    "safeAreaPercent": 7
+  },
+  "featureWhitelist": {
+    "agents": [
+      "Principal Architect",
+      "Architect",
+      "Interior Designer",
+      "Design Critic"
+    ],
+    "studio": [
+      "3D office navigation",
+      "Meeting Room",
+      "Principal room",
+      "Architecture room",
+      "Interiors room",
+      "Design Review room",
+      "red user visitor character",
+      "room-aware specialist selection"
+    ],
+    "workflow": [
+      "natural-language brief",
+      "explicit live voice when visibly working",
+      "structured brief",
+      "dependency-aware task planning",
+      "up to two distinct specialists working concurrently",
+      "saved prerequisite handoffs",
+      "real Activity events",
+      "versioned canonical design revisions",
+      "revision-checked proposal integration",
+      "contextual element steering",
+      "bounded Critic review and correction"
+    ],
+    "toolsAndArtifacts": [
+      "authenticated E2B workstation when visibly available",
+      "project/design.json",
+      "Three.js browser rendering",
+      "Blender compilation and rendering",
+      "GLB export",
+      "Blender source",
+      "saved screenshots and review previews"
+    ],
+    "exploration": [
+      "Orbit",
+      "Click to walk",
+      "Walk inside",
+      "Cutaway",
+      "element selection"
+    ]
+  },
+  "evidenceAssets": [
+    {
+      "path": "demo-results/2026-09-13/07-live-team.png",
+      "purpose": "Show the real team and Activity interface."
+    },
+    {
+      "path": "demo-results/2026-09-13/11-direct-3d-browser.png",
+      "purpose": "Show the saved direct 3D model in the browser."
+    },
+    {
+      "path": "demo-results/2026-09-13/06-direct-3d-walkthrough.png",
+      "purpose": "Show first-person walkthrough evidence."
+    },
+    {
+      "path": "demo-results/2026-09-13/04-direct-3d-first-front.png",
+      "purpose": "Show the first architectural proposal before correction."
+    },
+    {
+      "path": "demo-results/2026-09-13/05-direct-3d-corrected-front.png",
+      "purpose": "Show the actual corrected front view."
+    },
+    {
+      "path": "demo-results/2026-09-13/08-direct-3d-render.png",
+      "purpose": "Show the completed Blender render."
+    },
+    {
+      "path": "demo-results/2026-09-13/09-direct-3d-model.glb",
+      "purpose": "Evidence the downloadable derived 3D artifact."
+    },
+    {
+      "path": "demo-results/2026-09-13/10-direct-3d-source.blend",
+      "purpose": "Evidence the persistent Blender source artifact."
+    },
+    {
+      "path": "demo-results/2026-09-13/05-direct-design-revision-3.json",
+      "purpose": "Evidence the machine-editable canonical design."
+    }
+  ],
+  "prohibitedClaims": [
+    "the Yellow Aperture House evidence run was generated with GPT-6 Astra",
+    "the direct 3D model reconstructs the earlier GPT Image concept",
+    "the final Critic approved the saved Yellow Aperture House",
+    "every room and staircase is fully traversable",
+    "remote E2B workstation playback was reliably verified",
+    "the design is structurally engineered, code compliant or permit ready",
+    "the sample courtyard is proof of an AI generation run",
+    "agents silently overwrite canonical project state",
+    "steering interrupts and rewrites an in-flight task graph",
+    "Spline is required for the canonical model",
+    "all live provider scenarios have passed production acceptance"
+  ],
+  "scenes": [
+    {
+      "id": "cold-open",
+      "startSeconds": 0,
+      "endSeconds": 8,
+      "purpose": "State the product idea immediately.",
+      "visuals": "Open on a clean exterior view, then cut into the real 3D Atelier office. The red user character enters frame as room labels fade in.",
+      "onScreenText": [
+        "AN AI ARCHITECTURE FIRM YOU CAN ENTER",
+        "Atelier"
+      ],
+      "transition": "A red line extends from the visitor toward the meeting table."
+    },
+    {
+      "id": "studio-as-interface",
+      "startSeconds": 8,
+      "endSeconds": 18,
+      "purpose": "Show the 3D office and natural briefing.",
+      "visuals": "Move quickly past Meeting Room, Principal, Architecture, Interiors and Design Review, then open the project brief. Use one short live-voice clip only if it works visibly.",
+      "onScreenText": [
+        "THE 3D ENVIRONMENT IS THE INTERFACE",
+        "Brief with text or voice"
+      ],
+      "transition": "The brief condenses into goals, constraints and a task graph."
+    },
+    {
+      "id": "astra-plans",
+      "startSeconds": 18,
+      "endSeconds": 30,
+      "purpose": "Explain Astra's central reasoning role.",
+      "visuals": "Show the Principal's structured brief and Activity graph. Animate dependency lines from architecture and visual direction into interior work, then into final review.",
+      "onScreenText": [
+        "GPT-6 ASTRA: BRIEF TO DEPENDENCY GRAPH",
+        "Principal → Specialists → Review"
+      ],
+      "transition": "Ready tasks light up in two rooms at once."
+    },
+    {
+      "id": "concurrent-specialists",
+      "startSeconds": 30,
+      "endSeconds": 43,
+      "purpose": "Demonstrate differentiated concurrent agents.",
+      "visuals": "Use the real Activity UI or 07-live-team.png. Highlight Architect and Designer working concurrently, then show dependent Interior and Critic tasks receiving saved inputs.",
+      "onScreenText": [
+        "REAL SPECIALISTS. REAL DEPENDENCIES.",
+        "Independent work runs concurrently"
+      ],
+      "transition": "Task cards transform into saved file and tool-event rows."
+    },
+    {
+      "id": "computer-use-and-persistence",
+      "startSeconds": 43,
+      "endSeconds": 55,
+      "purpose": "Show computer use and the persistence boundary.",
+      "visuals": "Show real tool events and an E2B workstation only if accessible. Cut to canonical JSON, Blender source and GLB icons. Visualize proposals merging into a versioned project/design.json rather than directly mutating the world.",
+      "onScreenText": [
+        "OBSERVABLE COMPUTER USE",
+        "Tools → validated proposal → saved revision"
+      ],
+      "transition": "The JSON brackets expand into the rendered 3D building."
+    },
+    {
+      "id": "explore-the-result",
+      "startSeconds": 55,
+      "endSeconds": 68,
+      "purpose": "Reveal the interactive architectural output.",
+      "visuals": "Use 11-direct-3d-browser.png and 06-direct-3d-walkthrough.png, supplemented by fresh screen recording. Orbit the model, enable Cutaway and enter Walk inside.",
+      "onScreenText": [
+        "NOT JUST AN IMAGE",
+        "Editable JSON • Three.js • Walk inside"
+      ],
+      "transition": "The camera exits first person and selects one exterior element."
+    },
+    {
+      "id": "contextual-steering",
+      "startSeconds": 68,
+      "endSeconds": 80,
+      "purpose": "Show precise iterative change rather than regeneration.",
+      "visuals": "Select an exterior element and enter: 'Make the selected exterior red. Preserve the layout, furniture and unrelated materials.' Show the Designer/Critic change graph and revision increase only if the run completes; otherwise show the interaction without fabricating the result.",
+      "onScreenText": [
+        "STEER THE DESIGN IN CONTEXT",
+        "Change one element. Preserve the rest."
+      ],
+      "transition": "A revision badge wipes into a rapid JSON, GLB, Blender and render montage."
+    },
+    {
+      "id": "end-card",
+      "startSeconds": 80,
+      "endSeconds": 90,
+      "purpose": "Deliver the north-star promise.",
+      "visuals": "Flash the real JSON, GLB, Blender and render artifacts, then return to a strong office-to-building match cut. Hold the Atelier wordmark and public URL with a restrained red accent line.",
+      "onScreenText": [
+        "I HIRED AN AI ARCHITECTURE FIRM",
+        "AND WALKED INTO ITS OFFICE WHILE IT WORKED",
+        "atelier-architecture-studio.z3e0.chatgpt.site"
+      ],
+      "transition": "Hold the final card for two seconds."
+    }
+  ],
+  "renderingInstructions": {
+    "useRecordedProductFootage": true,
+    "useIllustrativeUi": false,
+    "showDisclaimer": "Architectural concept prototype",
+    "maxWordsPerTextCard": 10,
+    "captionStyle": "high-contrast sentence-case captions in the lower safe area",
+    "logoTreatment": "preserve Atelier's existing lowercase wordmark, serif symbol and green identity; use red only as the user-character and steering accent",
+    "evidenceTreatment": "Use only real UI capture and files listed under evidenceAssets. Clearly label archived evidence whose model differs from the current production model.",
+    "waitingTreatment": "Compress idle provider time with a clean time cut. Never fabricate task completion, workstation activity or a revision change.",
+    "redSteeringInstruction": "Make the selected exterior red. Preserve the layout, furniture and unrelated materials.",
+    "finalHoldSeconds": 2
+  },
+  "outputs": {
+    "draft": "renders/atelier-launchpad-demo-90s-draft.mp4",
+    "final": "renders/atelier-launchpad-demo-90s-final.mp4"
+  }
+}
