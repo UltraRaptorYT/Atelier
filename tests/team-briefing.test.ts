@@ -137,7 +137,7 @@ describe('team briefing, saved clarification and automatic continuation', () => 
       expect.objectContaining({ agent: 'principal', message: clarification.questions.join('\n') }),
     ]);
     expect(saved.design).toBeNull();
-    expect(saved.artifacts).toEqual([]);
+    expect(saved.artifacts.map(artifact => artifact.kind)).toEqual(['generation-profile']);
     expect(generateStudy).not.toHaveBeenCalled();
     expect(runTeam).not.toHaveBeenCalled();
   });

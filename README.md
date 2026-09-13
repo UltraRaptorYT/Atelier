@@ -6,6 +6,8 @@ The local preview needs no external keys. Live generation uses the configured Op
 
 The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.
 
+Design specialists author a bounded `proposal.json` file with reusable wall/opening, stair/void and mesh-roof helpers. They inspect actual proposal renders before submitting; their final model response contains only a summary. Validated meshes survive browser rendering, Blender export and navigation. The Critic receives exterior, ground/first-upper-floor plans and an interior view. See the [authoring guide](prompts/proposal-guide.md) and [quality diagnosis and implementation](docs/model-quality-diagnosis.md).
+
 The [collaboration guide](docs/concurrent-agents.md) explains scheduling, proposal merging and correction rounds. Activity shows the current task graph, dependencies, actual active specialists and each saved change request's progress.
 
 The [user journey guide](docs/user-journey.md) walks through entering the website, giving a brief, watching the team collaborate, reviewing the generated design and walking inside it, with current interaction gaps called out.
@@ -27,7 +29,7 @@ Up to two distinct specialists run together when their dependencies are complete
 
 Conflicting proposals trigger a Principal decision and one targeted retry. Final review can trigger one correction plan and another review; unresolved findings leave the project in `review`. A finishes-only change can involve just the Designer and Critic. A selected single-element colour edit uses a deterministic patch without a Designer workstation.
 
-Steering during an active run queues for the next run. Activity tracks **Queued → Working → Applied → Reviewed**, with saved revisions, review findings and failures kept distinct. Each team run saves an `effective-requirements.json` artifact containing the stored brief and ordered previously applied user amendments. Planning, specialists and review receive this shared record alongside the persisted current instruction; later feedback overrides earlier requirements only for the subject and scope it changes. Conversation routing distinguishes questions, brief additions, clarification answers and design changes. Pending Principal questions and accepted answers persist; answering all required questions queues a linked continuation of the briefing already requested. See the [user journey](docs/user-journey.md) and [readiness review](docs/agent-design-review.md). Saved canonical models are already explorable through **Design → Walk inside**; the final presentation-room exhibit and Spline/imported-model integration are unfinished.
+Steering during an active run queues for the next run. Activity tracks **Queued → Working → Applied → Reviewed**, with saved revisions, review findings and failures kept distinct. Each team run saves an `effective-requirements.json` artifact containing the stored brief and ordered previously applied user amendments. Planning, specialists and review receive this shared record alongside the persisted current instruction; later feedback overrides earlier requirements only for the subject and scope it changes. Conversation routing distinguishes questions, brief additions, clarification answers and design changes. Pending Principal questions and accepted answers persist; answering all required questions queues a linked continuation of the briefing already requested. See the [user journey](docs/user-journey.md) and [readiness review](docs/agent-design-review.md). Saved canonical models are explorable through **Design → Walk inside** or **Presentation → Walk inside saved design**. The exhibit’s E interaction enters the same latest saved revision and offers a return to the studio. Spline/imported-model integration remains unfinished.
 
 ## Run locally
 
@@ -52,7 +54,15 @@ Open **http://127.0.0.1:3000**. Without Clerk configuration, loopback developmen
 
 `setup:local` creates a local credential-encryption key in `worker/.dev.vars.local` only if that file does not exist, generates Worker types, and applies local database migrations. It does not supply external service credentials. The development frontend defaults to the Worker at `http://127.0.0.1:8787`. See [.env.local.example](.env.local.example) for frontend settings and [worker/.dev.vars.example](worker/.dev.vars.example) for Worker secrets; preserve existing local files when adding values.
 
-For an existing checkout, run `npm run worker:types` and `npm run db:local` after pulling binding or migration changes.
+For an existing checkout, run `npm run worker:types` and `npm run db:local` after pulling binding or migration changes. Apply [migration 0008](worker/migrations/0008_project_creation_requests.sql) before using this Worker version: it makes browser-draft connection retries reuse the original project. **Connect & start team** reconnects a browser draft to the available studio API with stable project and run identities; failed replies preserve the draft for retry. The project picker combines browser drafts and shared projects without duplicating a connected copy.
+
+### Build targets
+
+`npm run build` creates the standard Next.js production application; `npm start` serves it at **http://127.0.0.1:3000**. Configure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` before building, and `CLERK_SECRET_KEY` plus `ATELIER_WORKER_URL` for the server. The backend must accept that Clerk identity and the frontend origin. Production mode requires sign-in even on loopback; use `npm run dev` for the development identity without Clerk. The standard build explicitly disables Sites authentication so a shell setting cannot accidentally put ChatGPT sign-in into a Next deployment.
+
+`npm run build:sites` creates the separate ChatGPT Sites package in `dist/client`, `dist/server/index.js` and `dist/.openai/hosting.json`. It enables ChatGPT sign-in, omits Clerk from the client, and routes requests through [the Sites adapter](sites/index.ts). That adapter requires the hosting platform's authenticated identity headers, an HTTPS `ATELIER_WORKER_URL` and a `SITES_PROXY_SECRET` matching the API Worker. Deploy this package through Sites; `npm start` does not run its adapter. Both targets use `.next` as build intermediates, so run `npm run build` again before starting Next after a Sites build.
+
+The API Worker and its database migrations are deployed separately from either frontend. Building a frontend does not deploy the Worker, change its feature flags, or enable paid services. [Proxy contract tests](tests/sites-proxy.test.ts) cover authenticated forwarding and streamed responses without contacting providers. The existing `scripts/check-live-flow.mjs --production` uses a direct backend test identity and bypasses the Sites adapter; a real signed-in public journey is still needed to verify hosting integration.
 
 ## Explore and steer
 
@@ -73,9 +83,9 @@ Once that selected-element change is applied, later work receives it as a scoped
 
 ## Live services
 
-The code contains a Cloudflare Worker backend with D1 metadata, R2 artifacts, Durable Object coordination and Workflow execution. Clerk provides deployed authentication. OpenAI calls use a personal key saved through Settings, falling back to the server's `OPENAI_API_KEY`. Agent desktops use E2B, and Blender rendering runs on those desktops.
+The code contains a Cloudflare Worker backend with D1 metadata, R2 artifacts, Durable Object coordination and Workflow execution. Standard Next deployments use Clerk; the Sites build uses ChatGPT sign-in through its hosting adapter. OpenAI calls use a personal key saved through Settings, falling back to the server's `OPENAI_API_KEY`. Agent desktops use E2B, and Blender rendering runs on those desktops.
 
-The configured defaults are `gpt-6-astra` for design and delegated voice tools, and `gpt-live-1` for native speech. See [the environment guide](docs/ENVIRONMENT.md) for exact files and model settings.
+The configured defaults are `gpt-6-astra` with explicit `max` reasoning for the design team, `gpt-6-astra` with `low` reasoning for delegated voice tools, and `gpt-live-1` for native speech. Structured agent calls allow up to 64,000 output tokens per response, including reasoning; existing task deadlines still apply. See [the environment guide](docs/ENVIRONMENT.md) for exact files and model settings.
 
 ### GPT-Live 1 voice input
 

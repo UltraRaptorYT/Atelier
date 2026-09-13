@@ -1,8 +1,8 @@
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import { Group, Mesh } from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Design } from '@/shared/design';
-import { geometryParts } from '@/shared/geometry';
+import { createElementGeometry, createElementMaterial } from './design-geometry';
 export async function exportGLB(design: Design, revision = 0, projectId:string|null=null): Promise<ArrayBuffer> {
   const scene = new Group(); scene.name = design.title;
   scene.userData={atelier_design_revision:revision,schemaVersion:design.schemaVersion,units:design.units};
@@ -15,17 +15,17 @@ export async function exportGLB(design: Design, revision = 0, projectId:string|n
       if(!projectId) throw new Error('Sign in to export this project’s geometry assets.');
       const loaded=await new GLTFLoader().loadAsync(`/api/studio/projects/${projectId}/artifacts/${asset.artifactId}`);
       loaded.scene.scale.set(...e.size);
-      loaded.scene.traverse(o=>{if(o instanceof Mesh)o.material=new MeshStandardMaterial({color:m.color,roughness:m.roughness,metalness:m.metalness});});
+      if (e.assetMaterialOverride) loaded.scene.traverse(o=>{if(o instanceof Mesh)o.material=createElementMaterial(m, e);});
       group.add(loaded.scene);scene.add(group);continue;
     }
-    for (const part of geometryParts(e)) {
-      const mesh = new Mesh(new BoxGeometry(...part.size), new MeshStandardMaterial({ color: m.color, roughness: m.roughness, metalness: m.metalness, transparent: e.kind === 'window', opacity: e.kind === 'window' ? .25 : 1 }));
+    for (const part of createElementGeometry(e)) {
+      const mesh = new Mesh(part.geometry, createElementMaterial(m, e));
       mesh.position.set(...part.position); group.add(mesh);
     }
     scene.add(group);
   }
   try { const output = await new GLTFExporter().parseAsync(scene, { binary: true }); if (!(output instanceof ArrayBuffer)) throw new Error('GLB export failed.'); return output; }
-  finally { scene.traverse(o => { if (o instanceof Mesh) { o.geometry.dispose(); if (o.material instanceof MeshStandardMaterial) o.material.dispose(); } }); }
+  finally { scene.traverse(o => { if (o instanceof Mesh) { o.geometry.dispose(); for (const material of Array.isArray(o.material) ? o.material : [o.material]) material.dispose(); } }); }
 }
 export function floorPlanSVG(design: Design, floor = 0) {
   const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]!));

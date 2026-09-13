@@ -13,6 +13,9 @@ import { requirementsPrompt } from '../../shared/requirements';
 import { readEffectiveRequirements } from './requirements';
 import { changeStartedStatement, changeFailedStatement } from './changes';
 import { requestClarification } from './clarifications';
+import { saveRuntimeProfile } from './runtime-profile';
+import { TaskTimeBudget } from './task-time';
+import { checkedWorkflowStep } from './workflow-errors';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
 type ImageStepResult = { ok: true; value: string | null } | { ok: false; status: number; message: string };
 async function imageStepResult(work: () => Promise<string | null>): Promise<ImageStepResult> {
@@ -63,6 +66,12 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           changeStartedStatement(this.env, p),
         ]);
       });
+      await step.do('generation-profile', async () => {
+        await checkCancelled();
+        const saved = await saveRuntimeProfile(this.env, p);
+        await checkCancelled();
+        return saved;
+      });
       if (p.kind === 'image') {
         imageStepValue(await step.do('image-study', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, () => imageStepResult(async () => {
           await checkCancelled();
@@ -71,7 +80,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
         })));
       } else if (p.kind === 'render') {
         const sandboxId = await desktopFor('designer', 'render');
-        await step.do('blender-render', { retries: { limit: 0, delay: '1 second' }, timeout: '15 minutes' }, async () => {
+        await checkedWorkflowStep(step, 'blender-render', { retries: { limit: 0, delay: '1 second' }, timeout: '15 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); const design = await designFromRow(this.env, row); if (!design) throw new Error('Generate a design first.');
           const desktop = await connect(sandboxId); await task('designer', 'Render presentation', `Rendering design revision ${row.revision} in Blender.`);
           await syncDesktop(desktop, design, this.env, p.projectId);
@@ -91,14 +100,15 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('designer', 'Render presentation', `Presentation files for revision ${row.revision} are ready.`, 'completed');
         });
       } else {
-        const perspectives = p.kind === 'generate' && !p.resumesRunId && !p.instruction?.startsWith('[VOICE_START]') ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
-        const brief = await step.do('principal-brief', { retries: { limit: 1, delay: '2 seconds' }, timeout: '3 minutes' }, async () => {
+        const perspectives = p.kind === 'generate' && !p.resumesRunId && !p.instruction?.startsWith('[VOICE_START]') ? await checkedWorkflowStep(step, 'team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' }, async () => { const timeBudget = new TaskTimeBudget(); await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief)), timeBudget); }) : [];
+        const brief = await checkedWorkflowStep(step, 'principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' }, async () => {
+          const timeBudget = new TaskTimeBudget();
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId);
           const original = BriefSchema.parse(JSON.parse(row.brief));
           await task('principal', 'Prepare the project brief', p.kind === 'change' ? 'Assessing the requested design change.' : 'Interpreting the brief and assigning specialists.');
           if (p.kind === 'change') return original;
           const requirements = await readEffectiveRequirements(this.env, p.projectId, original, p.baseRevision, p.runId);
-          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Start authorization: ${p.instruction || "No explicit voice start instruction."}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the effective requirements. If the user explicitly asks you to choose defaults, do so. Summarize the effective requirements in goals and constraints; a superseded original choice is not an unresolved conflict.\n${requirementsPrompt(requirements)}`, BriefSchema);
+          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Start authorization: ${p.instruction || "No explicit voice start instruction."}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the effective requirements. If the user explicitly asks you to choose defaults, do so. Summarize the effective requirements in goals and constraints; a superseded original choice is not an unresolved conflict.\n${requirementsPrompt(requirements)}`, BriefSchema, undefined, [], undefined, timeBudget);
           parsed.request = original.request;
           if (original.clarificationAnswers !== undefined) parsed.clarificationAnswers = original.clarificationAnswers;
           else delete parsed.clarificationAnswers;
@@ -127,7 +137,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
         })));
         let local: { color: string; elementId: string } | null = null;
         if (p.kind === 'change' && p.elementId && !p.referenceArtifactId) {
-          const route = await step.do('route-change', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
+          const route = await checkedWorkflowStep(step, 'route-change', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
             await checkCancelled();
             const row = await ownedProject(this.env, p.projectId, p.userId), current = await designFromRow(this.env, row);
             return modelJSON(this.env, p.userId, 'principal', `Classify this change: ${p.instruction}. Selected element: ${p.elementId}. Current elements: ${JSON.stringify(current?.elements.map(e => ({ id: e.id, name: e.name })))}. Local means a color-only edit to the selected existing element. Return hex color and its ID for a local edit. Otherwise return global so the Principal can plan the required specialists.`, RouteSchema);
@@ -150,8 +160,8 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
         const runStatus = (await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{status:string}>())?.status;
         if (runStatus === 'completed' || runStatus === 'awaiting_input') return;
         const cancelled = runStatus === 'cancelled';
-        const message = e instanceof HttpError ? e.message : cancelled ? 'Work cancelled. Saved revisions are preserved.' : 'The run stopped before completion. Saved revisions are preserved; check credentials and computer availability, then retry.';
-        await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND status IN ('queued','in_progress')").bind(p.runId), this.env.DB.prepare("UPDATE tasks SET status = ? WHERE run_id = ? AND status IN ('in_progress','queued','review','blocked') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = ?)").bind(cancelled ? 'cancelled' : 'failed', p.runId, p.runId, cancelled ? 'cancelled' : 'failed'), changeFailedStatement(this.env, p, cancelled ? 'cancelled' : 'failed', message)]);
+        const message = cancelled ? 'Work cancelled. Saved revisions are preserved.' : e instanceof HttpError ? e.message : 'The run stopped before completion. Saved revisions are preserved; check credentials and computer availability, then retry.';
+        await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND status IN ('queued','in_progress')").bind(p.runId), this.env.DB.prepare("UPDATE tasks SET status = ?, detail = ? WHERE run_id = ? AND status IN ('in_progress','queued','review','blocked') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = ?)").bind(cancelled ? 'cancelled' : 'failed', message, p.runId, p.runId, cancelled ? 'cancelled' : 'failed'), changeFailedStatement(this.env, p, cancelled ? 'cancelled' : 'failed', message)]);
         await emit(this.env, p.projectId, 'error', message, 'principal');
       });
     } finally {

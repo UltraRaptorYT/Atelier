@@ -7,7 +7,12 @@ import type { Bindings, RunParams } from './types';
 import { modelJSON } from './ai';
 import { artifact, designFromRow, emit } from './store';
 import { ownedProject, HttpError } from './security';
-import { createDesktop, releaseDesktop, syncDesktop, checkpointDesktop, runVisible } from './desktop';
+import { createDesktop, releaseDesktop, syncDesktop, checkpointDesktop, prepareProposalAuthoring, prepareProposalDesktop } from './desktop';
+import { ProposalSession, PreviewCameraSchema, type ProposalEvidence, type ProposalView } from './proposals';
+import { TaskTimeBudget } from './task-time';
+import { designReasoningEffort } from './model-settings';
+import { designContext } from './design-context';
+import { checkedWorkflowStep } from './workflow-errors';
 import { loadImageReference, validatePNG, visualReferenceInstructions } from './images';
 import { requirementsPrompt, type EffectiveRequirements } from '../../shared/requirements';
 import { readEffectiveRequirements } from './requirements';
@@ -24,18 +29,19 @@ const VisualReviewSchema = ReviewSchema.extend({
   landmarks: z.array(z.object({
     id: z.string().max(48), status: z.enum(['pass', 'fail', 'unverified']),
     elementIds: z.array(z.string().max(80)).max(40),
-    evidenceArtifactIds: z.array(z.string().max(200)).max(2),
+    evidenceArtifactIds: z.array(z.string().max(200)).max(5),
     explanation: z.string().min(1).max(1000),
   }).strict()).max(7),
 }).strict();
 type VisualSpec = z.infer<typeof VisualSpecSchema>;
 const PreviewMetadataSchema = z.object({
-  revision: z.number().int().min(0), view: z.enum(['front', 'rear']),
-  camera: z.object({ position: z.tuple([z.number(), z.number(), z.number()]), target: z.tuple([z.number(), z.number(), z.number()]), front: z.tuple([z.number(), z.number()]) }),
+  revision: z.number().int().min(0), view: z.enum(['front', 'rear', 'plan_ground', 'plan_upper', 'interior']),
+  camera: PreviewCameraSchema,
   resolution: z.tuple([z.number().int().min(1).max(1280), z.number().int().min(1).max(960)]),
   samples: z.number().int().min(1).max(32), source: z.literal('canonical design'), elements: z.number().int().min(1).max(1200),
+  designHash: z.string().regex(/^[a-f0-9]{64}$/),
 });
-type VisualEvidence = { revision: number; referenceArtifactId: string | null; views: { view: 'front' | 'rear'; artifactId: string; metadataArtifactId: string; camera: z.infer<typeof PreviewMetadataSchema>['camera'] }[]; unavailable: string[] };
+type VisualEvidence = { revision: number; referenceArtifactId: string | null; views: { view: ProposalView; artifactId: string; metadataArtifactId: string; camera: z.infer<typeof PreviewMetadataSchema>['camera'] }[]; unavailable: string[] };
 const DirectionSchema = z.object({
   summary: z.string().max(3000), recommendations: z.array(z.string().max(1000)).max(20),
   coordination: z.array(z.object({ target: AgentIdSchema, message: z.string().max(1000) })).max(6),
@@ -43,11 +49,15 @@ const DirectionSchema = z.object({
 const DecisionSchema = z.object({ decision: z.string().max(3000), instruction: z.string().min(1).max(4000) });
 const options = { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' } as const;
 type Base = { revision: number; design: Design | null };
-type Result = { artifactId: string; baseRevision: number; proposal: Design | null; summary: string; findings: string[]; recommendations: string[]; coordination: { target: string; message: string }[]; visualReview?: { evidence: VisualEvidence; landmarks?: z.infer<typeof VisualReviewSchema>['landmarks'] } };
+type Result = { artifactId: string; baseRevision: number; proposal: Design | null; summary: string; findings: string[]; recommendations: string[]; coordination: { target: string; message: string }[]; proposalEvidence?: ProposalEvidence; visualReview?: { evidence: VisualEvidence; landmarks?: z.infer<typeof VisualReviewSchema>['landmarks'] } };
 type LocalColor = { color: string; elementId: string };
 
 /** Run a persisted dependency graph. Only publication serializes; independent proposals run together. */
 export async function runTeam(env: Bindings, p: RunParams, step: WorkflowStep, brief: Brief, referenceId: string | null, local: LocalColor | null = null) {
+  // The full design team uses the configured quality setting. Conversational
+  // routing and voice delegation keep their separate latency-oriented paths.
+  const teamModel = <T>(agent: z.infer<typeof AgentIdSchema>, prompt: string, schema: z.ZodType<T>, context?: Parameters<typeof modelJSON>[5], images: string[] = [], timeBudget?: TaskTimeBudget) =>
+    modelJSON(env, p.userId, agent, prompt, schema, context, images, designReasoningEffort(env), timeBudget);
   const coordinator = env.PROJECTS.getByName(p.projectId);
   const checkCancelled = async () => {
     const row = await env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{ status: string }>();
@@ -102,7 +112,8 @@ export async function runTeam(env: Bindings, p: RunParams, step: WorkflowStep, b
     throw new HttpError(408, 'The computer queue timed out. Saved task results are preserved.');
   }
 
-  const visualSpec: VisualSpec | null = referenceId ? await step.do('visual-landmarks', { ...options, timeout: '3 minutes' }, async () => {
+  const visualSpec: VisualSpec | null = referenceId ? await checkedWorkflowStep(step, 'visual-landmarks', options, async () => {
+    const timeBudget = new TaskTimeBudget();
     await checkCancelled();
     const cached = await savedArtifact<VisualSpec>(`${p.runId}-visual-spec.json`);
     if (cached) return VisualSpecSchema.parse(cached);
@@ -112,9 +123,9 @@ export async function runTeam(env: Bindings, p: RunParams, step: WorkflowStep, b
     const spec = local ? VisualSpecSchema.parse({
       summary: 'Verify the accepted selected finish and preserve the existing design.',
       landmarks: [{ id: 'accepted-finish', feature: 'Accepted selected finish', requirement: `Element ${local.elementId} must use ${local.color}; preserve its geometry and all unrelated work. The accepted finish overrides historical image colors.` }],
-    }) : await modelJSON(env, p.userId, 'designer', `Extract the essential visual landmarks from this selected architectural reference before the team models it. Brief: ${JSON.stringify(brief)}. Accepted current change: ${p.instruction || 'none'}. ${visualReferenceInstructions}
+    }) : await teamModel('designer', `Extract the essential visual landmarks from this selected architectural reference before the team models it. Brief: ${JSON.stringify(brief)}. Accepted current change: ${p.instruction || 'none'}. ${visualReferenceInstructions}
 ${requirementsText}
-Return 1–7 concrete landmarks that make this design recognizable: massing, setbacks/terraces, roof silhouette, major glazing/openings, entrance and material relationships as relevant. Describe relative placement and proportions, not invented exact dimensions. Each requirement must be testable against actual model elements and rendered views. Accepted current changes override conflicting features or colors in the historical reference. For an existing-design correction, scope requirements to the accepted change and preservation of unrelated existing work. Distinguish required geometry from atmospheric image styling. Use primitives where sufficient; identify a curved feature requiring a registered custom component instead of silently dropping it. Do not require landscaping or photographic effects unless part of the brief.`, VisualSpecSchema, undefined, [(await loadImageReference(env, p.projectId, referenceId)).dataUrl]);
+Return 1–7 concrete landmarks that make this design recognizable: massing, setbacks/terraces, roof silhouette, major glazing/openings, entrance and material relationships as relevant. Describe relative placement and proportions, not invented exact dimensions. Each requirement must be testable against actual model elements and rendered views. Accepted current changes override conflicting features or colors in the historical reference. For an existing-design correction, scope requirements to the accepted change and preservation of unrelated existing work. Distinguish required geometry from atmospheric image styling. Use primitives where sufficient; identify a curved feature requiring a registered custom component instead of silently dropping it. Do not require landscaping or photographic effects unless part of the brief.`, VisualSpecSchema, undefined, [(await loadImageReference(env, p.projectId, referenceId)).dataUrl], timeBudget);
     await artifact(env, p.projectId, p.runId, 'visual-spec.json', 'visual-specification', p.baseRevision, JSON.stringify(spec), 'application/json');
     await updateTask(taskId, 'completed', `${spec.landmarks.length} visual landmarks saved.`, p.baseRevision, `${p.runId}-visual-spec.json`, p.baseRevision);
     await emit(env, p.projectId, 'task_completed', 'Visual landmark specification saved for the team.', 'designer', taskId, `${p.runId}-visual-landmarks-completed`);
@@ -122,26 +133,36 @@ Return 1–7 concrete landmarks that make this design recognizable: massing, set
     return spec;
   }) : null;
 
-  async function renderEvidence(desktop: Awaited<ReturnType<typeof createDesktop>>, key: string, rowId: string, base: Base) {
+  async function renderEvidence(desktop: Awaited<ReturnType<typeof createDesktop>>, key: string, rowId: string, base: Base, timeBudget: TaskTimeBudget) {
     const evidence: VisualEvidence = { revision: base.revision, referenceArtifactId: referenceId, views: [], unavailable: [] };
     const images: string[] = [];
-    for (const view of ['front', 'rear'] as const) {
+    const requiredViews: ProposalView[] = ['front', 'rear', 'plan_ground', ...(base.design!.floors > 1 ? ['plan_upper' as const] : []), 'interior'];
+    await prepareProposalDesktop(desktop, base.design!, env, p.projectId);
+    const canonicalJSON = JSON.stringify(base.design);
+    const designHash = Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalJSON))).toString('hex');
+    await desktop.files.write('/home/user/project/review-design.json', canonicalJSON);
+    for (const [index, view] of requiredViews.entries()) {
       await checkCancelled();
       await emit(env, p.projectId, 'tool_started', `Rendering the canonical model ${view} view for visual review of revision ${base.revision}.`, 'critic', rowId);
       try {
-        const command = await desktop.commands.run(`timeout 90s blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --preview --view ${view} --revision ${base.revision}`, { timeoutMs: 95000 });
+        // Keep time for the remaining views and the Critic's actual review.
+        const timeoutMs = timeBudget.allowance(65000, 120000 + (requiredViews.length - index - 1) * 20000 + 10000, 6000);
+        const renderSeconds = Math.max(1, Math.floor((timeoutMs - 5000) / 1000));
+        const command = await desktop.commands.run(`timeout ${renderSeconds}s blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design /home/user/project/review-design.json --output /home/user/project/output --preview --view ${view} --revision ${base.revision}`, { timeoutMs });
         if (command.exitCode !== 0) throw new Error('Preview renderer failed.');
         const metadata = PreviewMetadataSchema.parse(JSON.parse(await desktop.files.read(`/home/user/project/output/preview-${view}.json`)));
-        if (metadata.revision !== base.revision || metadata.view !== view || metadata.elements !== base.design!.elements.length) throw new Error('Preview provenance does not match the current canonical design.');
+        if (metadata.revision !== base.revision || metadata.view !== view || metadata.designHash !== designHash || metadata.elements !== base.design!.elements.length) throw new Error('Preview provenance does not match the current canonical design.');
         const bytes = new Uint8Array(await desktop.files.read(`/home/user/project/output/preview-${view}.png`, { format: 'bytes' }));
         const dimensions = validatePNG(bytes, 8 * 1024 * 1024);
         if (dimensions.width !== metadata.resolution[0] || dimensions.height !== metadata.resolution[1]) throw new Error('Preview dimensions do not match its provenance.');
+        await checkCancelled();
         const metadataArtifactId = await artifact(env, p.projectId, p.runId, `${key}-preview-${view}.json`, 'render-metadata', base.revision, JSON.stringify(metadata), 'application/json');
         const artifactId = await artifact(env, p.projectId, p.runId, `${key}-preview-${view}.png`, 'render', base.revision, bytes, 'image/png');
         evidence.views.push({ view, artifactId, metadataArtifactId, camera: metadata.camera });
         images.push(`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`);
         await emit(env, p.projectId, 'tool_completed', `Canonical ${view} view saved for revision ${base.revision}: ${artifactId}`, 'critic', rowId);
       } catch {
+        await checkCancelled();
         evidence.unavailable.push(view);
         await emit(env, p.projectId, 'tool_completed', `Canonical ${view} preview unavailable for revision ${base.revision}; visual correspondence remains unverified.`, 'critic', rowId);
       }
@@ -169,7 +190,8 @@ Return 1–7 concrete landmarks that make this design recognizable: massing, set
       const persisted = await step.do(`${key}-saved-result`, async () => { await checkCancelled(); return savedArtifact<Result>(`${p.runId}-${key}-result.json`); });
       if (persisted) return persisted;
       const sandboxId = usesComputer ? await desktopFor(task, key, rowId) : null;
-      return await step.do(`${key}-work`, options, async () => {
+      const completed = await checkedWorkflowStep(step, `${key}-work`, options, async () => {
+        const timeBudget = new TaskTimeBudget();
         await checkCancelled();
         const cached = await savedArtifact<Result>(`${p.runId}-${key}-result.json`);
         if (cached) return cached;
@@ -177,11 +199,14 @@ Return 1–7 concrete landmarks that make this design recognizable: massing, set
         await emit(env, p.projectId, 'task_started', `${task.title}: ${task.objective}`, task.agent, rowId, `${p.runId}-${key}-started`);
         const images = referenceId ? [(await loadImageReference(env, p.projectId, referenceId)).dataUrl] : [];
         const visual = referenceId ? `Visual reference artifact: ${referenceId}. ${visualReferenceInstructions}` : '';
+        const dependencySummaries = Object.fromEntries(Object.entries(dependencies).map(([id, { proposal, ...saved }]) =>
+          [id, { ...saved, proposalSummary: designContext(proposal) }]));
         const prompt = `Task ${task.id} (${task.kind}). Objective: ${task.objective}. Deliverables: ${JSON.stringify(task.deliverables)}.
 ${requirementsText}
-Brief: ${JSON.stringify(brief)}. Current design revision ${base.revision}: ${JSON.stringify(base.design)}.
+Brief: ${JSON.stringify(brief)}. Current design revision ${base.revision} summary: ${JSON.stringify(designContext(base.design, p.elementId))}.
+read_design returns the exact assigned canonical snapshot from /home/user/project/design.json. Use that file for existing element records and geometry; this compact summary omits mesh arrays.
 Accepted change for this round: ${p.instruction || 'none'}.
-Completed dependencies and their saved outputs: ${JSON.stringify(dependencies)}.
+Completed dependencies and their saved outputs: ${JSON.stringify(dependencySummaries)}.
 ${extraInstruction} ${visual}
 ${visualSpec ? `Visual specification: ${JSON.stringify(visualSpec)}\nMap each required feature to actual stable element IDs and geometry; a name or note is not implementation. Use the accepted current change to resolve any conflict with the reference. Preserve unrelated existing design during scoped repairs.` : ''}
 Use dependency outputs to coordinate your work. Preserve unrelated elements and stable IDs. Your output is a proposal; the coordinator publishes the canonical revision after checking conflicts.`;
@@ -194,65 +219,85 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
         }
         const communications: { target: z.infer<typeof AgentIdSchema>; message: string }[] = [];
         const registeredAssets: Design['assets'] = [];
-        const context = desktop ? { desktop, projectId: p.projectId, taskId: rowId, design: base.design, communications, registeredAssets } : undefined;
+        const context = desktop ? { desktop, projectId: p.projectId, taskId: rowId, design: base.design, communications, registeredAssets, checkActive: checkCancelled, timeBudget, proposal: undefined as ProposalSession | undefined } : undefined;
         const result: Result = { artifactId: `${p.runId}-${key}-result.json`, baseRevision: base.revision, proposal: null, summary: '', findings: [], recommendations: [], coordination: communications };
         if (task.kind === 'visual_direction') {
-          Object.assign(result, await modelJSON(env, p.userId, 'designer', `${prompt}\nDevelop a concrete palette, material, furniture and lighting direction. Describe these in recommendations. Send coordination messages only for actual requirements affecting another specialist. Do not invent geometry or tool activity.`, DirectionSchema, undefined, images));
+          Object.assign(result, await teamModel('designer', `${prompt}\nDevelop a concrete palette, material, furniture and lighting direction. Describe these in recommendations. Send coordination messages only for actual requirements affecting another specialist. Do not invent geometry or tool activity.`, DirectionSchema, undefined, images, timeBudget));
         } else if (task.kind === 'review') {
           const deterministic = base.design ? reviewDesign(base.design) : [];
           if (base.design && desktop) {
-            const rendered = await renderEvidence(desktop, key, rowId, base);
+            const rendered = await renderEvidence(desktop, key, rowId, base, timeBudget);
             await checkCancelled();
             const labels = [
               ...(referenceId ? [`Image 1: selected concept ${referenceId}; generated visual intent, not a model render. Accepted changes override conflicting historical details.`] : []),
               ...rendered.evidence.views.map((view, index) => `Image ${index + (referenceId ? 2 : 1)}: ACTUAL canonical model ${view.view} preview; revision ${base.revision}; artifact ${view.artifactId}.`),
             ];
-            const reviewPrompt = `${prompt}\nReview the current canonical model using the attached actual rendered views and its JSON. Inspect massing and proportions, enclosure, hosted openings, visible circulation, roof/wall/slab relationships, and material assignments against the brief. Distinguish what is visible from geometry checks and unknown interior/headroom details; never infer a successful walkthrough from an exterior image. A simple box or missing design-defining geometry is a meaningful finding when it fails the accepted brief or reference.\nCanonical render evidence: ${JSON.stringify(rendered.evidence)}\n${labels.join('\n')}\n${rendered.evidence.unavailable.length ? 'Some required canonical previews failed. Mark visual verification unverified and raise a finding; do not claim the design is ready.' : 'These images are rendered from the exact saved canonical revision being reviewed, not generated illustrations.'}\n${visualSpec ? 'Assess every saved landmark exactly once in landmarks. A pass needs actual implementing element IDs and current preview artifact IDs demonstrating it. Mark absent geometry fail and insufficient evidence unverified; feature names, material definitions and design notes are not visual proof. Report concrete corrections that preserve unaffected elements.' : 'Raise concrete, actionable geometry and visual findings, preserving unrelated accepted work.'}\nDeterministic findings: ${JSON.stringify(deterministic)}.`;
+            const reviewPrompt = `${prompt}\nReview the current canonical model using the attached actual rendered views and its JSON. Inspect massing and proportions, enclosure, hosted openings, visible circulation, roof/wall/slab relationships, interior arrangement and material assignments against the brief. Use the actual floor plans and interior preview to inspect room arrangement and furniture. Distinguish what is visible from geometry checks and unknown headroom/operability details; never infer a successful walkthrough from an exterior image. A simple box or missing design-defining geometry is a meaningful finding when it fails the accepted brief or reference.\nCanonical render evidence: ${JSON.stringify(rendered.evidence)}\n${labels.join('\n')}\n${rendered.evidence.unavailable.length ? 'Some required canonical previews failed. Mark visual verification unverified and raise a finding; do not claim the design is ready.' : 'These images are rendered from the exact saved canonical revision being reviewed, not generated illustrations.'}\n${visualSpec ? 'Assess every saved landmark exactly once in landmarks. A pass needs actual implementing element IDs and current preview artifact IDs demonstrating it. Mark absent geometry fail and insufficient evidence unverified; feature names, material definitions and design notes are not visual proof. Report concrete corrections that preserve unaffected elements.' : 'Raise concrete, actionable geometry and visual findings, preserving unrelated accepted work.'}\nDeterministic findings: ${JSON.stringify(deterministic)}.`;
             if (visualSpec) {
-              const review = await modelJSON(env, p.userId, 'critic', reviewPrompt, VisualReviewSchema, context, [...images, ...rendered.images]);
+              const review = await teamModel('critic', reviewPrompt, VisualReviewSchema, context, [...images, ...rendered.images]);
               result.summary = review.summary;
               result.findings = [...deterministic, ...review.findings, ...visualFindings(review, rendered.evidence, base.design)];
               result.visualReview = { evidence: rendered.evidence, landmarks: review.landmarks };
             } else {
-              const review = await modelJSON(env, p.userId, 'critic', reviewPrompt, ReviewSchema, context, rendered.images);
+              const review = await teamModel('critic', reviewPrompt, ReviewSchema, context, rendered.images);
               result.summary = review.summary; result.findings = [...deterministic, ...review.findings];
               result.visualReview = { evidence: rendered.evidence };
             }
-            if (rendered.evidence.unavailable.length || rendered.evidence.views.length !== 2) {
+            if (rendered.evidence.unavailable.length || rendered.evidence.views.length !== (base.design.floors > 1 ? 5 : 4)) {
               result.summary = 'The design is saved, but visual review is incomplete because required canonical previews are unavailable.';
-              result.findings.push('Visual review is unverified: both front and rear previews of the current canonical revision are required before the design is ready.');
+              result.findings.push('Visual review is unverified: exterior, floor-plan and interior previews of the current canonical revision are required before the design is ready.');
             }
             result.findings = [...new Set(result.findings)];
           } else {
-            const review = await modelJSON(env, p.userId, 'critic', `${prompt}\nReview the brief and dependencies for conflicts and missing requirements; no building exists yet. Raise actionable issues only; distinguish missing evidence from a verified result.`, ReviewSchema, context, images);
+            const review = await teamModel('critic', `${prompt}\nReview the brief and dependencies for conflicts and missing requirements; no building exists yet. Raise actionable issues only; distinguish missing evidence from a verified result.`, ReviewSchema, context, images, timeBudget);
             result.summary = review.summary;
             result.findings = [...new Set([...deterministic, ...review.findings])];
           }
         } else {
+          if (context && !color) {
+            await prepareProposalAuthoring(context.desktop, z.toJSONSchema(base.design ? DesignEditsSchema : DesignSchema));
+            context.proposal = new ProposalSession({
+              env, desktop: context.desktop, projectId: p.projectId, runId: p.runId, taskId: rowId, key,
+              baseRevision: base.revision, baseDesign: base.design, agent: task.agent,
+              registeredAssets: () => registeredAssets, checkActive: checkCancelled, timeBudget,
+              prepare: candidate => prepareProposalDesktop(context.desktop, candidate, env, p.projectId),
+            });
+          }
           const ownership = task.agent === 'designer'
             ? 'You own materials, material assignments, furniture and lights. Preserve metadata, notes, structural geometry, spaces, floors and spawn exactly.'
             : 'Develop the requested architecture. Make spaces accessible, split upper slabs around stair voids, and keep existing finishes and furniture unless the objective requires changing them. Use assetId null for procedural elements.';
           if (color && base.design) result.proposal = recolor(base.design, color.elementId, color.color);
           else if (base.design) {
-            const edits = await modelJSON(env, p.userId, task.agent, `${prompt}\n${ownership}\nReturn only explicit incremental edits: upsert complete records for changed or new IDs, and remove only existing IDs that this objective requires deleting. Empty arrays leave a collection unchanged; null metadata values preserve the current values. Omitted elements, materials and spaces are preserved automatically. Do not list untouched records, rebuild the scene, or return an asset registry. Use only existing asset IDs or IDs returned by register_blender_asset or read_design_revision. To restore missing work, read the relevant saved revision and upsert only the needed records while preserving current accepted repairs.`, DesignEditsSchema, context, images);
+            const edits = await teamModel(task.agent, `${prompt}\n${ownership}\nWrite explicit incremental edits to /home/user/project/proposal.json: upsert complete records for changed or new IDs, and remove only existing IDs that this objective requires deleting. Empty arrays leave a collection unchanged; null metadata values preserve the current values. Omitted elements, materials and spaces are preserved automatically. Do not list untouched records, rebuild the scene, or return an asset registry. Use only existing asset IDs or IDs returned by register_blender_asset or read_design_revision. To restore missing work, read the relevant saved revision and upsert only the needed records while preserving current accepted repairs. Inspect the proposal with inspect_proposal, examine its images, then submit_proposal. Your final JSON contains only the requested summary.`, DesignEditsSchema, context, images);
             result.proposal = applyDesignEdits(base.design, edits, registeredAssets);
-          } else result.proposal = await modelJSON(env, p.userId, task.agent, `${prompt}\n${ownership}\nEstablish the initial complete design.`, DesignSchema, context, images);
+          } else result.proposal = await teamModel(task.agent, `${prompt}\n${ownership}\nWrite the initial complete design to /home/user/project/proposal.json. Use design_authoring helpers and supported mesh geometry to fulfill the brief. Inspect the candidate with inspect_proposal, examine its images, then submit_proposal. Your final JSON contains only the requested summary.`, DesignSchema, context, images);
           // Enforce ownership before a proposal reaches shared state.
           mergeDesignProposal(base.design, base.design, result.proposal, task.agent);
           result.summary = `${task.title}: design proposal prepared from revision ${base.revision}.`;
-          if (desktop) {
-            await syncDesktop(desktop, result.proposal, env, p.projectId);
-            const validation = await runVisible(desktop, 'python3 -m json.tool /home/user/project/design.json /home/user/project/validated-design.json', 10000);
-            if (validation.exitCode !== 0) throw new HttpError(422, 'The workstation could not validate its design proposal.');
-          }
+          if (context?.proposal?.submitted) result.proposalEvidence = context.proposal.submitted.evidence;
         }
         await checkCancelled();
-        if (desktop) await checkpointDesktop(env, desktop, p.projectId, `${p.runId}-${key}`, base.revision, task.agent);
         await artifact(env, p.projectId, p.runId, `${key}-result.json`, result.proposal ? 'design-proposal' : task.kind, base.revision, JSON.stringify(result), 'application/json');
         await updateTask(rowId, result.proposal ? 'review' : 'in_progress', result.summary, null, result.artifactId);
         if (task.kind === 'visual_direction') for (const [index, message] of result.coordination.entries()) await emit(env, p.projectId, 'agent_message', `To ${message.target}: ${message.message}`, task.agent, rowId, `${p.runId}-${key}-message-${index}`);
         return result;
       });
+      if (sandboxId) {
+        // The real task result is durable before optional GUI/screenshot work.
+        // A stalled window manager must not invalidate accepted geometry.
+        try {
+          await step.do(`${key}-workstation-capture`, { ...options, timeout: '30 seconds' }, async () => {
+            await checkCancelled();
+            const { Sandbox } = await import('@e2b/desktop');
+            const desktop = await Sandbox.connect(sandboxId, { apiKey: env.E2B_API_KEY });
+            if (completed.proposal) await syncDesktop(desktop, completed.proposal, env, p.projectId);
+            await checkpointDesktop(env, desktop, p.projectId, `${p.runId}-${key}`, base.revision, task.agent);
+          });
+        } catch {
+          await checkCancelled();
+        }
+      }
+      return completed;
     } finally {
       if (usesComputer) await step.do(`${key}-release-computer`, async () => { await releaseDesktop(env, p.projectId, task.agent, `${p.runId}-${key}`); });
     }
@@ -264,7 +309,8 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
   for (let round = 0; round < 2; round++) {
     const phase = `team-${round}`;
     const initial = await step.do(`${phase}-base`, current);
-    const plan = await step.do(`${phase}-plan`, { ...options, timeout: '3 minutes' }, async () => {
+    const plan = await checkedWorkflowStep(step, `${phase}-plan`, options, async () => {
+      const timeBudget = new TaskTimeBudget();
       await checkCancelled();
       if (round) await emit(env, p.projectId, 'meeting_started', `The Critic found ${findings.length} issues. The Principal is assigning corrections.`, 'principal', null, `${p.runId}-${phase}-meeting-started`);
       await updateTask(`${p.runId}-principal`, 'in_progress', round ? 'Assigning bounded corrections from the design review.' : 'Planning dependencies and independent specialist work.');
@@ -272,15 +318,15 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
       const next = cached ? validatePlan(cached, Boolean(initial.design)) : local && round === 0 ? validatePlan({ summary: 'The Designer applies the selected finish; the Critic reviews the resulting revision.', tasks: [
         { id: 'finish', kind: 'interior', agent: 'designer', title: 'Update selected finish', objective: p.instruction || 'Apply the selected colour.', dependencies: [], deliverables: ['Updated element material'] },
         { id: 'review', kind: 'review', agent: 'critic', title: 'Review changed finish', objective: 'Verify the accepted colour change and preserve other requirements.', dependencies: ['finish'], deliverables: ['Design review'] },
-      ] }, Boolean(initial.design)) : validatePlan(await modelJSON(env, p.userId, 'principal', `Create a dependency plan for the specialist team.
+      ] }, Boolean(initial.design)) : validatePlan(await teamModel('principal', `Create a dependency plan for the specialist team.
 ${requirementsText}
-Brief: ${JSON.stringify(brief)}. Current design: ${JSON.stringify(initial.design)}. Accepted change: ${p.instruction || 'none'}.
+Brief: ${JSON.stringify(brief)}. Current design summary (rooms, materials and counts; detailed geometry remains in the canonical file): ${JSON.stringify(designContext(initial.design, p.elementId))}. Accepted change: ${p.instruction || 'none'}.
 ${visualSpec ? `Saved visual landmarks to realize in actual geometry and verify with model renders: ${JSON.stringify(visualSpec)}. Include concrete feature-to-element acceptance checks in the architecture objective and final review. The attached image is visual intent; accepted current changes override historical features.` : ''}
 Review findings requiring correction: ${JSON.stringify(findings)}.
 Choose only work needed now, at most 8 tasks. Each task needs a unique short ID, objective, deliverables and dependencies. Independent tasks should have no unnecessary dependencies; at most two different specialists run together. One specialist performs one task at a time.
 Kinds and owners: architecture=architect (canonical geometry), interior=designer (materials, material assignments, furniture, lights), visual_direction=designer (saved palette/material/furniture/lighting recommendations, no geometry edits), review=critic (requirements or actual design review).
 For a new house, architecture and visual_direction can begin together. Interior placement needs the architecture and any visual direction. For an existing house, independent structure and finish proposals may run together; finishes-only requests need no Architect. An early Critic review can run independently when useful. Do not invent a required task just to involve a role.
-The graph must be acyclic. It needs a design-writing task and a final review that transitively depends on EVERY other task. A new house needs architecture and interior, with interior depending on architecture. Dependent tasks receive actual saved outputs. ${round ? 'This is the final automatic correction round; make the smallest bounded corrections.' : ''}`, PlanSchema, undefined, referenceId ? [(await loadImageReference(env, p.projectId, referenceId)).dataUrl] : []), Boolean(initial.design));
+The graph must be acyclic. It needs a design-writing task and a final review that transitively depends on EVERY other task. A new house needs architecture and interior, with interior depending on architecture. Dependent tasks receive actual saved outputs. ${round ? 'This is the final automatic correction round; make the smallest bounded corrections.' : ''}`, PlanSchema, undefined, referenceId ? [(await loadImageReference(env, p.projectId, referenceId)).dataUrl] : [], timeBudget), Boolean(initial.design));
       await artifact(env, p.projectId, p.runId, `${phase}-plan.json`, 'task-plan', initial.revision, JSON.stringify(next), 'application/json');
       await decision(`${phase}-plan`, round ? 'Design review corrections' : 'Specialist dependency plan', next.summary);
       for (const [index, task] of next.tasks.entries()) {
@@ -324,12 +370,13 @@ The graph must be acyclic. It needs a design-writing task and a final review tha
         if (result.proposal) {
           let publication = await step.do(`${key}-publish`, async () => { await checkCancelled(); const saved = await coordinator.commitProposal(p.projectId, result.baseRevision, `${p.runId}-${key}`, result.proposal!, p.runId, task.agent); return { revision: saved.revision, conflicts: [...saved.conflicts] }; });
           if (publication.conflicts.length) {
-            const resolution = await step.do(`${key}-meeting`, { ...options, timeout: '3 minutes' }, async () => {
+            const resolution = await checkedWorkflowStep(step, `${key}-meeting`, options, async () => {
+              const timeBudget = new TaskTimeBudget();
               await checkCancelled();
               const cached = await savedArtifact<z.infer<typeof DecisionSchema> & { base: Base }>(`${p.runId}-${key}-conflict.json`);
               const latest = cached?.base || await current();
               await emit(env, p.projectId, 'meeting_started', `Overlapping edits in ${publication.conflicts.join(', ')} need a shared decision.`, 'principal', rowId, `${rowId}-conflict-started`);
-              const resolved = cached || await modelJSON(env, p.userId, 'principal', `Resolve overlapping edits in this task: ${JSON.stringify(task)}. Brief: ${JSON.stringify(brief)}. User instruction: ${p.instruction || 'none'}. Conflicting paths: ${JSON.stringify(publication.conflicts)}. Current accepted design: ${JSON.stringify(latest.design)}. Pending proposal: ${JSON.stringify(result.proposal)}. Decide how this task's owner should revise its proposal against the current design while preserving other accepted changes and respecting field ownership. Return a concise decision and an actionable instruction.\n${requirementsText}`, DecisionSchema);
+              const resolved = cached || await teamModel('principal', `Resolve overlapping edits in this task: ${JSON.stringify(task)}. Brief: ${JSON.stringify(brief)}. User instruction: ${p.instruction || 'none'}. Conflicting paths: ${JSON.stringify(publication.conflicts)}. Current accepted design: ${JSON.stringify(latest.design)}. Pending proposal: ${JSON.stringify(result.proposal)}. Decide how this task's owner should revise its proposal against the current design while preserving other accepted changes and respecting field ownership. Return a concise decision and an actionable instruction.\n${requirementsText}`, DecisionSchema, undefined, [], timeBudget);
               await artifact(env, p.projectId, p.runId, `${key}-conflict.json`, 'coordination', latest.revision, JSON.stringify({ ...resolved, base: latest, conflicts: publication.conflicts, proposalArtifactId: result.artifactId }), 'application/json');
               await decision(`${key}-conflict`, 'Resolve overlapping design edits', resolved.decision);
               await emit(env, p.projectId, 'meeting_ended', resolved.decision, 'principal', rowId, `${rowId}-conflict-ended`);
@@ -354,7 +401,8 @@ The graph must be acyclic. It needs a design-writing task and a final review tha
     findings = outputs[final.id].findings;
     // Rendering infrastructure failures need a new evidence attempt, not paid
     // design corrections that cannot repair an unavailable renderer.
-    const missingReviewEvidence = Boolean(outputs[final.id].visualReview && outputs[final.id].visualReview!.evidence.views.length !== 2);
+    const reviewedEvidence = outputs[final.id].visualReview?.evidence;
+    const missingReviewEvidence = Boolean(reviewedEvidence && (reviewedEvidence.unavailable.length > 0 || reviewedEvidence.views.length < 4));
     if (!findings.length || round === 1 || missingReviewEvidence) {
       await step.do(`${phase}-review-outcome`, async () => {
         const latest = await current();

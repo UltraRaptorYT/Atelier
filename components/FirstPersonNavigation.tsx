@@ -9,6 +9,7 @@ import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, clearWalkPosition, cre
 import type { Design } from '@/shared/design';
 import type { RoomId } from './World';
 import styles from './FirstPersonNavigation.module.css';
+import { presentationInRange } from '@/lib/presentation';
 
 type Point = { x: number; y: number; z: number };
 type Room = { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] };
@@ -24,6 +25,7 @@ type Props = {
   onProximity: (id: RoomId | null) => void;
   onRoom: (id: RoomId) => void;
   onExit: () => void;
+  presentationAvailable?: boolean;
 };
 
 const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
@@ -33,7 +35,7 @@ function editing(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('input, textarea, select, [role="textbox"]')));
 }
 
-export default function FirstPersonNavigation({ target, design, rooms, office, revision, paused, onRoom, onExit, positions, meeting, onProximity }: Props) {
+export default function FirstPersonNavigation({ target, design, rooms, office, revision, paused, onRoom, onExit, positions, meeting, onProximity, presentationAvailable = false }: Props) {
   const body = useRef<RapierRigidBody>(null);
   const collider = useRef<RapierCollider>(null);
   const controller = useRef<WalkController | null>(null);
@@ -201,7 +203,7 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
       return distance <= (candidate.id === 'reception' ? 3.2 : INTERACTION_DISTANCE) && (!previous || distance < Math.hypot(p.x-previous[0],p.z-previous[2])) ? candidate : closest;
     }, null) : null;
     if ((room?.id || null) !== voiceRoom.current) { voiceRoom.current = room?.id || null; onProximity(voiceRoom.current); }
-    const interaction = office ? rooms.filter(r => r.id !== 'presentation').find(r => r.id === 'reception'
+    const interaction = office ? rooms.find(r => r.id === 'presentation' ? presentationInRange(p, r.position, presentationAvailable) : r.id === 'reception'
       ? Math.hypot(p.x, p.z-5.8) < 2.8
       : Math.hypot(p.x-r.position[0],p.z-r.position[2]) < 2.8) || null : null;
     if (interaction?.id !== nearbyRoom.current?.id) { nearbyRoom.current = interaction; setRoomLabel(interaction?.label || null); }
@@ -211,6 +213,6 @@ export default function FirstPersonNavigation({ target, design, rooms, office, r
     <RigidBody ref={body} type="kinematicPosition" colliders={false} enabledRotations={[false, false, false]} position={[spawn.x, spawn.y, spawn.z]}>
       <CapsuleCollider ref={collider} args={[CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS]} />
     </RigidBody>
-    {!paused && (unavailable || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{unavailable ? 'No clear place to stand here. Press Esc and choose another room or review the model.' : <><kbd>E</kbd> Talk / workstation: {roomLabel}</>}</div></Html>}
+    {!paused && (unavailable || roomLabel) && <Html fullscreen style={{ pointerEvents: 'none' }}><div className={styles.hint} role="status">{unavailable ? 'No clear place to stand here. Press Esc and choose another room or review the model.' : <><kbd>E</kbd> {nearbyRoom.current?.id === 'presentation' ? 'Walk inside saved design' : `Talk / workstation: ${roomLabel}`}</>}</div></Html>}
   </>;
 }

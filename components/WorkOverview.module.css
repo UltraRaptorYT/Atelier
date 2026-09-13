@@ -1,4 +1,6 @@
 .overview { margin: 0 20px 16px; border: 1px solid #dce3d3; border-radius: 10px; background: #f4f7ed; overflow: hidden; }
+.overview[data-state='stopped'] { border-color: #cbb496; background: #f9f1e6; }
+.overview[data-state='stopped'] .heading strong { color: #895b32; }
 .work { padding: 12px 14px; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .heading strong { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }

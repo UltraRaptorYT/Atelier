@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { Sandbox } from '@e2b/desktop';
-import { ComputeBudget } from '../worker/src/budget';
+import { ComputeBudget, dailyComputerAllowance } from '../worker/src/budget';
 import { createDesktop, releaseDesktop } from '../worker/src/desktop';
-import { limits } from '../shared/budget';
+import { admission, limits } from '../shared/budget';
 import type { Bindings } from '../worker/src/types';
 
 vi.mock('cloudflare:workers', () => ({ DurableObject: class {
@@ -43,10 +43,72 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-13T10:00:00Z'));
   vi.mocked(Sandbox.kill).mockResolvedValue(true);
   let next = 0;
-  vi.mocked(Sandbox.create).mockImplementation(async () => ({ sandboxId: `sandbox-${++next}`, commands: { run: vi.fn().mockResolvedValue({ exitCode: 0 }) }, files: { write: vi.fn().mockResolvedValue(undefined) } }) as never);
+  vi.mocked(Sandbox.create).mockImplementation(async () => ({ sandboxId: `sandbox-${++next}`, commands: { run: vi.fn().mockResolvedValue({ exitCode: 0, disconnect: vi.fn().mockResolvedValue(undefined) }) }, files: { write: vi.fn().mockResolvedValue(undefined) } }) as never);
 });
 afterEach(() => { for (const db of databases.splice(0)) db.close(); vi.useRealTimers(); vi.restoreAllMocks(); });
 const advance = (seconds: number) => vi.setSystemTime(Date.now() + seconds * 1000);
+
+describe('one-run local verification allowance', () => {
+  const runId = '57c78f5b-5a2f-4efa-8e4d-afb9fce67618';
+  const day = '2026-09-13';
+  const grant = { day, runId, additionalSeconds: 1800 };
+  function usedDaily(f: ReturnType<typeof fixture>, owner = 'local-developer') {
+    f.db.prepare('INSERT INTO leases(id,owner,day,month,seconds,expires,idle_since,started_at,released) VALUES(?,?,?,?,?,?,?,?,1)')
+      .run(`previous-${owner}`, owner, day, day.slice(0,7), 3600, Date.now()-1, Date.now()-3600000, Date.now()-3600000);
+  }
+  it('admits only the bounded extra 30 minutes after the normal hour is charged, retaining the ledger and lease bounds', async () => {
+    const f=fixture();f.env.ENVIRONMENT='local';f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify(grant);usedDaily(f);
+    expect(await f.budget.reserve(`${runId}-architect`, 'local-developer')).toEqual({allowed:true});
+    expect(await f.budget.reserve(`${runId}-designer`, 'local-developer')).toEqual({allowed:true});
+    expect(await f.budget.reserve(`${runId}-third`, 'local-developer')).toEqual({allowed:false,reason:'queue'});
+    expect(f.lease(`${runId}-architect`).seconds).toBe(900);
+    advance(901);
+    await f.budget.release(`${runId}-architect`);await f.budget.release(`${runId}-designer`);
+    expect((await f.budget.reserve(`${runId}-critic`, 'local-developer')).reason).toMatch(/daily/);
+    expect(f.db.prepare('SELECT SUM(seconds) AS charged FROM leases').get()!.charged).toBe(5400);
+    expect(f.lease('previous-local-developer')).toMatchObject({seconds:3600,released:1});
+    expect(limits.userDailySeconds).toBe(3600);expect(limits.leaseSeconds).toBe(900);expect(limits.globalDesktops).toBe(2);
+  });
+  it.each([
+    {name:'missing override',value:undefined},
+    {name:'malformed JSON',value:'{"day":'},
+    {name:'expired day',value:JSON.stringify({...grant,day:'2026-09-12'})},
+    {name:'future day',value:JSON.stringify({...grant,day:'2026-09-14'})},
+    {name:'wrong run',value:JSON.stringify({...grant,runId:'aa7c5696-5268-423a-980c-d1183d4c28fb'})},
+    {name:'invalid UUID',value:JSON.stringify({...grant,runId:'all'})},
+    {name:'oversized grant',value:JSON.stringify({...grant,additionalSeconds:1801})},
+    {name:'zero grant',value:JSON.stringify({...grant,additionalSeconds:0})},
+    {name:'fractional grant',value:JSON.stringify({...grant,additionalSeconds:1.5})},
+    {name:'string grant',value:JSON.stringify({...grant,additionalSeconds:'1800'})},
+    {name:'unknown property',value:JSON.stringify({...grant,unlimited:true})},
+  ])('retains the normal cap for $name',async({value})=>{
+    const f=fixture();f.env.ENVIRONMENT='local';f.env.LOCAL_VERIFICATION_ALLOWANCE=value;usedDaily(f);
+    expect((await f.budget.reserve(`${runId}-architect`,'local-developer')).reason).toMatch(/daily/);
+    expect(f.db.prepare('SELECT COUNT(*) AS n FROM leases').get()!.n).toBe(1);
+  });
+  it.each(['production','staging'])('has no effect in %s',async environment=>{
+    const f=fixture();f.env.ENVIRONMENT=environment;f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify(grant);usedDaily(f);
+    expect((await f.budget.reserve(`${runId}-architect`,'local-developer')).reason).toMatch(/daily/);
+  });
+  it('does not grant other owners or leases that only contain a similar run prefix',async()=>{
+    const f=fixture();f.env.ENVIRONMENT='local';f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify(grant);usedDaily(f,'another-owner');usedDaily(f);
+    expect((await f.budget.reserve(`${runId}-architect`,'another-owner')).reason).toMatch(/daily/);
+    for(const lease of [runId,`${runId}extra-architect`,`prefix-${runId}-architect`])expect((await f.budget.reserve(lease,'local-developer')).reason).toMatch(/daily/);
+  });
+  it('expires at UTC midnight and still enforces smaller grants, monthly accounting and invalid reservation bounds',async()=>{
+    const f=fixture();f.env.ENVIRONMENT='local';f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify({...grant,additionalSeconds:60});usedDaily(f);
+    expect((await f.budget.reserve(`${runId}-too-large`,'local-developer',61)).reason).toMatch(/daily/);
+    expect(await f.budget.reserve(`${runId}-short`,'local-developer',60)).toEqual({allowed:true});
+    expect(dailyComputerAllowance(f.env,'local-developer',`${runId}-next`,'2026-09-14')).toBe(3600);
+    f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify(grant);
+    f.db.prepare('INSERT INTO leases(id,owner,day,month,seconds,expires,idle_since,released) VALUES(?,?,?,?,?,?,?,1)')
+      .run('monthly-usage','another-owner',day,day.slice(0,7),limits.globalMonthlySeconds,Date.now()-1,Date.now()-1);
+    expect((await f.budget.reserve(`${runId}-monthly`,'local-developer')).reason).toMatch(/monthly/);
+    expect((await f.budget.reserve(`${runId}-invalid`,'local-developer',901)).reason).toMatch(/Invalid/);
+    expect(admission({active:0,dailySeconds:3600,monthlySeconds:3600},900)).toMatch(/daily/);
+    for(const limit of [Infinity,5401,NaN])expect(admission({active:0,dailySeconds:3600,monthlySeconds:3600},900,limit)).toMatch(/Invalid/);
+  });
+});
 
 describe('desktop budget reservation and confirmed usage', () => {
   it('reserves two computers atomically, including the full allowance until shutdown', async () => {

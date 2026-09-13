@@ -134,8 +134,8 @@ function assertDesignerScope(base: Design, proposal: Design) {
     const next = after.get(element.id), path = `/elements/${element.id}`;
     if (!next) { if (!ownsElement(element)) forbidden.push(path); continue; }
     if (ownsElement(element)) { if (!ownsElement(next)) forbidden.push(`${path}/kind`); continue; }
-    for (const key of Object.keys(element) as (keyof DesignElement)[]) {
-      if (key !== 'materialId' && !equal(element[key], next[key])) forbidden.push(`${path}/${key}`);
+    for (const key of new Set([...Object.keys(element), ...Object.keys(next)]) as Set<keyof DesignElement>) {
+      if (key !== 'materialId' && key !== 'assetMaterialOverride' && !equal(element[key], next[key])) forbidden.push(`${path}/${key}`);
     }
   }
   for (const element of proposal.elements) if (!before.has(element.id) && !ownsElement(element)) forbidden.push(`/elements/${element.id}`);

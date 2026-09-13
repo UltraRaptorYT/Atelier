@@ -3,10 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html, Line } from '@react-three/drei';
-import { Euler, Group, Mesh, Quaternion, Vector3 } from 'three';
+import { Group, Matrix3 } from 'three';
+import { readNavigationWorld } from '@/lib/navigation-world';
 import {
   canWalkSegment, findWalkPath, projectWalkPosition,
-  type NavigationBox, type NavigationPoint, type NavigationWorld,
+  type NavigationPoint, type NavigationWorld,
 } from '@/shared/navigation';
 
 type Props = {
@@ -15,29 +16,6 @@ type Props = {
   paused: boolean;
   onStatus: (message: string) => void;
 };
-
-// Read the exact box meshes used by the renderer and physics. There is no
-// separate hard-coded office map to drift away from the visible geometry.
-function readWorld(root: Group): NavigationWorld {
-  const world: NavigationWorld = { surfaces: [], obstacles: [] };
-  root.updateWorldMatrix(true, true);
-  root.traverse(object => {
-    if (!(object instanceof Mesh) || !object.userData.walkObstacle) return;
-    const dimensions = object.geometry.parameters;
-    if (!dimensions || !('width' in dimensions)) return;
-    const position = object.getWorldPosition(new Vector3());
-    const scale = object.getWorldScale(new Vector3());
-    const rotation = new Euler().setFromQuaternion(object.getWorldQuaternion(new Quaternion()), 'YXZ');
-    const box: NavigationBox = {
-      position: position.toArray(),
-      size: [dimensions.width * scale.x, dimensions.height * scale.y, dimensions.depth * scale.z],
-      rotation: rotation.y,
-    };
-    world.obstacles.push(box);
-    if (object.userData.walkSurface) world.surfaces.push(box);
-  });
-  return world;
-}
 
 function clearSpawn(world: NavigationWorld, spawn: NavigationPoint): NavigationPoint | null {
   const direct = projectWalkPosition(world, spawn, 3);
@@ -68,7 +46,7 @@ export default function ClickNavigation({ children, spawn, paused, onStatus }: P
 
   useLayoutEffect(() => {
     if (!root.current) return;
-    world.current = readWorld(root.current);
+    world.current = readNavigationWorld(root.current);
     const start = clearSpawn(world.current, spawn);
     position.current = start;
     remaining.current = [];
@@ -106,7 +84,8 @@ export default function ClickNavigation({ children, spawn, paused, onStatus }: P
     if (paused || event.delta > 5 || event.button !== 0 || !position.current) return;
     event.stopPropagation();
     const hit = event.intersections.find(intersection => intersection.object.userData.walkObstacle);
-    if (!hit?.object.userData.walkSurface || !hit.face || hit.face.normal.y < .9) {
+    const normal = hit?.face?.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
+    if (!hit?.object.userData.walkSurface || !normal || normal.y < .9) {
       stop('Choose a clear spot on the floor.');
       return;
     }

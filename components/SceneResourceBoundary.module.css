@@ -1,0 +1,6 @@
+.resource { width: 190px; padding: 9px 11px; border: 1px solid #d9d9c7; border-radius: 7px; background: #fafbf3f2; color: #53614a; font-size: 11px; line-height: 1.45; box-shadow: 0 2px 8px #344a2420; }
+.resource strong { display: block; font-size: 11px; overflow-wrap: anywhere; }
+.resource p { margin-top: 5px; color: #758369; }
+.resource button { margin-top: 7px; padding: 5px 8px; border-radius: 4px; background: #e5eddc; color: #455d35; font-size: 11px; }
+.resource button:hover { background: #d9e5cc; }
+.explanation { max-width: 350px; padding: 0 20px; text-align: center; font-size: 13px; line-height: 1.6; }

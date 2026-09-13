@@ -11,10 +11,34 @@ import { originalConceptId } from './images';
 import { changeFailedStatement } from './changes';
 import { dispatchClarification } from './clarifications';
 import { isRecoverableLiveError } from '../../shared/live-errors';
+import { openDesktopStream } from './desktop';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private voiceTargets = new Map<string, { agent: AgentId; elementId: string | null; meeting: boolean }>();
   private closingVoices = new Set<string>();
+  private desktopStreams = new Map<string, Promise<{ url: string }>>();
+  async desktopStream(projectId: string, owner: string, agent: AgentId, leaseId: string) {
+    try {
+      await ownedProject(this.env, projectId, owner);
+      const key = JSON.stringify([projectId, agent, leaseId]);
+      let opening = this.desktopStreams.get(key);
+      if (!opening) {
+        const operation = openDesktopStream(this.env, projectId, agent, leaseId).finally(() => {
+          if (this.desktopStreams.get(key) === operation) this.desktopStreams.delete(key);
+        });
+        opening = operation;
+        this.desktopStreams.set(key, operation);
+        // A browser abort cannot undo a provider rotation. Keep it alive here
+        // so a concurrent retry joins the same work instead of rotating again.
+        this.ctx.waitUntil(operation.then(() => {}, () => {}));
+      }
+      return { ok: true as const, ...await opening };
+    } catch (error) {
+      // RPC serialization loses Error prototypes; return only trusted copy.
+      return { ok: false as const, status: error instanceof HttpError ? error.status : 502,
+        message: error instanceof HttpError ? error.message : 'The live computer could not open. Retry the viewer or inspect saved files.' };
+    }
+  }
   async publish(projectId: string, baseRevision: number, operationId: string, design: Design) {
     try { return { ok: true as const, revision: await this.commit(projectId, baseRevision, operationId, design) }; }
     catch (error) {

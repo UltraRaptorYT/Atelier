@@ -19,7 +19,7 @@ const final = { status: 'completed', output: [], output_text: '{"accepted":true}
 const call = (id: string, args: unknown, name = 'report_coordination') => ({ type: 'function_call', call_id: id, name, arguments: JSON.stringify(args) });
 const round = (...output: ReturnType<typeof call>[]) => ({ status: 'completed', output, output_text: '' });
 function context() {
-  return { projectId: 'project-1', taskId: 'run-1-interior', design: null, communications: [] as Array<{ target: AgentId; message: string }>, desktop: { files: { read: vi.fn().mockResolvedValue('{"notes":["Keep the courtyard"]}'), write: vi.fn() }, commands: { run: vi.fn() } } };
+  return { projectId: 'project-1', taskId: 'run-1-interior', design: null, communications: [] as Array<{ target: AgentId; message: string }>, desktop: { launch: vi.fn().mockResolvedValue(undefined), files: { read: vi.fn().mockResolvedValue('{"notes":["Keep the courtyard"]}'), write: vi.fn() }, commands: { run: vi.fn() } } };
 }
 const notes = () => mocks.emit.mock.calls.filter(([, , type]) => type === 'agent_message');
 const outputs = () => mocks.create.mock.calls.at(-1)![0].input.filter((item: { type?: string }) => item.type === 'function_call_output');
@@ -92,13 +92,13 @@ describe('bounded operational agent tools', () => {
     expect(mocks.emit).not.toHaveBeenCalled();
   });
 
-  it('stops repeated tool failures at the existing twelve-round limit with no automatic provider retries', async () => {
+  it('stops repeated tool failures at the existing twelve-round limit without replaying local tools across provider request retries', async () => {
     const ctx = context();
     mocks.create.mockImplementation(async () => round(call(`invalid-${mocks.create.mock.calls.length}`, { target: 'unknown', message: 'Escalate.' })));
     await expect(modelJSON(env, 'owner', 'designer', 'Develop interiors.', schema, ctx as never)).rejects.toMatchObject({ status: 422, message: expect.stringMatching(/tool limit/) });
     expect(mocks.create).toHaveBeenCalledTimes(12);
     expect(mocks.create.mock.calls.at(-1)![0].tool_choice).toBe('none');
-    expect(mocks.constructor).toHaveBeenCalledWith({ apiKey: 'test-key', maxRetries: 0, timeout: 120000 });
+    expect(mocks.constructor).toHaveBeenCalledWith({ apiKey: 'test-key', maxRetries: 1, timeout: 120000 });
     expect(ctx.communications).toEqual([]); expect(notes()).toHaveLength(0);
   });
 });

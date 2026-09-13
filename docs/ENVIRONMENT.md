@@ -39,7 +39,7 @@ Those commands consume E2B compute; run them only when your account and budget a
 
 Create an OpenAI project API key with access to `gpt-6-astra`, `gpt-live-1`, Responses, and Live sessions. Open Atelier → Settings → connect your OpenAI key. One normal project key authenticates both models; there is no separate Astra-specific key. API usage is billed to that OpenAI project.
 
-There is intentionally no `OPENAI_API_KEY` environment variable in this application. Each user supplies their own key. The Worker verifies and encrypts it in D1; it is never returned after saving or passed into an E2B sandbox. Do not put it in a `NEXT_PUBLIC_*` variable or paste it into chat. Saving a key verifies authentication, not every model permission; a real design/voice request is still needed to verify access.
+Users can supply their own key in Settings; the Worker verifies and encrypts it in D1. An optional `OPENAI_API_KEY` Worker secret supplies an environment fallback when the user has no saved key. Neither key is returned to the browser or passed into an E2B sandbox. Do not put it in a `NEXT_PUBLIC_*` variable or paste it into chat. Saving a key verifies authentication, not every model permission; a real design/voice request is still needed to verify access.
 
 ## 4. Models and feature gates: `worker/wrangler.jsonc`
 
@@ -47,6 +47,7 @@ These are already set in each environment's `vars` block:
 
 ```json
 "OPENAI_MODEL": "gpt-6-astra",
+"OPENAI_REASONING_EFFORT": "max",
 "VOICE_MODEL": "gpt-live-1",
 "GENERATION_ENABLED": "false",
 "RENDER_ENABLED": "false",
@@ -54,9 +55,11 @@ These are already set in each environment's `vars` block:
 "E2B_TEMPLATE": "atelier-desktop"
 ```
 
-Astra uses Responses for the four specialists and the delegated voice tools. GPT-Live handles native speech and transcript deltas over WebRTC; no separate Whisper/STT/TTS service or key is needed. Voice delegation uses low reasoning effort; design calls retain their existing API-default reasoning behavior.
+Astra uses Responses for the four specialists and the delegated voice tools. GPT-Live handles native speech and transcript deltas over WebRTC; no separate Whisper/STT/TTS service or key is needed. The design team uses explicit `max` reasoning for planning, architectural modeling, interior work, visual review, and conflict resolution. `max` is Astra’s highest documented API effort; `ultra` is not a supported Responses API value. Conversation routing, the initial clarification meeting, and brief normalization keep their existing API-default behavior; voice delegation uses `low`. Higher reasoning effort may take longer and use more tokens; it does not replace the canonical geometry contract or rendered checks.
 
-Keep generation and render gates false until setup is complete. The current generation workflow requires the verified E2B desktop template. Voice uses no E2B desktop but incurs GPT-LIVE-1 session usage plus any delegated Astra calls. API access has not yet been tested in this workspace.
+Keep generation and render gates false until setup is complete. The current generation workflow requires the verified E2B desktop template. Voice uses no E2B desktop but incurs GPT-LIVE-1 session usage plus any delegated Astra calls. Check the running `/capabilities` response for actual feature gates and `runtimeProfile` model/effort settings; local CLI overrides can differ from checked-in defaults. Each new run saves `generation-profile.json` so the actual configuration can be compared with the deployed Worker. These fingerprints are diagnostic evidence, not proof of matching generated quality or provider access.
+
+Structured calls through `modelJSON` have a 64,000-token per-response allowance, including reasoning and visible output, defined by `MODEL_MAX_OUTPUT_TOKENS` in [model-settings.ts](../worker/src/model-settings.ts). Agent instructions and reasoning settings are preserved. Task and request deadlines remain separate limits. Runtime profile version 2 records this allowance in `limits.modelOutputTokens`. Incomplete responses distinguish token exhaustion, content filtering and an unspecified incomplete result; server diagnostics record the response ID, reason and token counts without logging prompts or generated content. **Retry team briefing** starts a new attempt in the same project using its saved brief and answers; the failed attempt remains in history.
 
 ## 5. Vercel and Cloudflare deployment
 
@@ -64,6 +67,6 @@ On Vercel, enter the three Next.js variables in the project's environment settin
 
 On Cloudflare, store `CLERK_SECRET_KEY`, `E2B_API_KEY`, and `KEY_ENCRYPTION_KEYS` as **Worker secrets** for the selected environment. `CLERK_JWT_KEY` remains optional. Use an independent encryption key for each environment. D1/R2 IDs and bindings, `APP_ORIGIN`, models, and feature gates belong in the matching Wrangler environment. D1 and R2 use bindings, so the app does not need `DATABASE_URL` or an R2 access key.
 
-No Vercel or Cloudflare deployment token belongs in the browser or the app env files. CLI authentication is separate. Resources have not been provisioned; the resource/cost review in [DEPLOYMENT.md](DEPLOYMENT.md) still applies.
+No Vercel or Cloudflare deployment token belongs in the browser or the app env files. CLI authentication is separate. The production resources recorded in Wrangler have been provisioned; verify the target bindings and migrations before deployment. The resource/cost review in [DEPLOYMENT.md](DEPLOYMENT.md) still applies.
 
 Documentation checked before migration: [GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), [Astra migration](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra.md#migration-quickstart), [Live WebRTC](https://developers.openai.com/api/docs/guides/voice-webrtc?api=live), [Live migration](https://developers.openai.com/api/docs/guides/live-migration), [Live delegation](https://developers.openai.com/api/docs/guides/live-delegation), [Live lifecycle](https://developers.openai.com/api/docs/guides/live-conversations).

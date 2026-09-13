@@ -1,0 +1,4 @@
+.card { margin: 18px 20px; padding: 18px; border: 1px solid #d7dfcc; border-radius: 9px; background: #f3f6eb; }
+.card h3 { margin-top: 9px; font-size: 17px; font-weight: 550; line-height: 1.4; }
+.card p { margin-top: 10px; color: #748265; font-size: 12px; line-height: 1.6; }
+.card button { margin-top: 15px; }

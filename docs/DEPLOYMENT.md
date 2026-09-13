@@ -1,8 +1,52 @@
 # Deployment and resource review
 
+## Current deployment status: 2026-09-13
+
+The user has requested local testing first; the deployment was set up from a
+friend's machine. Do not publish or require deployment login for local
+verification. `wrangler dev --env local` emulates Cloudflare services locally;
+live generation still uses the configured OpenAI and E2B services.
+
+The existing frontend is hosted at
+<https://atelier-architecture-studio.z3e0.chatgpt.site>, with API Worker
+<https://atelier-api-production.ultraraptor.workers.dev>. Reuse the Sites project
+ID recorded in [`.openai/hosting.json`](../.openai/hosting.json). The resource
+proposal below is historical; do not recreate resources from it.
+
+A read-only check found the public frontend and Worker reachable, but the Worker
+did not expose the new runtime profile and the frontend bundle lacked the recent
+connection/recovery changes. This is evidence that the local updates still need
+deployment. It does not establish the deployed model or reasoning effort.
+The Sites connector could not access the recorded project, and local Cloudflare
+deployment authentication was unavailable. An account/workspace mismatch is a
+possible cause of the Sites access failure, not a confirmed diagnosis.
+
+To restore access, use the ChatGPT account/workspace that can edit the existing
+Atelier Site at <https://chatgpt.com/sites>. For Cloudflare, run
+`npx wrangler login` in this repository and complete authentication with the
+account owning `atelier-api-production`; `npx wrangler whoami` verifies the
+result. Login alone does not deploy. Keep credentials out of messages and Git.
+
+After access is available, inspect production migrations and bindings, apply
+the required migrations before publishing the new Worker, and build the matching
+frontend with `npm run build:sites`. This writes the deployment package to `dist`;
+`npm run build` produces the separate standard Next application. Push the exact
+source revision before saving/publishing a Sites version. Preserve the existing
+Site ID, audience and secrets. A real signed-in browser journey through the Site
+is still required; direct backend tests do not verify its authentication adapter.
+
+The latest local Astra/max verification failed in planning before creating any
+workstation leases or geometry. Its temporary run-specific allowance was removed.
+See [the diagnostic record](model-quality-diagnosis.md#live-astra-verification-stopped-before-delegation).
+
+## Historical resource proposal
+
 **Superseded budget:** the user now requires free infrastructure and has confirmed existing OpenAI API Platform credits for Astra. The paid beta estimate and provisioning steps below are historical options, not the active execution plan. Follow [FREE-MODE.md](FREE-MODE.md); OpenAI credits do not authorize paid hosting or E2B compute.
 
-Prepared 2026-09-13. **Nothing in this document has been provisioned.** The user requested a resource/cost review before database provisioning. Keep this review as the checkpoint before creating the services below.
+Prepared before provisioning on 2026-09-13. The user requested a resource/cost
+review before creating services. Later approved provisioning and deployment
+supersede that initial status; check the current configuration and account state
+before any further resource changes.
 
 **Hosting update:** [Sites and Blender compute assessment](SITES-AND-COMPUTE.md) evaluates Sites as an alternative frontend host. The Vercel instructions and estimate below remain the existing baseline until that migration is validated and Sites account allowances are confirmed. Backend storage and E2B compute stay separate in either option.
 
@@ -76,7 +120,7 @@ Complete [verification](VERIFICATION.md) on staging. For production, create the 
 ## Operations
 
 - Turn `GENERATION_ENABLED` false and redeploy to stop new generation/voice admission. Cancel active runs through the authenticated UI and confirm E2B shutdown when an immediate stop is required; already-running Workflow versions can retain their original environment snapshot.
-- A reservation charges the complete 15-minute allowance conservatively, including idle time. It is not refunded on early completion. Four reservations exhaust one user's 60-minute daily allowance.
+- Admission reserves a bounded workstation allowance. Confirmed release records actual elapsed use; an unconfirmed shutdown retains its conservative reservation until expiry. Check the current lease ledger instead of estimating daily usage from the number of reservations.
 - Idle desktops shut down after two minutes without work/viewer heartbeat. A failed kill retains its slot until the provider timeout. No job extends a desktop beyond its bounded lease.
 - Set alerts at approximately 50%, 80% and 95% of the service allowances. Check actual E2B billing against reserved usage. Keep Vercel usage controls and account notifications enabled.
 - R2 buckets stay private. Do not enable `r2.dev` or public custom domains. Artifact and desktop URLs are returned only after ownership checks.

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { DesignWorkflow } from '../worker/src/workflow';
 import { modelJSON } from '../worker/src/ai';
 import { reviewMeeting } from '../worker/src/meeting';
@@ -14,6 +15,7 @@ import { DesignEditsSchema, type DesignEdits } from '../shared/design-edits';
 import { DesignMergeConflict, mergeDesignProposal, type CollaborationPlan } from '../shared/collaboration';
 import type { Bindings, ProjectRow, RunParams } from '../worker/src/types';
 import { HttpError } from '../worker/src/security';
+import { ModelRequestTimeoutError, TaskTimeBudget } from '../worker/src/task-time';
 
 vi.mock('cloudflare:workers', () => ({
   WorkflowEntrypoint: class {
@@ -30,7 +32,7 @@ vi.mock('../worker/src/images', async importOriginal => ({
   generateStudy: vi.fn(), loadImageReference: vi.fn(), loadConceptContext: vi.fn(),
   visualReferenceInstructions: 'Treat the image as visual intent; accepted changes override older image features.',
 }));
-vi.mock('../worker/src/desktop', () => ({ createDesktop: vi.fn(), idleDesktop: vi.fn(), releaseDesktop: vi.fn(), syncDesktop: vi.fn(), checkpointDesktop: vi.fn() }));
+vi.mock('../worker/src/desktop', () => ({ createDesktop: vi.fn(), idleDesktop: vi.fn(), releaseDesktop: vi.fn(), syncDesktop: vi.fn(), checkpointDesktop: vi.fn(), prepareProposalAuthoring: vi.fn(), prepareProposalDesktop: vi.fn(), runVisible: vi.fn(async (desktop, command) => desktop.commands.run(command)) }));
 vi.mock('@e2b/desktop', () => ({ Sandbox: { connect: vi.fn() } }));
 
 const brief = { request: 'A courtyard home for four people.', summary: 'Courtyard home', goals: [], constraints: ['Keep the courtyard'], questions: [] };
@@ -116,7 +118,7 @@ function standardResult(agent: AgentId, prompt: string, current: Design | null =
 }
 let mf: Miniflare;
 let storage: Pick<Bindings, 'DB' | 'FILES'>;
-let previewFailure: 'command-error' | 'invalid-png' | 'stale-revision' | 'wrong-view' | 'wrong-dimensions' | null;
+let previewFailure: 'command-error' | 'invalid-png' | 'stale-revision' | 'wrong-view' | 'wrong-dimensions' | 'wrong-hash' | null;
 
 beforeAll(async () => {
   mf = new Miniflare(convertV4MiniflareOptions({
@@ -134,20 +136,20 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(reviewMeeting).mockResolvedValue([]);
   previewFailure = null;
-  let previewRevision = 0, previewElementCount = 0;
+  let previewRevision = 0, previewElementCount = 0, previewHash = '';
   study.mockImplementation(async (_env, params, stage) => `${params.runId}-${stage}.png`);
   loadReference.mockResolvedValue({ bytes: new Uint8Array([1]), mime: 'image/png', dataUrl: reference });
   loadContext.mockResolvedValue({ bytes: new Uint8Array([1]), mime: 'image/png', dataUrl: reference });
   const desktop = {
-    files: { write: vi.fn().mockResolvedValue(undefined), read: vi.fn(async (path: string) => {
+    files: { write: vi.fn(async (path: string, data: string) => { if (path.endsWith('/review-design.json')) previewHash = createHash('sha256').update(data).digest('hex'); }), read: vi.fn(async (path: string) => {
       if (path.endsWith('.png')) return previewFailure === 'invalid-png' ? new Uint8Array([1, 2, 3]) : previewBytes;
-      const view = /preview-(front|rear)\.json$/.exec(path)?.[1];
+      const view = /preview-(front|rear|plan_ground|plan_upper|interior)\.json$/.exec(path)?.[1];
       if (!view) return '{}';
       return JSON.stringify({
         revision: previewRevision - (previewFailure === 'stale-revision' ? 1 : 0),
         view: previewFailure === 'wrong-view' ? (view === 'front' ? 'rear' : 'front') : view,
-        camera: { position: [10, 8, view === 'front' ? -10 : 10], target: [0, 2, 0], front: [0, view === 'front' ? -1 : 1] },
-        resolution: [previewFailure === 'wrong-dimensions' ? 2 : 1, 1], samples: 8, source: 'canonical design', elements: previewElementCount,
+        camera: { position: [10, 8, view === 'front' ? -10 : 10], target: [0, 2, 0], ...(view === 'front' || view === 'rear' ? { front: [0, view === 'front' ? -1 : 1] } : view.startsWith('plan_') ? { orthographic: true, orthoScale: 18, floor: view === 'plan_upper' ? 1 : 0, cutHeight: 1.2 } : { lens: 22, floor: 0, spaceId: 'living', cameraObstructions: 0 }) },
+        resolution: [previewFailure === 'wrong-dimensions' ? 2 : 1, 1], samples: 8, source: 'canonical design', designHash: previewFailure === 'wrong-hash' ? '0'.repeat(64) : previewHash, elements: previewElementCount,
       });
     }) },
     commands: { run: vi.fn(async (command: string) => {
@@ -207,13 +209,14 @@ async function fixture(kind: RunParams['kind'], revision = 0, referenceArtifactI
   const scheduleChanges = vi.fn().mockResolvedValue(undefined);
   const env = { ...storage, IMAGE_GENERATION_ENABLED: 'true', PROJECTS: { getByName: () => ({ commit, commitProposal, scheduleChanges }) } } as unknown as Bindings;
   const steps: string[] = [];
+  const stepFailures: { name: string; error: string }[] = [];
   const cached = new Map<string, Promise<unknown>>();
   const step = {
     do: async (name: string, ...args: unknown[]) => {
       steps.push(name);
       // Real WorkflowStep serializes both values and thrown exceptions; custom
       // Error subclasses lose their prototypes at the checkpoint boundary.
-      if (!cached.has(name)) cached.set(name, (args.at(-1) as () => Promise<unknown>)().then(result => structuredClone(result), error => { throw structuredClone(error); }));
+      if (!cached.has(name)) cached.set(name, (args.at(-1) as () => Promise<unknown>)().then(result => structuredClone(result), error => { stepFailures.push({ name, error: String(error) }); throw structuredClone(error); }));
       return cached.get(name);
     },
     sleep: vi.fn().mockRejectedValue(new Error('Unexpected desktop queue wait')),
@@ -227,7 +230,7 @@ async function fixture(kind: RunParams['kind'], revision = 0, referenceArtifactI
   const design = async () => { const saved = await row(); return saved.design_key ? await (await storage.FILES.get(saved.design_key))!.json<Design>() : null; };
   const tasks = async () => (await storage.DB.prepare('SELECT * FROM tasks WHERE run_id = ?').bind(runId).all()).results;
   const events = async () => (await storage.DB.prepare('SELECT type,message FROM events WHERE project_id = ? ORDER BY id').bind(projectId).all<{type:string;message:string}>()).results;
-  return { env, params, commit, commitProposal, scheduleChanges, step, steps, run, row, status, design, tasks, events, initialDesign };
+  return { env, params, commit, commitProposal, scheduleChanges, step, steps, stepFailures, run, row, status, design, tasks, events, initialDesign };
 }
 
 async function trackChange(task: Awaited<ReturnType<typeof fixture>>) {
@@ -361,7 +364,8 @@ describe('visual references across the real workflow branch', () => {
     expect(specialistCalls().find(call => kindOf(call[3]) === 'architecture')?.[4]).toBe(DesignSchema);
     expect(specialistCalls().find(call => kindOf(call[3]) === 'interior')?.[4]).toBe(DesignEditsSchema);
     for (const call of specialistCalls()) {
-      expect(call[6]).toEqual(call[2] === 'critic' ? [reference, reference, reference] : [reference]);
+      expect(call[7]).toBe('max');
+      expect(call[6]).toEqual(call[2] === 'critic' ? Array(5).fill(reference) : [reference]);
       expect(call[3]).toContain(frozenId);
       expect(call[3]).not.toContain('later-user-selected-image.png');
     }
@@ -402,7 +406,7 @@ describe('visual references across the real workflow branch', () => {
     expect(study).not.toHaveBeenCalled();
     expect(loadReference).not.toHaveBeenCalled();
     expect(model.mock.calls.map(([, , agent]) => agent)).toEqual(['principal', 'critic']);
-    expect(model.mock.calls.at(-1)?.[6]).toEqual([reference, reference]);
+    expect(model.mock.calls.at(-1)?.[6]).toEqual(Array(4).fill(reference));
     expect(task.commit).toHaveBeenCalledTimes(1);
     expect(task.commit.mock.calls[0][3]).toEqual(recolor(task.initialDesign!, 'front-left', '#ff0000'));
     expect(createDesktop.mock.calls.map(([, , , agent]) => agent)).toEqual(['critic']);
@@ -522,8 +526,75 @@ describe('visual references across the real workflow branch', () => {
   });
 });
 
+describe('bounded model work through serialized Workflow checkpoints', () => {
+  it('keeps cancellation authoritative when a pending model later times out', async () => {
+    const task = await fixture('change', 1), release = deferred();
+    let planning = false;
+    model.mockImplementation(async (_env, _owner, agent, prompt, _schema, context) => {
+      if (prompt.startsWith('Create a dependency plan')) {
+        planning = true;
+        await release.promise;
+        throw new ModelRequestTimeoutError('Principal architect', 480000);
+      }
+      return standardResult(agent, prompt, context?.design);
+    });
+    const running = task.run();
+    try {
+      await expect.poll(() => planning, workflowPollOptions).toBe(true);
+      await storage.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ?").bind(task.params.runId).run();
+    } finally { release.resolve(); await running; }
+    expect(await task.status()).toBe('cancelled');
+    expect((await task.events()).filter(event => event.type === 'error')).toEqual([{ type: 'error', message: 'Work cancelled. Saved revisions are preserved.' }]);
+    expect(JSON.stringify(await task.tasks())).not.toContain('480-second allowance');
+    expect(task.commit).not.toHaveBeenCalled();
+  });
+
+  it.each(['brief', 'plan', 'specialist'] as const)('preserves the actionable %s timeout and saved design without repeating model work on replay', async stage => {
+    const task = await fixture(stage === 'brief' ? 'generate' : 'change', stage === 'brief' ? 0 : 1);
+    const timeout = new ModelRequestTimeoutError(stage === 'specialist' ? 'Architect' : 'Principal architect', 480000);
+    let rejectedCalls = 0;
+    model.mockImplementation(async (_env, _owner, agent, prompt, _schema, context) => {
+      const matches = stage === 'brief' ? prompt.startsWith('Prepare a structured brief')
+        : stage === 'plan' ? prompt.startsWith('Create a dependency plan') : kindOf(prompt) === 'architecture';
+      if (matches) { rejectedCalls++; throw timeout; }
+      return standardResult(agent, prompt, context?.design);
+    });
+    task.step.do = vi.fn(task.step.do);
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    expect((await task.events()).filter(event => event.type === 'error')).toEqual([{ type: 'error', message: timeout.message }]);
+    expect((await task.tasks()).filter(item => item.status === 'failed').every(item => item.detail === timeout.message)).toBe(true);
+    const stepName = stage === 'brief' ? 'principal-brief' : stage === 'plan' ? 'team-0-plan' : 'team-0-task-0-work';
+    const receipt = vi.mocked(task.step.do).mock.calls.find(([name]) => name === stepName);
+    expect(receipt?.[1]).toMatchObject({ retries: { limit: 0 }, timeout: '10 minutes' });
+    if (stage === 'plan') expect(model.mock.calls.find(call => call[3].startsWith('Create a dependency plan'))?.[7]).toBe('max');
+    if (stage === 'specialist') {
+      expect(releaseDesktop).toHaveBeenCalled();
+      const direction = model.mock.calls.find(call => kindOf(call[3]) === 'visual_direction');
+      expect(direction?.[8]).toBeInstanceOf(TaskTimeBudget);
+    } else expect(createDesktop).not.toHaveBeenCalled();
+    expect(task.commit).not.toHaveBeenCalled();
+    expect(await task.design()).toEqual(task.initialDesign);
+    await task.run();
+    expect(rejectedCalls).toBe(1);
+  });
+
+  it.each([new Error('private-provider-detail secret-token'), { name: 'HttpError', status: 408, message: 'private-provider-detail secret-token' }])('keeps untrusted planning failure details private', async error => {
+    const task = await fixture('change', 1);
+    model.mockImplementation(async (_env, _owner, agent, prompt, _schema, context) => {
+      if (prompt.startsWith('Create a dependency plan')) throw error;
+      return standardResult(agent, prompt, context?.design);
+    });
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    expect((await task.events()).find(event => event.type === 'error')?.message).toContain('The run stopped before completion.');
+    expect(JSON.stringify([await task.events(), await task.tasks()])).not.toMatch(/private-provider-detail|secret-token/);
+    expect(task.commit).not.toHaveBeenCalled();
+  });
+});
+
 describe('canonical visual review evidence', () => {
-  it('saves the extracted contract before planning and gives the Critic two revision-bound model previews', async () => {
+  it('saves the extracted contract before planning and gives the Critic exterior, plan and interior previews bound to the canonical revision', async () => {
     const task = await fixture('generate', 0, 'selected-direction.png');
     await task.run();
     expect(await task.status()).toBe('completed');
@@ -536,13 +607,13 @@ describe('canonical visual review evidence', () => {
     expect(model.mock.calls[planningIndex][6]).toEqual([reference]);
     const critic = specialistCalls().find(call => call[2] === 'critic')!;
     expect(critic[5]?.design).toEqual(await task.design());
-    expect(critic[6]).toEqual([reference, reference, reference]);
+    expect(critic[6]).toEqual(Array(5).fill(reference));
     const evidence = JSON.parse(/^Canonical render evidence: (.+)$/m.exec(critic[3])![1]) as {
       revision: number; referenceArtifactId: string; unavailable: string[];
       views: { view: string; artifactId: string; metadataArtifactId: string }[];
     };
     expect(evidence).toMatchObject({ revision: 2, referenceArtifactId: 'selected-direction.png', unavailable: [] });
-    expect(evidence.views.map(view => view.view)).toEqual(['front', 'rear']);
+    expect(evidence.views.map(view => view.view)).toEqual(['front', 'rear', 'plan_ground', 'interior']);
     for (const view of evidence.views) {
       const png = await storage.DB.prepare('SELECT object_key,revision,kind FROM artifacts WHERE project_id = ? AND id = ?').bind(task.params.projectId, view.artifactId).first<{ object_key: string; revision: number; kind: string }>();
       expect(png).toMatchObject({ revision: 2, kind: 'render' });
@@ -553,13 +624,13 @@ describe('canonical visual review evidence', () => {
     }
     const desktop = await vi.mocked(Sandbox.connect).mock.results.at(-1)!.value;
     const commands = vi.mocked(desktop.commands.run).mock.calls.map(call => String(call[0])).filter(command => command.includes('--preview'));
-    expect(commands).toHaveLength(2);
+    expect(commands).toHaveLength(4);
     expect(commands[0]).toContain('--preview --view front --revision 2');
     expect(commands[1]).toContain('--preview --view rear --revision 2');
     expect(study).not.toHaveBeenCalled();
   });
 
-  it.each(['command-error', 'invalid-png', 'stale-revision', 'wrong-view', 'wrong-dimensions'] as const)('keeps direct 3D in review when canonical evidence has %s', async failure => {
+  it.each(['command-error', 'invalid-png', 'stale-revision', 'wrong-view', 'wrong-dimensions', 'wrong-hash'] as const)('keeps direct 3D in review when canonical evidence has %s', async failure => {
     previewFailure = failure;
     const task = await fixture('generate');
     await task.run();
@@ -601,6 +672,21 @@ describe('canonical visual review evidence', () => {
 });
 
 describe('dependency-driven specialist collaboration', () => {
+  it('saves accepted results before optional workstation capture and continues when the GUI fails', async () => {
+    const task = await fixture('generate');
+    vi.mocked(checkpointDesktop).mockImplementation(async (_env, projectId, prefix) => {
+      const result = await storage.DB.prepare('SELECT id FROM artifacts WHERE project_id = ? AND id = ?')
+        .bind(projectId, `${prefix}-result.json`).first();
+      expect(result).not.toBeNull();
+      throw new Error('Window manager unavailable');
+    });
+    await task.run();
+    expect(checkpointDesktop).toHaveBeenCalled();
+    expect(await task.status()).toBe('completed');
+    expect((await task.row()).revision).toBe(2);
+    expect(task.stepFailures.filter(item => item.name.endsWith('-workstation-capture'))).toHaveLength(3);
+    expect(model.mock.calls.filter(([, , agent, prompt]) => agent === 'principal' && prompt.startsWith('Create a dependency plan')).every(call => call[7] === 'max')).toBe(true);
+  });
   it('starts independent roles together, waits for both, and passes their saved results to the dependent interior task', async () => {
     const task = await fixture('generate');
     const release = deferred(), started = new Set<string>();
@@ -656,7 +742,7 @@ describe('dependency-driven specialist collaboration', () => {
     const running = task.run();
     try { await expect.poll(() => [...started].sort(), workflowPollOptions).toEqual(['architecture', 'interior']); }
     finally { release.resolve(); await running; }
-    expect(await task.status()).toBe('completed');
+    expect(await task.status(), JSON.stringify({ steps: task.stepFailures, events: await task.events() })).toBe('completed');
     expect(task.commitProposal.mock.calls.map(([, base]) => base)).toEqual([1, 1]);
     const saved = (await task.design())!;
     expect(saved.elements.find(element => element.id === 'roof')!.position[1]).toBe(task.initialDesign!.elements.find(element => element.id === 'roof')!.position[1] + .25);
@@ -954,7 +1040,7 @@ describe('visual reference continuity at workflow boundaries', () => {
     expect(await task.status()).toBe('completed');
     expect(study).not.toHaveBeenCalled();
     expect(specialistCalls().length).toBeGreaterThanOrEqual(4);
-    for (const call of specialistCalls()) expect(call[6]).toEqual([...(selected ? [reference] : []), ...(call[2] === 'critic' ? [reference, reference] : [])]);
+    for (const call of specialistCalls()) expect(call[6]).toEqual([...(selected ? [reference] : []), ...(call[2] === 'critic' ? Array(4).fill(reference) : [])]);
     expect(model.mock.calls.filter(call => isExtraction(call[3]))).toHaveLength(selected ? 1 : 0);
     if (selected) expect(loadReference.mock.calls.every(([, , id]) => id === selected)).toBe(true);
     else expect(loadReference).not.toHaveBeenCalled();
@@ -990,7 +1076,7 @@ describe('visual reference continuity at workflow boundaries', () => {
     expect(study).not.toHaveBeenCalled();
     expect(specialistCalls()).toHaveLength(6);
     for (const call of specialistCalls()) {
-      expect(call[6]).toEqual(call[2] === 'critic' ? [reference, reference, reference] : [reference]);
+      expect(call[6]).toEqual(call[2] === 'critic' ? Array(5).fill(reference) : [reference]);
       expect(call[3]).toContain(`Visual reference artifact: ${selected}`);
       expect(call[3]).toContain(task.params.instruction);
       expect(call[3]).not.toContain('Visual reference artifact: later-user-selected-image.png');

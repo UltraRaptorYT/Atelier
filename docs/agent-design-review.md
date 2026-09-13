@@ -6,6 +6,8 @@ This review describes code and automated coverage. This documentation update did
 
 ## Current execution model
 
+Structured agent responses allow up to 64,000 tokens, including reasoning, without reducing the agent instructions or reasoning settings. Runtime profiles record that limit. Incomplete responses are rejected before tool execution; token exhaustion is distinguished from content filtering and unknown incomplete outcomes, with safe token-count diagnostics in server logs. The independent task deadlines remain enforced.
+
 The Principal produces a validated plan of **2–8 tasks**. IDs, ownership, dependencies and cycles are checked before execution. Every plan includes canonical design work and a final Critic review that transitively depends on **every other task**, including visual studies and preliminary reviews. A first design requires architecture and interior tasks, with interior work depending transitively on architecture.
 
 | Task kind | Owner | Persistent output |
@@ -65,15 +67,15 @@ A generation clarification persists versioned question IDs and leaves the run `a
 
 ### Required geometry evidence
 
-[reviewDesign()](../shared/design.ts) checks a small set of omissions and narrow spaces. It does not establish supported spawn, room reachability, actual door openings, enclosure, stair headroom or image-to-model correspondence. The final review still returns string findings and a summary, without mandatory evidence coverage, severity, affected IDs or an explicit unknown verdict.
+[reviewDesign()](../shared/design.ts) checks a small set of omissions and narrow spaces. It does not establish supported spawn, room reachability, actual door openings, enclosure or stair headroom. Final review now requires current canonical renders with matching source hashes: front/rear, ground plan, first upper plan when present, and an interior view. Selected concepts additionally require landmark assessments citing current elements and evidence. General findings still lack structured severity and affected IDs. For three/four-floor projects, plans above the first upper floor and comprehensive room-by-room interior evidence remain missing.
 
 The walking controllers check real collision and floor support for navigation, but those runtime checks are not automatically used as a generation acceptance gate. Add revision-bound deterministic geometry checks and a small structured review contract. The existing correction loop can then act on supported failures and missing evidence. See [first-person.ts](../shared/first-person.ts), [navigation.ts](../shared/navigation.ts) and [team.ts](../worker/src/team.ts).
 
 ### Workstation views and presentation
 
-The standard workstation opens a room table and JSON source. Its automatic screenshot shows that interface; it does not automatically provide floor plans, elevations, a stair section or a building viewport. Agents have real tools, but a source-table screenshot cannot substantiate an observed assembly review. Blender compilation and presentation rendering remain a separate requested workflow. See [desktop.ts](../worker/src/desktop.ts) and [workflow.ts](../worker/src/workflow.ts).
+The standard workstation opens a room table and JSON source, but design tasks now also author a bounded candidate file and call `inspect_proposal`. This produces actual candidate exterior/plan/interior images before submission, with up to two inspection attempts. A later `submit_proposal` call verifies the content has not changed; the model's final response contains only a summary. The Critic independently renders the combined canonical revision. These images provide geometry evidence; a source-table screenshot alone does not. Presentation-quality export remains a separate requested workflow. See [proposals.ts](../worker/src/proposals.ts), [authoring helpers](../scripts/design_authoring.py) and [workflow.ts](../worker/src/workflow.ts).
 
-The Presentation room still contains a fixed exhibit. The accepted building is explorable through **Design → Walk inside** or **Click to walk**; entering the office’s Presentation room does not yet open that design. Connect a revision-aware exhibit and an in-world walkthrough entry to complete the spatial handoff. Spline scenes and imported assets also need explicit viewer and collider integration; the local Blender/Spline authoring tools do not provide this automatically.
+The Presentation room shows the current canonical miniature. Its **Walk inside saved design** action and nearby E interaction enter the latest saved building at its authored spawn, including models whose review remains open. A return control leads back to the exhibit. The Design view also supports **Walk inside** and **Click to walk**. Automated tests cover saved-revision selection, review labels and entry availability; this change did not verify the handoff in a live browser. Spline scenes and imported assets still need explicit viewer and collider integration; local Blender/Spline authoring tools do not provide this automatically.
 
 ### Smaller state and schema gaps
 
@@ -85,7 +87,7 @@ The Presentation room still contains a fixed exhibit. The accepted building is e
 
 ## Geometry contract
 
-The application schema supports 1–4 floors, up to 40 spaces and 1,200 elements, basic materials, yaw-rotated boxes and procedural stairs. Door/window elements do not subtract openings from walls. `asset` elements currently remain boxes, and the browser’s light elements do not provide an independently authored lighting rig. The Worker’s Blender compiler uses the same elementary geometry and adds its presentation lighting.
+The application schema supports 1–4 floors, up to 40 spaces and 1,200 elements, yaw-rotated boxes, procedural stairs and bounded normalized triangle meshes. A design permits up to 60,000 mesh vertices/100,000 triangles. Browser/Blender geometry and walking collisions share that contract. Door/window records do not subtract openings automatically; the reusable wall helpers generate actual apertures, headers and sills. Explicit opacity/transmission separates opaque frames from glass. Registered GLB assets retain authored materials and UVs unless `assetMaterialOverride` is set. The browser's light elements still do not provide an independently authored lighting rig.
 
 Project-specific local Blender/Spline scripts may interpret extra authoring metadata. Those extensions are not part of the application’s validated geometry or its walkable scene. Any general extension needs coordinated schema, browser, export, validation and navigation changes. See [geometry.ts](../shared/geometry.ts), [blender_compile.py](../scripts/blender_compile.py), [Blender tooling](blender-mcp.md) and [walkthrough requirements](walkthrough.md).
 
@@ -102,4 +104,4 @@ Relevant automated suites are:
 
 Run `npm test` and `npm run typecheck` for the repository’s current checks. Automated storage, scheduling and physics coverage does not verify live provider availability, architectural quality, complete evidence capture or the final Presentation-room experience.
 
-The next product priorities are live acceptance of the shared conversation path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should measure generation, repeated scoped steering against the saved requirements record, review and optional rendering within the unchanged allowances. Mocked execution tests can verify persistence and context propagation; they do not establish that live models consistently preserve every prior requirement.
+The next product priorities are live acceptance of the shared conversation path, an evidence-backed geometry review contract, and live validation of the workstation-to-presentation handoff. A paid demo should measure generation, repeated scoped steering against the saved requirements record, review and optional rendering within the unchanged allowances. Mocked execution tests can verify persistence and context propagation; they do not establish that live models consistently preserve every prior requirement.

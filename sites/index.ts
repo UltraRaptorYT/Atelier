@@ -42,7 +42,7 @@ export default {
       // Limit uploads before forwarding; captures legitimately exceed the JSON command limit.
       let body: Uint8Array<ArrayBuffer> | undefined;
       if (!['GET', 'HEAD'].includes(request.method) && request.body) {
-        const limit = path.endsWith('/captures') ? 12 * 1024 * 1024 : 64000;
+        const limit = request.method === 'POST' && /^\/projects\/[^/]+\/captures$/.test(path) ? 12 * 1024 * 1024 : 64000;
         if (Number(request.headers.get('content-length') || 0) > limit) return json({ error: 'Request too large.' }, 413);
         const reader = request.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
         while (true) {

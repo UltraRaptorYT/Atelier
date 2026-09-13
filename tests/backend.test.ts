@@ -77,6 +77,25 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     }
     expect(await (await call('/projects',tokenB)).json()).toEqual([]);
   });
+  it('creates one project for concurrent reconnects and replays the original receipt after its brief changes', async () => {
+    const operationId = crypto.randomUUID(), request = { name: 'Recovered browser draft', brief, operationId };
+    const responses = await Promise.all([call('/projects', tokenB, 'POST', request), call('/projects', tokenB, 'POST', request)]);
+    expect(responses.map(response => response.status).sort()).toEqual([200, 201]);
+    const projects = await Promise.all(responses.map(response => response.json() as Promise<any>));
+    expect(projects[0].id).toBe(projects[1].id);
+    const id = projects[0].id;
+    try {
+      expect((await env.DB.prepare('SELECT id FROM projects WHERE owner_id = ?').bind('user-b').all()).results).toHaveLength(1);
+      expect((await env.DB.prepare("SELECT id FROM events WHERE project_id = ? AND type = 'project_created'").bind(id).all()).results).toHaveLength(1);
+      const updated = { ...brief, request: brief.request + ' Add a gaming room.' };
+      expect((await call(`/projects/${id}/brief`, tokenB, 'PUT', { name: request.name, brief: updated })).status).toBe(200);
+      const replay = await call('/projects', tokenB, 'POST', request);
+      expect(replay.status).toBe(200);
+      expect(await replay.json()).toMatchObject({ id, brief: updated });
+      expect((await call('/projects', tokenB, 'POST', { ...request, brief: updated })).status).toBe(409);
+      expect((await call('/projects', tokenA, 'POST', request)).status).toBe(409);
+    } finally { await env.DB.prepare('DELETE FROM projects WHERE id = ?').bind(id).run(); }
+  });
   it('publishes exactly one revision and event when the same request is retried concurrently',async()=>{
     const id=await project(), stub=env.PROJECTS.getByName(id), design=exampleDesign();
     expect(await Promise.all([stub.commit(id,0,'same-operation',design),stub.commit(id,0,'same-operation',design)])).toEqual([1,1]);

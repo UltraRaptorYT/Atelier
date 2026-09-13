@@ -1,8 +1,22 @@
 import { DurableObject } from 'cloudflare:workers';
 import { Sandbox } from '@e2b/desktop';
+import { z } from 'zod';
 import type { Bindings } from './types';
 import { admission, limits } from '../../shared/budget';
 type Lease = { id: string; owner: string; seconds: number; expires: number; sandbox: string | null; idle_since: number; busy: number; released: number; started_at: number | null };
+const LocalVerificationAllowanceSchema = z.object({
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), runId: z.string().uuid(), additionalSeconds: z.number().int().min(1).max(1800),
+}).strict();
+
+/** One explicit local run/day may use a bounded extra allowance; normal ledger charges still apply. */
+export function dailyComputerAllowance(env: Pick<Bindings, 'ENVIRONMENT' | 'LOCAL_VERIFICATION_ALLOWANCE'>, owner: string, leaseId: string, day: string): number {
+  if (env.ENVIRONMENT !== 'local' || owner !== 'local-developer' || typeof env.LOCAL_VERIFICATION_ALLOWANCE !== 'string' || env.LOCAL_VERIFICATION_ALLOWANCE.length > 512) return limits.userDailySeconds;
+  try {
+    const parsed = LocalVerificationAllowanceSchema.safeParse(JSON.parse(env.LOCAL_VERIFICATION_ALLOWANCE));
+    if (!parsed.success || parsed.data.day !== day || !leaseId.startsWith(`${parsed.data.runId}-`)) return limits.userDailySeconds;
+    return limits.userDailySeconds + parsed.data.additionalSeconds;
+  } catch { return limits.userDailySeconds; }
+}
 export class ComputeBudget extends DurableObject<Bindings> {
   private releases = new Map<string, Promise<boolean>>();
   constructor(ctx: DurableObjectState, env: Bindings) {
@@ -24,7 +38,7 @@ export class ComputeBudget extends DurableObject<Bindings> {
     const active = this.ctx.storage.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM leases WHERE released = 0 AND expires > ?', now).one().n;
     const dailySeconds = this.ctx.storage.sql.exec<{ n: number }>('SELECT COALESCE(SUM(seconds),0) AS n FROM leases WHERE owner = ? AND day = ?', owner, day).one().n;
     const monthlySeconds = this.ctx.storage.sql.exec<{ n: number }>('SELECT COALESCE(SUM(seconds),0) AS n FROM leases WHERE month = ?', month).one().n;
-    const reason = admission({ active, dailySeconds, monthlySeconds }, seconds);
+    const reason = admission({ active, dailySeconds, monthlySeconds }, seconds, dailyComputerAllowance(this.env, owner, id, day));
     if (reason) return { allowed: false, reason };
     this.ctx.storage.sql.exec('INSERT INTO leases(id,owner,day,month,seconds,expires,idle_since,started_at) VALUES(?,?,?,?,?,?,?,?)', id, owner, day, month, seconds, now + seconds * 1000, now, now);
     await this.ctx.storage.setAlarm(now + 60000);

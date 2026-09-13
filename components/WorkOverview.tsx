@@ -15,9 +15,9 @@ export default function WorkOverview({ snapshot, connection, viewingLatest, onVi
   const offline = !local && connection === 'offline';
   const connectionLabel = { connecting: 'Connecting to updates…', live: 'Updates connected', polling: 'Checking for updates', offline: 'Updates paused · reconnecting' }[connection];
 
-  return <section className={styles.overview} aria-label="Project work and saved model">
+  return <section className={styles.overview} data-state={work.state} aria-label="Project work and saved model">
     <div className={styles.work} aria-live="polite">
-      <div className={styles.heading}><strong><i data-state={offline ? 'stopped' : work.state} aria-hidden="true" />{offline ? 'Last known activity' : work.title}</strong><button type="button" onClick={onActivity}>Activity<ArrowRight size={12} /></button></div>
+      <div className={styles.heading}><strong><i data-state={offline ? 'stopped' : work.state} aria-hidden="true" />{offline && work.state !== 'stopped' ? 'Last known activity' : work.title}</strong><button type="button" onClick={onActivity}>{work.state === 'stopped' ? 'Review activity' : 'Activity'}<ArrowRight size={12} /></button></div>
       {work.tasks.length > 0 ? <ul className={styles.tasks}>{work.tasks.slice(0, 2).map(task => <li key={task.id}><span>{agents[task.agent].role}</span>{task.title}</li>)}</ul> : <p>{local ? 'This brief is saved in your browser. Connect the studio to start AI work.' : work.description}</p>}
       {!local && <small className={styles.connection} data-offline={offline}>{connectionLabel}</small>}
     </div>

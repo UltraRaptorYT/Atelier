@@ -11,6 +11,9 @@ vi.mock('openai', () => ({ default: class OpenAI { responses = { create: mocks.c
 vi.mock('../worker/src/prompts', () => ({ agentInstructions: () => 'Keep your task ownership.' }));
 vi.mock('../worker/src/security', () => ({ credential: mocks.credential, HttpError: class extends Error { constructor(public status: number, message: string) { super(message); } } }));
 vi.mock('../worker/src/store', () => ({ emit: mocks.emit, artifact: mocks.artifact }));
+// Asset registration owns the compiler result; terminal transport is covered
+// separately and is not part of this tool's contract.
+vi.mock('../worker/src/desktop', () => ({ runVisible: vi.fn(async (desktop, command, timeoutMs) => desktop.commands.run(command, { timeoutMs })) }));
 const empty = (): DesignEdits => ({ elements: { upsert: [], remove: [] }, materials: { upsert: [], remove: [] }, spaces: { upsert: [], remove: [] }, metadata: { title: null, buildingType: null, floors: null, spawn: null, notes: null } });
 const final = (value: unknown) => ({ status: 'completed', output: [], output_text: JSON.stringify(value) });
 const call = (name: string, args: unknown) => ({ status: 'completed', output: [{ type: 'function_call', call_id: 'tool-1', name, arguments: JSON.stringify(args) }], output_text: '' });
@@ -21,7 +24,7 @@ function setup() {
   const bind = vi.fn(() => ({ first })), prepare = vi.fn(() => ({ bind }));
   const json = vi.fn().mockResolvedValue(base), get = vi.fn().mockResolvedValue({ size: 10000, json });
   const env = { OPENAI_MODEL: 'gpt-5.6-terra', DB: { prepare }, FILES: { get } } as unknown as Bindings;
-  const desktop = { files: { read: vi.fn(async (path: string, options?: unknown) => options ? new Uint8Array([1, 2, 3]) : path.endsWith('.glb.json') ? '{"size":[1,1,1]}' : JSON.stringify(base)), write: vi.fn() }, commands: { run: vi.fn().mockResolvedValue({ exitCode: 0 }) } };
+  const desktop = { open: vi.fn().mockResolvedValue(undefined), files: { read: vi.fn(async (path: string, options?: unknown) => options ? new Uint8Array([1, 2, 3]) : path.endsWith('.glb.json') ? '{"size":[1,1,1]}' : JSON.stringify(base)), write: vi.fn() }, commands: { run: vi.fn().mockResolvedValue({ exitCode: 0 }) } };
   const context = { desktop, projectId: 'project-1', taskId: 'run-1-interior', design: base, registeredAssets };
   return { base, env, context, first, bind, prepare, json, get };
 }

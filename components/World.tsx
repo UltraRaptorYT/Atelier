@@ -3,13 +3,14 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { ContactShadows, Html, OrbitControls, PerformanceMonitor, useGLTF, useTexture } from '@react-three/drei';
 import { Physics, RigidBody } from '@react-three/rapier';
-import { Vector3, Group, PCFShadowMap, Mesh, MeshStandardMaterial, SRGBColorSpace } from 'three';
-import { agents, type AgentId, type Design, type Task } from '@/shared/design';
-import { geometryParts } from '@/shared/geometry';
+import { Vector3, Group, PCFShadowMap, Mesh, SRGBColorSpace } from 'three';
+import { agents, type AgentId, type Design, type DesignElement, type Material, type Task } from '@/shared/design';
+import { createElementGeometry, createElementMaterial } from '@/lib/design-geometry';
 import { meetingSeats, workSeats, officeRoute } from '@/shared/office';
 import { modelOrbitCamera, type ModelCamera } from '@/shared/model-camera';
 import ClickNavigation from './ClickNavigation';
 import FirstPersonNavigation from './FirstPersonNavigation';
+import SceneResourceBoundary, { ResourceUnavailable, SceneUnavailable } from './SceneResourceBoundary';
 
 export type RoomId = 'reception' | AgentId | 'presentation';
 export const rooms: { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] }[] = [
@@ -21,7 +22,7 @@ export const rooms: { id: RoomId; label: string; position: [number, number, numb
   { id: 'presentation', label: 'Presentation', position: [7.5, 0, 4], camera: [7.5, 1.7, 7] },
 ];
 type Preview = {agent:AgentId;url:string;createdAt:string};
-type Props = { meeting: boolean; onProximity: (id: RoomId | null) => void; onWorkstation: (agent: AgentId) => void; room: RoomId; mode: 'office' | 'model'; walking: boolean; clickToWalk: boolean; paused: boolean; onWalkStatus: (status: string) => void; design: Design | null; projectId: string | null; previews:Preview[]; onFrameRate:(fps:number)=>void; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
+type Props = { onPresentation: () => void; meeting: boolean; onProximity: (id: RoomId | null) => void; onWorkstation: (agent: AgentId) => void; room: RoomId; mode: 'office' | 'model'; walking: boolean; clickToWalk: boolean; paused: boolean; onWalkStatus: (status: string) => void; design: Design | null; projectId: string | null; previews:Preview[]; onFrameRate:(fps:number)=>void; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
 function FrameRate({onMeasure}:{onMeasure:(fps:number)=>void}) {
   const sample=useRef({frames:0,elapsed:0});
   useFrame((_,delta)=>{if(document.hidden){sample.current={frames:0,elapsed:0};return;}sample.current.frames++;sample.current.elapsed+=delta;if(sample.current.elapsed>=3){onMeasure(Math.round(sample.current.frames/sample.current.elapsed));sample.current={frames:0,elapsed:0};}});
@@ -30,6 +31,12 @@ function FrameRate({onMeasure}:{onMeasure:(fps:number)=>void}) {
 function MonitorPreview({preview}:{preview:Preview}){
   const texture=useTexture(preview.url);texture.colorSpace=SRGBColorSpace;
   return <group><mesh position={[0,1.35,-.225]}><planeGeometry args={[.92,.55]}/><meshBasicMaterial map={texture}/></mesh><Html position={[0,1.76,-.25]} center distanceFactor={5}><span className="monitor-stamp">{new Date(preview.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></Html></group>;
+}
+function SavedMonitorPreview({ preview }: { preview: Preview }) {
+  return <SceneResourceBoundary resetKey={preview.url} onRetry={() => useTexture.clear(preview.url)}
+    fallback={retry => <Html position={[0, 1.76, -.25]} center distanceFactor={5}><ResourceUnavailable kind="preview" name={preview.agent} onRetry={retry} /></Html>}>
+    <Suspense fallback={null}><MonitorPreview preview={preview} /></Suspense>
+  </SceneResourceBoundary>;
 }
 function Box({ p, s, color = '#c7b69e', collision = false, surface = false, rotation = 0, ...rest }: { p: [number, number, number]; s: [number, number, number]; color?: string; collision?: boolean; surface?: boolean; rotation?: number; onClick?: (e: ThreeEvent<MouseEvent>) => void }) {
   const mesh = <mesh position={p} rotation={[0, rotation, 0]} castShadow receiveShadow userData={{ walkObstacle: collision, walkSurface: surface }} {...rest}><boxGeometry args={s} /><meshStandardMaterial color={color} roughness={.8} /></mesh>;
@@ -48,16 +55,18 @@ function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active:
   const group = useRef<Group>(null), pose = useRef<Group>(null), hands = useRef<Group>(null);
   const initial = useRef(meeting ? meetingSeats[agent] : workSeats[agent]);
   const route = useRef<Vector3[]>([]);
+  const [travelling, setTravelling] = useState(false);
   useEffect(() => {
     const p = group.current?.position;
     route.current = officeRoute(p ? [p.x,0,p.z] : initial.current, agent, meeting).map(p => new Vector3(...p));
+    setTravelling(route.current.length > 1);
   }, [agent, meeting]);
   useFrame((state, dt) => {
     const g = group.current; if (!g) return;
     const target = route.current[0];
     const distance = target ? Math.hypot(g.position.x-target.x,g.position.z-target.z) : 0;
     const moving = distance > .035;
-    if (target && !moving) { g.position.copy(target); route.current.shift(); }
+    if (target && !moving) { g.position.copy(target); route.current.shift(); if (!route.current.length) setTravelling(false); }
     if (target && moving) {
       const step = Math.min(distance, dt * 1.7);
       const dx = (target.x-g.position.x)/distance, dz = (target.z-g.position.z)/distance;
@@ -77,11 +86,11 @@ function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active:
     <mesh position={[0,.96,0]} castShadow><capsuleGeometry args={[.2,.4,4,8]}/><meshStandardMaterial color={agents[agent].color}/></mesh>
     <group ref={hands}>{[-.26,.26].map(x=><Box key={x} p={[x,.82,-.12]} s={[.12,.4,.12]} color={agents[agent].color}/>)}</group>
     {[-.12,.12].map(x=><Box key={x} p={[x,.36,0]} s={[.16,.65,.19]} color="#424741"/>)}
-    </group><Html position={[0,1.9,0]} center distanceFactor={7}><span className="monitor-stamp" style={{borderBottom:`3px solid ${agents[agent].color}`}}>{agents[agent].name.split(' ')[0]} · {meeting ? 'Meeting' : active ? 'Working' : 'At desk'}</span></Html></group>;
+    </group><Html position={[0,1.9,0]} center distanceFactor={7}><span className="monitor-stamp" style={{borderBottom:`3px solid ${agents[agent].color}`}}>{agents[agent].name.split(' ')[0]} · {travelling ? meeting ? 'Joining meeting' : 'Going to desk' : meeting ? 'Meeting' : active ? 'Working' : 'At desk'}</span></Html></group>;
 }
 function Maquette({design}:{design:Design}) {
   const radius=Math.max(...design.elements.map(e=>Math.max(Math.abs(e.position[0])+e.size[0]/2,Math.abs(e.position[2])+e.size[2]/2)),1);
-  return <group position={[7.5,1.12,4]} scale={1.2/radius}>{design.elements.filter(e=>e.kind!=='roof').map(e=><group key={e.id} position={e.position} rotation={[0,e.rotation,0]}>{geometryParts(e).map((p,i)=><mesh key={i} position={p.position} castShadow><boxGeometry args={p.size}/><meshStandardMaterial color={design.materials.find(m=>m.id===e.materialId)?.color}/></mesh>)}</group>)}</group>;
+  return <group position={[7.5,1.12,4]} scale={1.2/radius}>{design.elements.filter(e=>e.kind!=='roof').map(e=><group key={e.id} position={e.position} rotation={[0,e.rotation,0]}><ElementMeshes element={e} material={design.materials.find(m=>m.id===e.materialId)!}/></group>)}</group>;
 }
 function Office({ onRoom, room, tasks, design, previews, meeting, onWorkstation, positions }: Pick<Props, 'onRoom' | 'room' | 'tasks' | 'design' | 'previews' | 'meeting' | 'onWorkstation'> & {positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>>}) {
   return <group>
@@ -103,7 +112,7 @@ function Office({ onRoom, room, tasks, design, previews, meeting, onWorkstation,
       const r = rooms.find(r => r.id === agent)!;
       const active = tasks.some(t => t.agent === agent && t.status === 'in_progress');
       const preview=previews.find(p=>p.agent===agent);
-      return <group key={agent}><group onClick={event => { event.stopPropagation(); onWorkstation(agent); }}><Desk p={[r.position[0], 0, r.position[2] - 1]} accent={active ? '#afbc9d' : '#64776d'} /></group>{preview && <group position={[r.position[0],0,r.position[2]-1]}><Suspense fallback={null}><MonitorPreview preview={preview}/></Suspense></group>}<Avatar agent={agent} active={active} meeting={meeting} positions={positions} /><Box p={[r.position[0] - 2.5, 1.1, r.position[2] - 2.6]} s={[.9, 2.2, .5]} color="#a88b65" />{[.5, 1, 1.5].map(y => <Box key={y} p={[r.position[0] - 2.5, y, r.position[2] - 2.32]} s={[.75, .06, .08]} color="#e1dac6" />)}</group>;
+      return <group key={agent}><group onClick={event => { event.stopPropagation(); onWorkstation(agent); }}><Desk p={[r.position[0], 0, r.position[2] - 1]} accent={active ? '#afbc9d' : '#64776d'} /></group>{preview && <group position={[r.position[0],0,r.position[2]-1]}><SavedMonitorPreview preview={preview}/></group>}<Avatar agent={agent} active={active} meeting={meeting} positions={positions} /><Box p={[r.position[0] - 2.5, 1.1, r.position[2] - 2.6]} s={[.9, 2.2, .5]} color="#a88b65" />{[.5, 1, 1.5].map(y => <Box key={y} p={[r.position[0] - 2.5, y, r.position[2] - 2.32]} s={[.75, .06, .08]} color="#e1dac6" />)}</group>;
     })}
     <Box p={[7.5, .55, 4]} s={[3.8, 1.1, 2.8]} color="#dfd9cb" collision />
     {design && <Maquette design={design}/>}
@@ -111,21 +120,44 @@ function Office({ onRoom, room, tasks, design, previews, meeting, onWorkstation,
     {rooms.map(r => <Html key={r.id} position={[r.position[0], .25, r.position[2] + 2]} center distanceFactor={22} occlude={false}><button className={`world-room ${room === r.id ? 'current' : ''}`} onClick={() => onRoom(r.id)}><span>{String(rooms.indexOf(r) + 1).padStart(2, '0')}</span>{r.label}</button></Html>)}
   </group>;
 }
-function PublishedAsset({url,color,roughness,metalness,onClick}:{url:string;color:string;roughness:number;metalness:number;onClick:(event:ThreeEvent<MouseEvent>)=>void}) {
+function ElementMeshes({ element, material, selected = false, onClick }: { element: DesignElement; material: Material; selected?: boolean; onClick?: (event: ThreeEvent<MouseEvent>) => void }) {
+  const parts = useMemo(() => createElementGeometry(element), [element]);
+  const appearance = useMemo(() => createElementMaterial(material, element), [material, element]);
+  appearance.emissive.set(selected ? '#bd824e' : '#000000');
+  appearance.emissiveIntensity = selected ? .25 : 0;
+  useEffect(() => () => { for (const part of parts) part.geometry.dispose(); }, [parts]);
+  useEffect(() => () => appearance.dispose(), [appearance]);
+  return <>{parts.map((part, i) => <mesh key={i} geometry={part.geometry} material={appearance} position={part.position} castShadow receiveShadow
+    userData={{ walkObstacle: !['light', 'window', 'door'].includes(element.kind), walkSurface: ['slab', 'stair'].includes(element.kind) }} onClick={onClick}/>)}</>;
+}
+function PublishedAsset({url,element,material,onClick}:{url:string;element:DesignElement;material:Material;onClick:(event:ThreeEvent<MouseEvent>)=>void}) {
   const {scene}=useGLTF(url);
-  const copy=useMemo(()=>{const cloned=scene.clone(true); cloned.traverse(o=>{if(o instanceof Mesh){o.material=new MeshStandardMaterial({color,roughness,metalness});o.castShadow=true;o.receiveShadow=true;}});return cloned;},[scene,color,roughness,metalness]);
-  useEffect(()=>()=>{copy.traverse(o=>{if(o instanceof Mesh && o.material instanceof MeshStandardMaterial)o.material.dispose();});},[copy]);
+  const copy=useMemo(()=>{const cloned=scene.clone(true); cloned.traverse(o=>{if(o instanceof Mesh){
+    if(element.assetMaterialOverride) o.material=createElementMaterial(material,element);
+    o.castShadow=true;o.receiveShadow=true;
+    o.userData={...o.userData,walkObstacle:!['light','window','door'].includes(element.kind),walkSurface:['slab','stair'].includes(element.kind)};
+  }});return cloned;},[scene,element,material]);
+  useEffect(()=>()=>{if(element.assetMaterialOverride) copy.traverse(o=>{if(o instanceof Mesh) for(const material of Array.isArray(o.material)?o.material:[o.material]) material.dispose();});},[copy,element.assetMaterialOverride]);
   return <primitive object={copy} onClick={onClick}/>;
 }
 function Building({ design, selected, onSelect, cutaway, projectId, clickToWalk }: { design: Design; selected: string | null; onSelect: Props['onSelect']; cutaway: boolean; projectId:string|null; clickToWalk: boolean }) {
   return <group>{design.elements.filter(e => !(cutaway && e.kind === 'roof')).map(e => {
     const material = design.materials.find(m => m.id === e.materialId)!;
-    const geometryKey=`${e.id}:${e.position.join(',')}:${e.size.join(',')}:${e.rotation}:${e.assetId}`;
+    const geometryKey=`${e.id}:${e.position.join(',')}:${e.size.join(',')}:${e.rotation}:${e.assetId}:${JSON.stringify(e.geometry)}`;
     const collision = !['light', 'window', 'door'].includes(e.kind);
     const asset=design.assets.find(a=>a.id===e.assetId);
-    if(asset && projectId) return <RigidBody key={`${geometryKey}:${asset.artifactId}`} type="fixed" colliders="trimesh"><group position={e.position} rotation={[0,e.rotation,0]} scale={e.size}><PublishedAsset url={`/api/studio/projects/${projectId}/artifacts/${asset.artifactId}`} {...material} onClick={event=>{event.stopPropagation();onSelect(e.id);}}/></group></RigidBody>;
-    const shapes = <group position={e.position} rotation={[0, e.rotation, 0]}>{geometryParts(e).map((part, i) => <mesh key={i} position={part.position} castShadow receiveShadow userData={{ walkObstacle: collision, walkSurface: ['slab', 'stair'].includes(e.kind) }} onClick={event => { if (clickToWalk) return; event.stopPropagation(); onSelect(e.id); }}><boxGeometry args={part.size} /><meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} transparent={e.kind === 'window' || e.kind === 'door'} opacity={e.kind === 'window' ? .25 : e.kind === 'door' ? .4 : 1} emissive={selected === e.id ? '#bd824e' : '#000000'} emissiveIntensity={selected === e.id ? .25 : 0} /></mesh>)}</group>;
-    return collision ? <RigidBody key={geometryKey} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
+    const select=(event:ThreeEvent<MouseEvent>)=>{if(clickToWalk)return;event.stopPropagation();onSelect(e.id);};
+    const shape = <group position={e.position} rotation={[0,e.rotation,0]}><ElementMeshes element={e} material={material} selected={selected===e.id} onClick={select}/></group>;
+    const proxy = collision ? <RigidBody key="saved-shape" type="fixed" colliders={e.geometry ? 'trimesh' : 'cuboid'}>{shape}</RigidBody> : shape;
+    if (!asset || !projectId) return <group key={geometryKey}>{proxy}</group>;
+    const url = `/api/studio/projects/${projectId}/artifacts/${asset.artifactId}`;
+    const imported = <group position={e.position} rotation={[0,e.rotation,0]} scale={e.size}><PublishedAsset url={url} element={e} material={material} onClick={select}/></group>;
+    // Each state owns its complete rigid body. A fallback never scales twice or
+    // leaves stale proxy colliders behind when the imported geometry is ready.
+    return <SceneResourceBoundary key={`${geometryKey}:${asset.artifactId}`} resetKey={url} onRetry={() => useGLTF.clear(url)}
+      fallback={retry => <>{proxy}<Html position={[e.position[0], e.position[1] + e.size[1] / 2 + .35, e.position[2]]} center distanceFactor={8}><ResourceUnavailable kind="model" name={e.name} onRetry={retry} /></Html></>}>
+      <Suspense fallback={proxy}>{collision ? <RigidBody key="imported-detail" type="fixed" colliders="trimesh">{imported}</RigidBody> : imported}</Suspense>
+    </SceneResourceBoundary>;
   })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision surface /></group>;
 }
 function CameraRig({ walking, mode, captureRef, projectId, framing, hasDesign }: Pick<Props, 'walking' | 'mode' | 'captureRef' | 'projectId'> & { framing: ModelCamera; hasDesign: boolean }) {
@@ -137,7 +169,7 @@ function CameraRig({ walking, mode, captureRef, projectId, framing, hasDesign }:
   useEffect(() => { captureRef.current = () => { gl.render(scene, camera); return gl.domElement.toDataURL('image/png'); }; return () => { captureRef.current = null; }; }, [gl, scene, camera, captureRef]);
   return null;
 }
-export default function World(props: Props) {
+function WorldScene(props: Props) {
   const [quality, setQuality] = useState(1.5);
   const positions = useRef<Partial<Record<RoomId, [number, number, number]>>>({});
   const framing = useMemo(() => modelOrbitCamera(props.design), [props.design]);
@@ -146,18 +178,29 @@ export default function World(props: Props) {
   const geometry = props.mode === 'office'
     ? <Office positions={positions} meeting={props.meeting} onWorkstation={props.onWorkstation} onRoom={props.onRoom} room={props.room} tasks={props.tasks} design={props.design} previews={props.previews} />
     : props.design && <Building projectId={props.projectId} design={props.design} selected={props.selected} onSelect={props.onSelect} cutaway={props.cutaway} clickToWalk={props.clickToWalk} />;
-  return <Canvas fallback={<div className="loading-world"><p>3D is unavailable in this browser. Your project panel, conversations and files are still available.</p></div>} shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: props.walking ? 65 : 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+  return <Canvas frameloop={props.paused ? 'demand' : 'always'} fallback={<div className="loading-world"><p>3D is unavailable in this browser. Your project panel, conversations and files are still available.</p></div>} shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: props.walking ? 65 : 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
     <color attach="background" args={['#e4e3d9']} /><fog attach="fog" args={['#e4e3d9', 50, 110]} />
     <ambientLight intensity={.9} /><hemisphereLight args={['#fff7df', '#939783', 1.6]} />
     <directionalLight position={[10, 25, 8]} intensity={2.2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-25} shadow-camera-right={25} shadow-camera-top={25} shadow-camera-bottom={-25} shadow-bias={-.0005} />
     <PerformanceMonitor onDecline={() => setQuality(1)} />
     <FrameRate onMeasure={props.onFrameRate}/>
-    <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
+    <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics paused={props.paused} gravity={[0, -20, 0]}>
       {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
-      {props.walking && <FirstPersonNavigation key={props.mode} target={target} design={props.design} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} positions={positions} meeting={props.meeting} onProximity={props.onProximity} onRoom={id => { if (id in agents) props.onWorkstation(id as AgentId); else props.onRoom(id); }} onExit={props.onUnlock} office={props.mode === 'office'} />}
+      {props.walking && <FirstPersonNavigation presentationAvailable={Boolean(props.projectId && props.design)} key={props.mode} target={target} design={props.design} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} positions={positions} meeting={props.meeting} onProximity={props.onProximity} onRoom={id => { if (id === 'presentation') props.onPresentation(); else if (id in agents) props.onWorkstation(id as AgentId); else props.onRoom(id); }} onExit={props.onUnlock} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
     {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={props.mode === 'model' ? Math.max(65, framing.radius * 6) : 65} maxPolarAngle={Math.PI / 2.1} target={props.mode === 'model' ? framing.target : [0, 0, 0]} />}
     <CameraRig walking={props.walking} mode={props.mode} captureRef={props.captureRef} projectId={props.projectId} framing={framing} hasDesign={Boolean(props.design)} />
   </Canvas>;
+}
+
+export default function World(props: Props) {
+  return <SceneResourceBoundary resetKey={`${props.projectId}:${props.mode}:${props.revision}`}
+    onError={() => { props.captureRef.current = null; if (document.pointerLockElement) document.exitPointerLock(); props.onProximity(null); }}
+    onRetry={() => {
+      for (const preview of props.previews) useTexture.clear(preview.url);
+      if (props.projectId) for (const asset of props.design?.assets || []) useGLTF.clear(`/api/studio/projects/${props.projectId}/artifacts/${asset.artifactId}`);
+    }} fallback={retry => <SceneUnavailable onRetry={retry} />}>
+    <WorldScene {...props} />
+  </SceneResourceBoundary>;
 }

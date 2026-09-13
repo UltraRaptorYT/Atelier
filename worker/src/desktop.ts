@@ -9,11 +9,13 @@ import compiler from '../../scripts/blender_compile.py';
 import { limits } from '../../shared/budget';
 import furniture from '../../shared/furniture.json';
 import assetCompiler from '../../scripts/blender_asset.py';
+import designAuthoring from '../../scripts/design_authoring.py';
+import proposalGuide from '../../prompts/proposal-guide.md';
 type DesktopRow = { sandbox_id: string; lease_id: string; expires_at: number };
-export async function connectDesktop(env: Bindings, projectId: string, agent: AgentId): Promise<Sandbox | null> {
+export async function connectDesktop(env: Bindings, projectId: string, agent: AgentId, expectedLeaseId?: string): Promise<Sandbox | null> {
   if (!env.E2B_API_KEY) return null;
   const row = await env.DB.prepare('SELECT sandbox_id,lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId, agent).first<DesktopRow>();
-  if (!row || row.expires_at <= Date.now()) return null;
+  if (!row || row.expires_at <= Date.now() || (expectedLeaseId !== undefined && row.lease_id !== expectedLeaseId)) return null;
   try { return await Sandbox.connect(row.sandbox_id, { apiKey: env.E2B_API_KEY }); } catch { return null; }
 }
 export async function createDesktop(env: Bindings, projectId: string, owner: string, agent: AgentId, leaseId: string): Promise<Sandbox> {
@@ -42,6 +44,8 @@ export async function createDesktop(env: Bindings, projectId: string, owner: str
     await desktop.files.write('/home/user/project/blender_compile.py', compiler);
     await desktop.files.write('/home/user/project/furniture.json', JSON.stringify(furniture));
     await desktop.files.write('/home/user/project/blender_asset.py', assetCompiler);
+    await desktop.files.write('/home/user/project/design_authoring.py', designAuthoring);
+    await desktop.files.write('/home/user/project/proposal-guide.md', proposalGuide);
     await desktop.files.write('/home/user/project/watch_terminal.py', watchTerminal);
     await desktop.commands.run('mkdir -p /home/user/project/.watch', { timeoutMs: 10000 });
     await (await desktop.commands.run('xfce4-terminal --disable-server --title="Atelier live work" --geometry=120x38 -e "python3 /home/user/project/watch_terminal.py"', { background: true, timeoutMs: 0 })).disconnect();
@@ -86,6 +90,27 @@ export async function releaseDesktop(env: Bindings, projectId: string, agent: Ag
 }
 export async function syncDesktop(desktop: Sandbox, design: Design, env:Bindings, projectId:string) {
   await desktop.files.write('/home/user/project/design.json', JSON.stringify(design, null, 2));
+  await syncDesktopAssets(desktop, design, env, projectId);
+  const html = `<!doctype html><html><meta charset="utf-8"><title>Atelier design workspace</title><style>body{background:#eeeee5;color:#36432f;font:16px system-ui;margin:40px}h1{font:36px Georgia}pre{background:white;padding:20px;border-radius:8px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}td,th{padding:12px;text-align:left;border-bottom:1px solid #ccc}small{color:#75856c}</style><h1>Atelier / live design workspace</h1><small>Canonical file: /home/user/project/design.json</small><h2 id="title"></h2><table id="spaces"><tr><th>Space</th><th>Floor</th><th>Size (m)</th></tr></table><h2>Design source</h2><pre id="source"></pre><script>const design=${JSON.stringify(design).replaceAll('<', '\\u003c')};document.getElementById('title').textContent=design.title;document.getElementById('source').textContent=JSON.stringify(design,null,2);for(const space of design.spaces){const tr=document.createElement('tr');for(const value of [space.name,space.floor+1,space.size.join(' × ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}document.getElementById('spaces').append(tr)}</script></html>`;
+  await desktop.files.write('/home/user/project/studio.html', html);
+  await desktop.open('/home/user/project/studio.html');
+}
+
+/** Restore the trusted compiler before inspecting agent-authored files. */
+export async function prepareProposalDesktop(desktop: Sandbox, design: Design, env: Bindings, projectId: string) {
+  await desktop.files.write('/home/user/project/blender_compile.py', compiler);
+  await desktop.files.write('/home/user/project/furniture.json', JSON.stringify(furniture));
+  await syncDesktopAssets(desktop, design, env, projectId);
+}
+
+export async function prepareProposalAuthoring(desktop: Sandbox, schema: Record<string, unknown>) {
+  // Reinstall on resumed leases as well as newly created workstations.
+  await desktop.files.write('/home/user/project/design_authoring.py', designAuthoring);
+  await desktop.files.write('/home/user/project/proposal-guide.md', proposalGuide);
+  await desktop.files.write('/home/user/project/proposal-schema.json', JSON.stringify(schema));
+}
+
+async function syncDesktopAssets(desktop: Sandbox, design: Design, env: Bindings, projectId: string) {
   if(design.assets.length) await desktop.commands.run('mkdir -p /home/user/project/assets');
   for(const asset of design.assets){
     const row=await env.DB.prepare("SELECT object_key FROM artifacts WHERE id = ? AND project_id = ? AND kind = 'model-asset'").bind(asset.artifactId,projectId).first<{object_key:string}>();
@@ -93,21 +118,21 @@ export async function syncDesktop(desktop: Sandbox, design: Design, env:Bindings
     if(!file) throw new HttpError(409,'A versioned geometry asset is unavailable.');
     await desktop.files.write(`/home/user/project/assets/${asset.id}.glb`,await file.arrayBuffer());
   }
-  const html = `<!doctype html><html><meta charset="utf-8"><title>Atelier design workspace</title><style>body{background:#eeeee5;color:#36432f;font:16px system-ui;margin:40px}h1{font:36px Georgia}pre{background:white;padding:20px;border-radius:8px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}td,th{padding:12px;text-align:left;border-bottom:1px solid #ccc}small{color:#75856c}</style><h1>Atelier / live design workspace</h1><small>Canonical file: /home/user/project/design.json</small><h2 id="title"></h2><table id="spaces"><tr><th>Space</th><th>Floor</th><th>Size (m)</th></tr></table><h2>Design source</h2><pre id="source"></pre><script>const design=${JSON.stringify(design).replaceAll('<', '\\u003c')};document.getElementById('title').textContent=design.title;document.getElementById('source').textContent=JSON.stringify(design,null,2);for(const space of design.spaces){const tr=document.createElement('tr');for(const value of [space.name,space.floor+1,space.size.join(' × ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}document.getElementById('spaces').append(tr)}</script></html>`;
-  await desktop.files.write('/home/user/project/studio.html', html);
-  await desktop.open('/home/user/project/studio.html');
 }
 export async function checkpointDesktop(env: Bindings, desktop: Sandbox, projectId: string, runId: string, revision: number, agent: AgentId) {
   const screenshot = await desktop.screenshot();
   await artifact(env, projectId, runId, `${agent}-desktop.png`, 'desktop-preview', revision, screenshot, 'image/png');
   await artifact(env, projectId, runId, `${agent}-design.json`, 'workspace', revision, await desktop.files.read('/home/user/project/design.json'), 'application/json');
 }
-export async function openDesktopStream(env: Bindings, projectId: string, agent: AgentId) {
-  const desktop = await connectDesktop(env, projectId, agent);
+export async function openDesktopStream(env: Bindings, projectId: string, agent: AgentId, leaseId: string) {
+  const desktop = await connectDesktop(env, projectId, agent, leaseId);
   if (!desktop) throw new HttpError(409, 'This specialist has no active computer. Start a design task; saved workstation previews remain in Files.');
-  // Rotate access on every inspection. Old viewer URLs stop authenticating.
+  // The coordinator coalesces overlapping opens for this exact lease. A later
+  // deliberate inspection still rotates access and invalidates older URLs.
   await desktop.stream.stop();
   await desktop.stream.start({ requireAuth: true });
+  const current = await env.DB.prepare('SELECT lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId, agent).first<{ lease_id: string; expires_at: number }>();
+  if (current?.lease_id !== leaseId || current.expires_at <= Date.now()) throw new HttpError(409, 'This computer finished while the viewer was connecting. Open the current task or its saved files.');
   const url = desktop.stream.getUrl({ authKey: desktop.stream.getAuthKey(), viewOnly: true, resize: 'scale' });
   return { url };
 }

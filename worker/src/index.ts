@@ -2,7 +2,6 @@ import { z, ZodError } from 'zod';
 import { BriefSchema, AgentIdSchema, recolor } from '../../shared/design';
 import { credential, encryptCredential, userId, ownedProject, bodyJSON, HttpError } from './security';
 import { designFromRow, eventsAfter, projectFromRow, snapshot, emit } from './store';
-import { openDesktopStream } from './desktop';
 import { queueChange } from './steering';
 import { changeFailedStatement } from './changes';
 import { handleInteraction } from './conversation';
@@ -12,10 +11,11 @@ import { startVoice } from './voice';
 import { CaptureRequestSchema, ConceptRequestSchema, ImageRequestSchema } from '../../shared/images';
 import { loadImageReference, saveCapture, selectConcept } from './images';
 import type { Bindings, ProjectRow, RunParams } from './types';
+import { runtimeProfile } from './runtime-profile';
 export { ProjectCoordinator } from './coordinator';
 export { ComputeBudget } from './budget';
 export { DesignWorkflow } from './workflow';
-const CreateSchema = z.object({ name: z.string().trim().min(1).max(120), brief: BriefSchema });
+const CreateSchema = z.object({ name: z.string().trim().min(1).max(120), brief: BriefSchema, operationId: z.string().uuid().optional() });
 const RunSchema = z.object({ operationId: z.string().uuid(), kind: z.enum(['generate','render']), baseRevision: z.number().int().min(0) });
 function enabled(env: Bindings, render = false) {
   if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Live generation is paused until the deployment checks pass.');
@@ -45,13 +45,14 @@ async function beginRun(env: Bindings, params: RunParams) {
 }
 async function route(request: Request, env: Bindings): Promise<Response> {
   const path = new URL(request.url).pathname.split('/').filter(Boolean).map(decodeURIComponent), method = request.method;
-  if (path[0] === 'health') return Response.json({ service: 'atelier', status: 'ok', generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', imageGeneration: String(env.IMAGE_GENERATION_ENABLED) === 'true' });
+  if (path[0] === 'health') return Response.json({ service: 'atelier', status: 'ok', generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', imageGeneration: String(env.IMAGE_GENERATION_ENABLED) === 'true', runtimeProfile: await runtimeProfile(env) });
   const owner = await userId(request, env);
   const allowance = env.API_LIMIT ? await env.API_LIMIT.limit({ key: owner }) : { success: true };
   if (!allowance.success) throw new HttpError(429, 'Too many requests. Wait a minute and retry.');
   if (path[0] === 'capabilities') {
     const key = await env.DB.prepare('SELECT owner_id FROM credentials WHERE owner_id = ?').bind(owner).first();
-    return Response.json({ configured: true, generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', local: env.ENVIRONMENT === 'local', keyConnected: Boolean(key || env.OPENAI_API_KEY?.trim()), keySource: key ? 'saved' : env.OPENAI_API_KEY?.trim() ? 'environment' : 'none', voice: String(env.VOICE_ENABLED) === 'true', voiceModel: env.VOICE_MODEL, images: String(env.IMAGE_GENERATION_ENABLED) === 'true', imageModel: env.OPENAI_IMAGE_CONCEPT_MODEL, imageEditModel: env.OPENAI_IMAGE_EDIT_MODEL });
+    const profile = await runtimeProfile(env);
+    return Response.json({ configured: true, generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', local: env.ENVIRONMENT === 'local', keyConnected: Boolean(key || env.OPENAI_API_KEY?.trim()), keySource: key ? 'saved' : env.OPENAI_API_KEY?.trim() ? 'environment' : 'none', voice: String(env.VOICE_ENABLED) === 'true', voiceModel: profile.models.voice, images: String(env.IMAGE_GENERATION_ENABLED) === 'true', imageModel: profile.models.conceptImage, imageEditModel: profile.models.imageEdit, runtimeProfile: profile });
   }
   if (path[0] === 'credentials') {
     if (method === 'DELETE') {
@@ -73,13 +74,25 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     if (method === 'GET') return Response.json((await env.DB.prepare('SELECT * FROM projects WHERE owner_id = ? ORDER BY updated_at DESC LIMIT 100').bind(owner).all<ProjectRow>()).results.map(projectFromRow));
     if (method === 'POST') {
       const data = CreateSchema.parse(await bodyJSON(request));
-      const count = await env.DB.prepare('SELECT COUNT(*) as count FROM projects WHERE owner_id = ?').bind(owner).first<{ count: number }>();
-      if ((count?.count || 0) >= 10) throw new HttpError(429, 'The beta allows ten projects per account.');
-      const id = crypto.randomUUID(), now = new Date().toISOString();
-      const saved=await env.DB.prepare('INSERT INTO projects(id,owner_id,name,brief,created_at,updated_at) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM projects WHERE owner_id = ?) < 10').bind(id, owner, data.name, JSON.stringify(data.brief), now, now,owner).run();
-      if(!saved.meta.changes) throw new HttpError(429,'The beta allows ten projects per account.');
-      await emit(env, id, 'project_created', 'Project created. Your brief is ready for the principal.');
-      return Response.json(projectFromRow(await ownedProject(env, id, owner)), { status: 201 });
+      const fingerprint = JSON.stringify({ name: data.name, brief: data.brief });
+      const replay = async () => {
+        if (!data.operationId) return null;
+        const saved = await env.DB.prepare('SELECT owner_id,project_id,request_json FROM project_creation_requests WHERE operation_id = ?').bind(data.operationId).first<{owner_id:string;project_id:string;request_json:string}>();
+        if (!saved) return null;
+        if (saved.owner_id !== owner || saved.request_json !== fingerprint) throw new HttpError(409, 'This project connection belongs to another account or a different brief. Your browser draft is preserved.');
+        return projectFromRow(await ownedProject(env, saved.project_id, owner));
+      };
+      const previous = await replay();
+      if (previous) return Response.json(previous);
+      const id = data.operationId || crypto.randomUUID(), now = new Date().toISOString();
+      const create = env.DB.prepare('INSERT OR IGNORE INTO projects(id,owner_id,name,brief,created_at,updated_at) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM projects WHERE owner_id = ?) < 10').bind(id, owner, data.name, JSON.stringify(data.brief), now, now, owner);
+      const statements = [create];
+      if (data.operationId) statements.push(env.DB.prepare('INSERT OR IGNORE INTO project_creation_requests(operation_id,owner_id,project_id,request_json,created_at) SELECT ?,?,?,?,? WHERE changes() = 1').bind(data.operationId, owner, id, fingerprint, now));
+      statements.push(env.DB.prepare("INSERT OR IGNORE INTO events(project_id,type,revision,message,created_at,operation_id) SELECT id,'project_created',revision,'Project created. Your brief is ready for the principal.',?,? FROM projects WHERE id = ? AND owner_id = ? AND changes() = 1").bind(now, `project-created-${id}`, id, owner));
+      const saved = await env.DB.batch(statements);
+      const result = await replay();
+      if (!saved[0].meta.changes && !result) throw new HttpError(429, 'The beta allows ten projects per account, or this project connection is already in use.');
+      return Response.json(result || projectFromRow(await ownedProject(env, id, owner)), { status: saved[0].meta.changes ? 201 : 200 });
     }
   }
   const id = path[1], row = await ownedProject(env, id, owner);
@@ -195,7 +208,10 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     await env.DB.prepare('UPDATE desktop_sessions SET viewed_at = ? WHERE project_id = ? AND agent = ?').bind(Date.now(), id, agent).run();
     const running = await env.DB.prepare("SELECT id FROM tasks WHERE project_id = ? AND agent = ? AND status = 'in_progress'").bind(id, agent).first();
     await env.BUDGET.getByName('desktop-budget').touch(desktop.lease_id, Boolean(running));
-    return Response.json(path[4] === 'heartbeat' ? { active: true } : await openDesktopStream(env, id, agent));
+    if (path[4] === 'heartbeat') return Response.json({ active: true });
+    const opened = await env.PROJECTS.getByName(id).desktopStream(id, owner, agent, desktop.lease_id);
+    if (!opened.ok) throw new HttpError(opened.status, opened.message);
+    return Response.json({ url: opened.url });
   }
   if (path[2] === 'voice') {
     if (method === 'PUT' && path[3]) {

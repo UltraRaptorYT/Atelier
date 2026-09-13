@@ -587,7 +587,9 @@ For the hackathon MVP, optimise for:
 3. Browser rendering
 4. Incremental changes
 
-Preserve the structured JSON → Three.js pipeline and stable element IDs so incremental changes and concurrent proposals remain mergeable. Generated canonical models can be explored through **Design → Walk inside**. The final presentation-room exhibit and Spline/imported-model walkthrough integration are separate unfinished work.
+Preserve the structured JSON → Three.js pipeline and stable element IDs so incremental changes and concurrent proposals remain mergeable. Generated canonical models can be explored through **Design → Walk inside** or the Presentation room’s **Walk inside saved design** action. The room shows the current canonical miniature; approaching its exhibit and pressing E enters the latest saved revision, with a return-to-exhibit control. Spline/imported-model walkthrough integration remains separate unfinished work.
+
+Design tasks now submit files: author `/home/user/project/proposal.json` using the installed `design_authoring` helpers, inspect actual images with `inspect_proposal`, then call `submit_proposal` in a later model turn. The 1 MiB file contains a complete initial Design or explicit DesignEdits for an existing revision; the final response is only a summary. Up to two inspection attempts are allowed, and submission requires unchanged inspected content. Canonical publication remains the coordinator's responsibility after the batch settles. Supported normalized mesh geometry must survive browser rendering, Blender export and navigation; do not emit unsupported local-only `blender` extensions. See [proposal guide](prompts/proposal-guide.md).
 
 ---
 
@@ -709,7 +711,7 @@ flowchart TD
   F --> W[User walks inside result]
 ```
 
-During work, the user visits rooms and inspects real tasks and tools. Meetings happen when a conflict or review finding needs a decision. Demonstrate a contextual Designer change, its saved revision and the refreshed model. Steering submitted during work applies in the next run; it does not interrupt the current model call. Use the Design view for the current walkthrough while the final presentation-room exhibit remains unfinished.
+During work, the user visits rooms and inspects real tasks and tools. Meetings happen when a conflict or review finding needs a decision. Demonstrate a contextual Designer change, its saved revision and the refreshed model. Steering submitted during work applies in the next run; it does not interrupt the current model call. Use the Design view or the Presentation exhibit to enter the current saved walkthrough. The Presentation card keeps unresolved review status visible.
 
 ---
 
