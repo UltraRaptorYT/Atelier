@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "atelier-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
+  "limits": { "cpu_ms": 30000 },
+  "rules": [{ "type": "Text", "globs": ["**/*.py"], "fallthrough": true }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ProjectCoordinator", "ComputeBudget"] }],
+  "env": {
+    "local": {
+      "name": "atelier-api-local",
+      "vars": { "ENVIRONMENT": "local", "APP_ORIGIN": "http://127.0.0.1:3000", "GENERATION_ENABLED": "false", "RENDER_ENABLED": "false", "OPENAI_MODEL": "gpt-5.6-terra", "VOICE_MODEL": "gpt-realtime-2.1", "KEY_VERSION": "v1", "E2B_TEMPLATE": "atelier-desktop" },
+      "d1_databases": [{ "binding": "DB", "database_name": "atelier-local", "database_id": "00000000-0000-0000-0000-000000000001", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "FILES", "bucket_name": "atelier-local" }],
+      "durable_objects": { "bindings": [{ "name": "PROJECTS", "class_name": "ProjectCoordinator" }, { "name": "BUDGET", "class_name": "ComputeBudget" }] },
+      "workflows": [{ "name": "atelier-jobs-local", "binding": "JOBS", "class_name": "DesignWorkflow" }]
+    },
+    "staging": {
+      "name": "atelier-api-staging",
+      "vars": { "ENVIRONMENT": "staging", "APP_ORIGIN": "https://replace-with-staging.vercel.app", "GENERATION_ENABLED": "false", "RENDER_ENABLED": "false", "OPENAI_MODEL": "gpt-5.6-terra", "VOICE_MODEL": "gpt-realtime-2.1", "KEY_VERSION": "v1", "E2B_TEMPLATE": "atelier-desktop" },
+      "d1_databases": [{ "binding": "DB", "database_name": "atelier-staging", "database_id": "REPLACE_AFTER_PROVISIONING", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "FILES", "bucket_name": "atelier-artifacts-staging" }],
+      "durable_objects": { "bindings": [{ "name": "PROJECTS", "class_name": "ProjectCoordinator" }, { "name": "BUDGET", "class_name": "ComputeBudget" }] },
+      "workflows": [{ "name": "atelier-jobs-staging", "binding": "JOBS", "class_name": "DesignWorkflow" }]
+    },
+    "production": {
+      "name": "atelier-api-production",
+      "vars": { "ENVIRONMENT": "production", "APP_ORIGIN": "https://replace-with-production.vercel.app", "GENERATION_ENABLED": "false", "RENDER_ENABLED": "false", "OPENAI_MODEL": "gpt-5.6-terra", "VOICE_MODEL": "gpt-realtime-2.1", "KEY_VERSION": "v1", "E2B_TEMPLATE": "atelier-desktop" },
+      "d1_databases": [{ "binding": "DB", "database_name": "atelier-production", "database_id": "REPLACE_AFTER_PROVISIONING", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "FILES", "bucket_name": "atelier-artifacts-production" }],
+      "durable_objects": { "bindings": [{ "name": "PROJECTS", "class_name": "ProjectCoordinator" }, { "name": "BUDGET", "class_name": "ComputeBudget" }] },
+      "workflows": [{ "name": "atelier-jobs-production", "binding": "JOBS", "class_name": "DesignWorkflow" }]
+    }
+  }
+}

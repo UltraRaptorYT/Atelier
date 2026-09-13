@@ -1,0 +1,170 @@
+'use client';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
+import { ContactShadows, Html, OrbitControls, PerformanceMonitor } from '@react-three/drei';
+import { Physics, RigidBody, CapsuleCollider, type RapierRigidBody } from '@react-three/rapier';
+import { Vector3, Group, Euler, PCFShadowMap } from 'three';
+import { agents, type AgentId, type Design, type Task } from '@/shared/design';
+import { geometryParts } from '@/shared/geometry';
+
+export type RoomId = 'reception' | AgentId | 'presentation';
+export const rooms: { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] }[] = [
+  { id: 'reception', label: 'Meeting room', position: [0, 0, 4], camera: [0, 1.7, 7] },
+  { id: 'principal', label: 'Principal', position: [-7.5, 0, 4], camera: [-7.5, 1.7, 6.8] },
+  { id: 'architect', label: 'Architecture', position: [-7.5, 0, -4], camera: [-7.5, 1.7, -.8] },
+  { id: 'designer', label: 'Interiors', position: [0, 0, -4], camera: [0, 1.7, -.8] },
+  { id: 'critic', label: 'Design review', position: [7.5, 0, -4], camera: [7.5, 1.7, -.8] },
+  { id: 'presentation', label: 'Presentation', position: [7.5, 0, 4], camera: [7.5, 1.7, 7] },
+];
+type Props = { room: RoomId; mode: 'office' | 'model'; walking: boolean; design: Design | null; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
+function Box({ p, s, color = '#c7b69e', collision = false, rotation = 0, ...rest }: { p: [number, number, number]; s: [number, number, number]; color?: string; collision?: boolean; rotation?: number; onClick?: (e: ThreeEvent<MouseEvent>) => void }) {
+  const mesh = <mesh position={p} rotation={[0, rotation, 0]} castShadow receiveShadow {...rest}><boxGeometry args={s} /><meshStandardMaterial color={color} roughness={.8} /></mesh>;
+  return collision ? <RigidBody type="fixed" colliders="cuboid">{mesh}</RigidBody> : mesh;
+}
+function Plant({ p, scale = 1 }: { p: [number, number, number]; scale?: number }) {
+  return <group position={p} scale={scale}><mesh position={[0, .3, 0]} castShadow><cylinderGeometry args={[.3, .23, .6, 16]} /><meshStandardMaterial color="#b8a78d" /></mesh><mesh position={[0, 1, 0]} castShadow><sphereGeometry args={[.48, 10, 8]} /><meshStandardMaterial color="#586b46" roughness={1} /></mesh><mesh position={[.2, 1.35, 0]}><sphereGeometry args={[.3, 10, 8]} /><meshStandardMaterial color="#708357" /></mesh></group>;
+}
+function Chair({ p, angle = 0 }: { p: [number, number, number]; angle?: number }) {
+  return <group position={p} rotation={[0, angle, 0]}><Box p={[0, .5, 0]} s={[.65, .16, .6]} color="#d0c5b2" /><Box p={[0, .9, -.28]} s={[.65, .7, .1]} color="#d0c5b2" />{[-.24, .24].flatMap(x => [-.22, .22].map(z => <Box key={`${x}${z}`} p={[x, .25, z]} s={[.05, .5, .05]} color="#76634f" />))}</group>;
+}
+function Desk({ p, accent }: { p: [number, number, number]; accent: string }) {
+  return <group position={p}><Box p={[0, .8, 0]} s={[2.6, .12, 1.05]} color="#ad885d" collision /><Box p={[-1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[0, 1.35, -.28]} s={[1.02, .66, .06]} color="#333b37" /><Box p={[0, 1.35, -.24]} s={[.91, .54, .015]} color={accent} /><Box p={[0, .87, .18]} s={[.7, .03, .25]} color="#e0ded4" /><Box p={[0, 1.02, -.28]} s={[.05, .35, .05]} color="#42463f" /><Box p={[.9, .91, .1]} s={[.38, .06, .5]} color="#eeebdf" /><Chair p={[0, 0, 1]} angle={Math.PI} /></group>;
+}
+function Avatar({ agent, active, at }: { agent: AgentId; active: boolean; at: [number, number, number] }) {
+  const group = useRef<Group>(null);
+  const target = useRef(new Vector3(...at));
+  useEffect(() => { target.current.set(...(active ? at : [at[0] * .5, 0, 3] as [number, number, number])); }, [active, at]);
+  useFrame((state, dt) => {
+    if (!group.current) return;
+    const moving = group.current.position.distanceTo(target.current) > .05;
+    group.current.position.lerp(target.current, Math.min(dt * 1.1, 1));
+    group.current.position.y = moving ? Math.abs(Math.sin(state.clock.elapsedTime * 6)) * .06 : 0;
+  });
+  return <group ref={group} position={at}><mesh position={[0, 1.37, 0]} castShadow><sphereGeometry args={[.18, 16, 16]} /><meshStandardMaterial color="#bc9274" /></mesh><mesh position={[0, .96, 0]} castShadow><capsuleGeometry args={[.2, .4, 4, 8]} /><meshStandardMaterial color={agents[agent].color} /></mesh>{[-.12, .12].map(x => <Box key={x} p={[x, .36, 0]} s={[.16, .65, .19]} color="#424741" />)}</group>;
+}
+function Office({ onRoom, room, tasks }: Pick<Props, 'onRoom' | 'room' | 'tasks'>) {
+  return <group>
+    <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision />
+    <Box p={[0, -.38, 0]} s={[24.4, .1, 17.4]} color="#9a927e" />
+    {Array.from({ length: 30 }, (_, i) => <Box key={i} p={[-11.7 + i * .8, .002, 0]} s={[.014, .01, 17]} color="#b7a58a" />)}
+    <Box p={[0, 1.5, -8.5]} s={[24, 3, .2]} color="#d9d6c9" collision />
+    <Box p={[-12, 1.5, 0]} s={[.18, 3, 17]} color="#dedbce" collision />
+    <Box p={[12, .6, 0]} s={[.18, 1.2, 17]} color="#d9d6c9" collision />
+    {[-11, -8, -5, -2, 1, 4, 7, 10].map(x => <group key={x}><Box p={[x, 1.9, -8.36]} s={[2.4, 1.8, .025]} color="#e6eee6" /><Box p={[x, 1.9, -8.32]} s={[.05, 1.8, .04]} color="#858b7c" /></group>)}
+    {[-3.7, 3.7].map(x => <group key={x}><Box p={[x, .5, -4.5]} s={[.12, 1, 7.6]} color="#c9c7b9" collision /><Box p={[x, 2.1, -4.5]} s={[.055, .045, 7.6]} color="#8b8f81" />{[-7.8, -4.5, -.7].map(z => <Box key={z} p={[x, 1.5, z]} s={[.07, 3, .07]} color="#848b7c" />)}</group>)}
+    {[-10.5,-4.9,2.7,10.5].map((x,i) => <Box key={x} p={[x,.65,0]} s={[[3,1.3,.15],[4.2,1.3,.15],[3.4,1.3,.15],[3,1.3,.15]][i] as [number,number,number]} color="#d4d1c2" collision />)}
+    {[-4, 4].map(x => <Box key={x} p={[x, 1.5, 4.4]} s={[.12, 3, 7.3]} color="#d9d5c7" collision />)}
+    <Box p={[0, .77, 3.8]} s={[4.2, .18, 1.7]} color="#a78056" collision />
+    {[-1.4, 0, 1.4].flatMap(x => [2.45, 5.1].map(z => <Chair key={`${x}${z}`} p={[x, 0, z]} angle={z < 3 ? 0 : Math.PI} />))}
+    <Box p={[0, .91, 3.8]} s={[1, .06, .65]} color="#f0ede3" />
+    <Box p={[.15, 1.06, 3.8]} s={[.45, .3, .4]} color="#d2cbb9" />
+    {(['principal', 'architect', 'designer', 'critic'] as AgentId[]).map(agent => {
+      const r = rooms.find(r => r.id === agent)!;
+      const active = tasks.some(t => t.agent === agent && t.status === 'in_progress');
+      return <group key={agent}><Desk p={[r.position[0], 0, r.position[2] - 1]} accent={active ? '#afbc9d' : '#64776d'} /><Avatar agent={agent} active={active} at={[r.position[0] + 1.8, 0, r.position[2] - .5]} /><Box p={[r.position[0] - 2.5, 1.1, r.position[2] - 2.6]} s={[.9, 2.2, .5]} color="#a88b65" />{[.5, 1, 1.5].map(y => <Box key={y} p={[r.position[0] - 2.5, y, r.position[2] - 2.32]} s={[.75, .06, .08]} color="#e1dac6" />)}</group>;
+    })}
+    <Box p={[7.5, .55, 4]} s={[3.8, 1.1, 2.8]} color="#dfd9cb" collision />
+    <Box p={[7.5, 1.2, 4]} s={[2.5, .12, 1.8]} color="#899378" />
+    <Box p={[7.1, 1.55, 4]} s={[1.4, .65, 1.1]} color="#e6e1d4" />
+    <Box p={[8.1, 1.8, 4]} s={[.65, 1.1, 1.1]} color="#d5c7aa" />
+    {[[-10.9, 0, 7], [10.8, 0, -7.4], [-10.8, 0, -7.3], [2.7, 0, -7.3], [10.8, 0, 7]] .map((p, i) => <Plant key={i} p={p as [number, number, number]} scale={i % 2 ? 1.2 : 1} />)}
+    {rooms.map(r => <Html key={r.id} position={[r.position[0], .25, r.position[2] + 2]} center distanceFactor={22} occlude={false}><button className={`world-room ${room === r.id ? 'current' : ''}`} onClick={() => onRoom(r.id)}><span>{String(rooms.indexOf(r) + 1).padStart(2, '0')}</span>{r.label}</button></Html>)}
+  </group>;
+}
+function Building({ design, selected, onSelect, cutaway }: { design: Design; selected: string | null; onSelect: Props['onSelect']; cutaway: boolean }) {
+  return <group>{design.elements.filter(e => !(cutaway && e.kind === 'roof')).map(e => {
+    const material = design.materials.find(m => m.id === e.materialId)!;
+    const collision = !['light', 'window', 'door'].includes(e.kind);
+    const shapes = <group position={e.position} rotation={[0, e.rotation, 0]}>{geometryParts(e).map((part, i) => <mesh key={i} position={part.position} castShadow receiveShadow onClick={event => { event.stopPropagation(); onSelect(e.id); }}><boxGeometry args={part.size} /><meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} transparent={e.kind === 'window' || e.kind === 'door'} opacity={e.kind === 'window' ? .25 : e.kind === 'door' ? .4 : 1} emissive={selected === e.id ? '#bd824e' : '#000000'} emissiveIntensity={selected === e.id ? .25 : 0} /></mesh>)}</group>;
+    return collision ? <RigidBody key={e.id} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
+  })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision /></group>;
+}
+function Player({ target, onRoom, office, revision, design }: { target: [number, number, number]; onRoom: Props['onRoom']; office: boolean; revision: number; design: Design | null }) {
+  const body = useRef<RapierRigidBody>(null);
+  const { camera } = useThree();
+  const keys = useRef(new Set<string>());
+  useEffect(() => {
+    body.current?.setTranslation({ x: target[0], y: target[1], z: target[2] }, true);
+    camera.position.set(...target); camera.lookAt(target[0], target[1], target[2] - 5);
+  }, [target[0], target[1], target[2], camera]);
+  useEffect(() => {
+    if (office || !body.current || !design) return;
+    const p = body.current.translation();
+    const supported = design.elements.some(e => {
+      if (!['slab','stair'].includes(e.kind)) return false;
+      const dx=p.x-e.position[0], dz=p.z-e.position[2], c=Math.cos(e.rotation), s=Math.sin(e.rotation);
+      return Math.abs(dx*c-dz*s)<=e.size[0]/2 && Math.abs(dx*s+dz*c)<=e.size[2]/2 && p.y>=e.position[1]-e.size[1]/2 && p.y-e.position[1]-e.size[1]/2<2;
+    });
+    if (!supported) { body.current.setTranslation({ x:target[0],y:target[1],z:target[2] },true); body.current.setLinvel({x:0,y:0,z:0},true); }
+  }, [revision,design,office]);
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+      if (['KeyW','KeyA','KeyS','KeyD','KeyE'].includes(e.code)) e.preventDefault();
+      keys.current.add(e.code);
+      if (e.code === 'KeyE' && office) {
+        const pos = camera.position;
+        const r = [...rooms].sort((a, b) => pos.distanceTo(new Vector3(...a.camera)) - pos.distanceTo(new Vector3(...b.camera)))[0];
+        document.exitPointerLock(); onRoom(r.id);
+      }
+    };
+    const up = (e: KeyboardEvent) => keys.current.delete(e.code);
+    const clear = () => keys.current.clear();
+    window.addEventListener('keydown', down); window.addEventListener('keyup', up); window.addEventListener('blur', clear); document.addEventListener('pointerlockchange', clear);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clear); document.removeEventListener('pointerlockchange', clear); };
+  }, [camera, onRoom, office]);
+  useFrame(() => {
+    if (!body.current) return;
+    const forward = new Vector3(); camera.getWorldDirection(forward); forward.y = 0; forward.normalize();
+    const right = new Vector3().crossVectors(forward, new Vector3(0, 1, 0));
+    const move = new Vector3();
+    if (keys.current.has('KeyW')) move.add(forward); if (keys.current.has('KeyS')) move.sub(forward);
+    if (keys.current.has('KeyD')) move.add(right); if (keys.current.has('KeyA')) move.sub(right);
+    move.normalize().multiplyScalar(3.5);
+    body.current.setLinvel({ x: move.x, y: body.current.linvel().y, z: move.z }, true);
+    const p = body.current.translation();
+    if (p.y < -3) body.current.setTranslation({ x: target[0], y: target[1], z: target[2] }, true);
+    camera.position.set(p.x, p.y + .5, p.z);
+  });
+  return <RigidBody ref={body} colliders={false} enabledRotations={[false, false, false]} position={target} friction={0}><CapsuleCollider args={[.45, .24]} /></RigidBody>;
+}
+function CameraRig({ walking, mode, captureRef }: Pick<Props, 'walking' | 'mode' | 'captureRef'>) {
+  const { camera, gl, scene } = useThree();
+  useEffect(() => { if (!walking) { camera.position.set(...(mode === 'office' ? [24, 26, 30] : [18, 15, 20]) as [number, number, number]); camera.lookAt(0, 0, 0); } }, [walking, mode, camera]);
+  useEffect(() => { captureRef.current = () => { gl.render(scene, camera); return gl.domElement.toDataURL('image/png'); }; return () => { captureRef.current = null; }; }, [gl, scene, camera, captureRef]);
+  return null;
+}
+function MouseLook({ onUnlock }: { onUnlock: () => void }) {
+  const { camera, gl } = useThree();
+  useEffect(() => {
+    let dragging = false, wasLocked = false;
+    const down = () => { dragging = true; }, up = () => { dragging = false; };
+    const move = (event: MouseEvent) => {
+      if (document.pointerLockElement !== gl.domElement && !dragging) return;
+      const euler = new Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+      euler.y -= event.movementX*.002; euler.x = Math.max(-1.45, Math.min(1.45, euler.x-event.movementY*.002)); camera.quaternion.setFromEuler(euler);
+    };
+    const lock = () => { if (!document.pointerLockElement && wasLocked) onUnlock(); wasLocked = document.pointerLockElement === gl.domElement; };
+    gl.domElement.addEventListener('mousedown',down); document.addEventListener('mouseup',up); document.addEventListener('mousemove',move); document.addEventListener('pointerlockchange',lock);
+    return () => { gl.domElement.removeEventListener('mousedown',down); document.removeEventListener('mouseup',up); document.removeEventListener('mousemove',move); document.removeEventListener('pointerlockchange',lock); };
+  }, [camera,gl,onUnlock]);
+  return null;
+}
+export default function World(props: Props) {
+  const [quality, setQuality] = useState(1.5);
+  const target = props.mode === 'model' && props.design ? props.design.spawn : rooms.find(r => r.id === props.room)!.camera;
+  return <Canvas shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+    <color attach="background" args={['#e4e3d9']} /><fog attach="fog" args={['#e4e3d9', 50, 110]} />
+    <ambientLight intensity={.9} /><hemisphereLight args={['#fff7df', '#939783', 1.6]} />
+    <directionalLight position={[10, 25, 8]} intensity={2.2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-25} shadow-camera-right={25} shadow-camera-top={25} shadow-camera-bottom={-25} shadow-bias={-.0005} />
+    <PerformanceMonitor onDecline={() => setQuality(1)} />
+    <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
+      {props.mode === 'office' ? <Office onRoom={props.onRoom} room={props.room} tasks={props.tasks} /> : props.design && <Building key={`building-${props.revision}`} design={props.design} selected={props.selected} onSelect={props.onSelect} cutaway={props.cutaway} />}
+      {props.walking && <Player target={target} revision={props.revision} design={props.design} onRoom={props.onRoom} office={props.mode === 'office'} />}
+    </Physics></Suspense>
+    <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
+    {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={65} maxPolarAngle={Math.PI / 2.1} target={[0, 0, 0]} />}
+    {props.walking && <MouseLook onUnlock={props.onUnlock} />}
+    <CameraRig walking={props.walking} mode={props.mode} captureRef={props.captureRef} />
+  </Canvas>;
+}

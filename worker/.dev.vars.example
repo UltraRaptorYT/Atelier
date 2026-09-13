@@ -1,0 +1,6 @@
+# Local-only secrets. Copy to .dev.vars.local; never commit real values.
+CLERK_SECRET_KEY=
+CLERK_JWT_KEY=
+E2B_API_KEY=
+# Base64-encoded 32 random bytes. Store historical keys until all credentials are rotated.
+KEY_ENCRYPTION_KEYS={"v1":"REPLACE_WITH_RANDOM_BASE64_32_BYTES"}

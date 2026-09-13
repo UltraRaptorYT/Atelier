@@ -1,0 +1,48 @@
+{
+  "name": "atelier-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit && tsc -p worker/tsconfig.json --noEmit",
+    "test": "npm run worker:test-build && vitest run",
+    "worker:test-build": "wrangler deploy --dry-run --config worker/wrangler.jsonc --env local --outdir ../.atelier/test-worker",
+    "setup:local": "node scripts/local-setup.mjs && npm run worker:types && npm run db:local",
+    "desktop:build": "tsx scripts/build-desktop.ts",
+    "worker:dev": "wrangler dev --config worker/wrangler.jsonc --env local",
+    "worker:types": "wrangler types --config worker/wrangler.jsonc worker/env.d.ts --env local",
+    "worker:check": "wrangler deploy --dry-run --config worker/wrangler.jsonc --env local",
+    "db:local": "wrangler d1 migrations apply atelier-local --local --config worker/wrangler.jsonc --env local"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260911.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.131.1"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.17.2",
+    "@clerk/nextjs": "^7.9.2",
+    "@e2b/desktop": "^2.4.0",
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/rapier": "^2.2.0",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.45.0",
+    "next": "^16.3.5",
+    "openai": "^7.15.0",
+    "react": "19.2",
+    "react-dom": "19.2",
+    "three": "^0.186.0",
+    "zod": "^4.6.2"
+  }
+}

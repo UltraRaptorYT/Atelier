@@ -1,0 +1,17 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE projects (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, name TEXT NOT NULL, brief TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0, design_key TEXT, status TEXT NOT NULL DEFAULT 'draft', created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE INDEX projects_owner ON projects(owner_id, updated_at);
+CREATE TABLE credentials (owner_id TEXT PRIMARY KEY, ciphertext TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE runs (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, owner_id TEXT NOT NULL, kind TEXT NOT NULL, status TEXT NOT NULL, base_revision INTEGER NOT NULL, instruction TEXT, agent TEXT, element_id TEXT, created_at TEXT NOT NULL);
+CREATE UNIQUE INDEX one_active_run_per_owner ON runs(owner_id) WHERE status IN ('queued','in_progress');
+CREATE TABLE tasks (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, run_id TEXT NOT NULL REFERENCES runs(id), agent TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '');
+CREATE INDEX tasks_project ON tasks(project_id);
+CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, type TEXT NOT NULL, agent TEXT, task_id TEXT, revision INTEGER NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL, operation_id TEXT UNIQUE);
+CREATE INDEX events_project_cursor ON events(project_id, id);
+CREATE TABLE revisions (project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, revision INTEGER NOT NULL, artifact_key TEXT NOT NULL, operation_id TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, PRIMARY KEY(project_id, revision));
+CREATE TABLE artifacts (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, name TEXT NOT NULL, kind TEXT NOT NULL, revision INTEGER NOT NULL, object_key TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX artifacts_project ON artifacts(project_id, revision);
+CREATE TABLE desktop_sessions (project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, agent TEXT NOT NULL, sandbox_id TEXT NOT NULL, lease_id TEXT NOT NULL, expires_at INTEGER NOT NULL, viewed_at INTEGER NOT NULL, PRIMARY KEY(project_id, agent));
+CREATE TABLE voice_sessions (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, owner_id TEXT NOT NULL, agent TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE TABLE decisions (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, run_id TEXT NOT NULL, topic TEXT NOT NULL, decision TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE changes (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, agent TEXT NOT NULL, instruction TEXT NOT NULL, element_id TEXT, base_revision INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL);
