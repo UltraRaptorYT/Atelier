@@ -1,0 +1,18 @@
+{
+  "site_m2": 600,
+  "ground_enclosed_m2": 164.4,
+  "upper_enclosed_m2": 155.6,
+  "total_enclosed_m2": 320.0,
+  "covered_footprint_m2": 180.0,
+  "coverage_percent": 30,
+  "conservative_planted_m2": 319.56,
+  "bedrooms": 3,
+  "storeys": 2,
+  "setbacks_m": {
+    "south": 7,
+    "north": 11,
+    "east": 2.5,
+    "west": 2.5
+  },
+  "note": "Concept geometry, not a statutory GFA calculation or accessibility certification."
+}

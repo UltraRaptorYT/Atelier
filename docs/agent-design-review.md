@@ -2,6 +2,12 @@
 
 Reviewed 2026-09-13. This is an audit of the existing agent workflow and active prompts, alongside the separate live voice integration. The numbered findings describe that review snapshot; the implementation update below records subsequent fixes. Source links identify the relevant code; line numbers describe the reviewed version.
 
+## Concurrent-collaboration implementation update
+
+The runtime now uses a Principal-authored dependency graph instead of the fixed specialist sequence described in the original findings. Independent tasks run concurrently, saved dependency outputs reach later tasks, overlapping proposals trigger a Principal decision and targeted retry, and final-review findings can trigger one bounded correction plan. Activity exposes these tasks and prerequisites. See [the current collaboration contract](concurrent-agents.md).
+
+Finding 1's reservation-accounting blocker is addressed by refunding unused time only after confirmed workstation shutdown; caps are unchanged and actual long runs can still exhaust them. Finding 5's lack of any correction loop is addressed, although evidence-backed geometric review remains limited. Finding 6 is partly addressed: the Principal can delegate multi-element finish work directly to the Designer, and concurrent proposals receive field-aware merge and ownership checks. Typed intent, explicit clarification resume, durable effective requirements, rich workstation model views and the Presentation-room exhibit remain separate work.
+
 ## Image-integration implementation update
 
 The image-generation implementation addressed several adjacent issues from this audit:

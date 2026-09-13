@@ -5,6 +5,7 @@ import { HttpError, credential, ownedProject } from './security';
 import { emit } from './store';
 import { dispatchPending } from './steering';
 import { executeVoiceTool, hangupVoice, LiveResponseTools } from './voice';
+import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collaboration';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private closingVoices = new Set<string>();
@@ -107,7 +108,35 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     for (const [id, session] of sessions) if (Date.now()-session.created > 15*60000 || !this.voices.has(id.slice(6))) await this.closeVoice(id.slice(6));
     if ((await this.ctx.storage.list({ prefix: 'voice-' })).size || await this.ctx.storage.get('pending-project')) await this.ctx.storage.setAlarm(Date.now()+60000);
   }
-  async commit(projectId: string, baseRevision: number, operationId: string, design: Design, runId?: string): Promise<number> {
+  async commitProposal(projectId: string, baseRevision: number, operationId: string, proposal: Design, runId: string, agent: AgentId): Promise<{ revision: number | null; conflicts: string[] }> {
+    const saved = await this.env.DB.prepare('SELECT revision FROM revisions WHERE project_id = ? AND operation_id = ?').bind(projectId, operationId).first<{ revision: number }>();
+    if (saved) return { revision: saved.revision, conflicts: [] };
+    const run = await this.env.DB.prepare('SELECT status FROM runs WHERE id = ? AND project_id = ?').bind(runId, projectId).first<{ status: string }>();
+    if (run?.status !== 'in_progress') throw new HttpError(409, 'The run stopped before this proposal could be published.');
+    let base: Design | null = null;
+    if (baseRevision) {
+      const previous = await this.env.DB.prepare('SELECT artifact_key FROM revisions WHERE project_id = ? AND revision = ?').bind(projectId, baseRevision).first<{ artifact_key: string }>();
+      const object = previous && await this.env.FILES.get(previous.artifact_key);
+      if (!object) throw new HttpError(409, 'The task’s starting design revision is unavailable.');
+      base = DesignSchema.parse(await object.json());
+    }
+    // Proposals may have been produced concurrently. Merge against the saved
+    // common ancestor, then retain the existing atomic revision/cancellation fence.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const row = await this.env.DB.prepare('SELECT * FROM projects WHERE id = ?').bind(projectId).first<ProjectRow>();
+      if (!row || row.revision < baseRevision) throw new HttpError(409, 'The task’s starting revision is invalid.');
+      const object = row.design_key && await this.env.FILES.get(row.design_key);
+      if (row.design_key && !object) throw new HttpError(503, 'The current saved design is unavailable.');
+      const latest = object ? DesignSchema.parse(await object.json()) : null;
+      let merged: Design;
+      try { merged = mergeDesignProposal(base, latest, proposal, agent); }
+      catch (error) { if (error instanceof DesignMergeConflict) return { revision: null, conflicts: error.paths }; throw error; }
+      try { return { revision: await this.commit(projectId, row.revision, operationId, merged, runId, agent), conflicts: [] }; }
+      catch (error) { if (!(error instanceof HttpError) || error.status !== 409 || attempt === 2) throw error; }
+    }
+    throw new HttpError(409, 'The design is changing. Reconcile the saved proposals before continuing.');
+  }
+  async commit(projectId: string, baseRevision: number, operationId: string, design: Design, runId?: string, agent: AgentId = 'architect'): Promise<number> {
     const duplicate = await this.env.DB.prepare('SELECT project_id, revision FROM revisions WHERE operation_id = ?').bind(operationId).first<{ project_id: string; revision: number }>();
     if (duplicate) { if (duplicate.project_id !== projectId) throw new HttpError(409, 'Operation belongs to another project.'); return duplicate.revision; }
     const validated = DesignSchema.parse(design), revision = baseRevision + 1;
@@ -118,7 +147,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     const result = await this.env.DB.batch([
       this.env.DB.prepare("INSERT OR IGNORE INTO revisions(project_id,revision,artifact_key,operation_id,created_at) SELECT id,?,?,?,? FROM projects WHERE id = ? AND revision = ? AND (? IS NULL OR EXISTS (SELECT 1 FROM runs WHERE id = ? AND project_id = projects.id AND status = 'in_progress'))").bind(revision, key, operationId, now, projectId, baseRevision, runId || null, runId || null),
       this.env.DB.prepare('UPDATE projects SET revision = ?, design_key = ?, status = ?, updated_at = ? WHERE id = ? AND revision = ? AND EXISTS (SELECT 1 FROM revisions WHERE operation_id = ?)').bind(revision, key, 'review', now, projectId, baseRevision, operationId),
-      this.env.DB.prepare("INSERT OR IGNORE INTO events(project_id,type,agent,revision,message,created_at,operation_id) SELECT project_id,'artifact_updated','architect',revision,?,?,? FROM revisions WHERE operation_id = ?").bind(`Design revision ${revision} saved.`, now, `commit-${operationId}`, operationId),
+      this.env.DB.prepare("INSERT OR IGNORE INTO events(project_id,type,agent,revision,message,created_at,operation_id) SELECT project_id,'artifact_updated',?,revision,?,?,? FROM revisions WHERE operation_id = ?").bind(agent, `Design revision ${revision} saved.`, now, `commit-${operationId}`, operationId),
     ]);
     if (!result[0].meta.changes) {
       const saved = await this.env.DB.prepare('SELECT revision FROM revisions WHERE project_id = ? AND operation_id = ?').bind(projectId, operationId).first<{revision:number}>();

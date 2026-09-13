@@ -4,6 +4,7 @@ import type { Bindings } from './types';
 import { HttpError } from './security';
 import { artifact, emit } from './store';
 import compiler from '../../scripts/blender_compile.py';
+import { limits } from '../../shared/budget';
 type DesktopRow = { sandbox_id: string; lease_id: string; expires_at: number };
 export async function connectDesktop(env: Bindings, projectId: string, agent: AgentId): Promise<Sandbox | null> {
   if (!env.E2B_API_KEY) return null;
@@ -16,19 +17,51 @@ export async function createDesktop(env: Bindings, projectId: string, owner: str
   const budget = env.BUDGET.getByName('desktop-budget');
   const previous = await env.DB.prepare('SELECT sandbox_id,lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId,agent).first<DesktopRow>();
   // A new task gets a full bounded lease. Reusing an older machine can expire mid-commit.
-  if (previous?.lease_id === leaseId) { const existing = await connectDesktop(env,projectId,agent); if (existing) { await budget.touch(leaseId,true); return existing; } }
-  if (previous) { const released = await budget.release(previous.lease_id); if (released === false) throw new HttpError(425, 'Waiting for the previous workstation to shut down.'); }
-  const reservation = await budget.reserve(leaseId, owner, 900);
+  if (previous?.lease_id === leaseId) {
+    const reservation = await budget.reserve(leaseId, owner, limits.leaseSeconds);
+    if (!reservation.allowed) throw new HttpError(429, reservation.reason!);
+    const existing = await connectDesktop(env,projectId,agent);
+    if (existing) { await budget.touch(leaseId,true); return existing; }
+  }
+  if (previous) { const released = await releaseDesktop(env, projectId, agent, previous.lease_id); if (!released) throw new HttpError(425, 'Waiting for the previous workstation to shut down.'); }
+  const reservation = await budget.reserve(leaseId, owner, limits.leaseSeconds);
   if (!reservation.allowed) throw new HttpError(reservation.reason === 'queue' ? 425 : 429, reservation.reason === 'queue' ? 'The studio’s computers are busy. Your job is waiting in the queue.' : reservation.reason!);
+  let desktop: Sandbox | undefined;
+  let attached = false;
   try {
-    const desktop = await Sandbox.create(env.E2B_TEMPLATE, { apiKey: env.E2B_API_KEY, timeoutMs: 900000, resolution: [1280, 800], metadata: { project: projectId, agent, lease: leaseId } });
-    await budget.attach(leaseId, desktop.sandboxId);
-    await env.DB.prepare('INSERT OR REPLACE INTO desktop_sessions(project_id,agent,sandbox_id,lease_id,expires_at,viewed_at) VALUES(?,?,?,?,?,?)').bind(projectId, agent, desktop.sandboxId, leaseId, Date.now()+900000, Date.now()).run();
+    desktop = await Sandbox.create(env.E2B_TEMPLATE, { apiKey: env.E2B_API_KEY, timeoutMs: limits.leaseSeconds * 1000, resolution: [1280, 800], metadata: { project: projectId, agent, lease: leaseId } });
+    attached = await budget.attach(leaseId, desktop.sandboxId);
+    if (!attached) throw new Error('The workstation reservation is no longer available.');
+    await env.DB.prepare('INSERT OR REPLACE INTO desktop_sessions(project_id,agent,sandbox_id,lease_id,expires_at,viewed_at) VALUES(?,?,?,?,?,?)').bind(projectId, agent, desktop.sandboxId, leaseId, Date.now()+limits.leaseSeconds * 1000, Date.now()).run();
     await desktop.commands.run('mkdir -p /home/user/project/output', { timeoutMs: 10000 });
     await desktop.files.write('/home/user/project/blender_compile.py', compiler);
     await emit(env, projectId, 'tool_completed', 'Remote workstation connected.', agent);
     return desktop;
-  } catch (e) { await budget.release(leaseId); throw e; }
+  } catch (e) {
+    if (desktop && !attached) {
+      // An attachment may have been rejected, or committed without its RPC
+      // acknowledgement. Always try the locally-known machine directly.
+      try { await Sandbox.kill(desktop.sandboxId, { apiKey: env.E2B_API_KEY }); } catch { /* The budget records the ID below and retries shutdown. */ }
+    }
+    try {
+      // Supply the local ID even if attach failed, so shutdown can be retried
+      // by the budget alarm without freeing a live machine's reserved slot.
+      const released = await budget.release(leaseId, desktop?.sandboxId);
+      if (released) await env.DB.prepare('DELETE FROM desktop_sessions WHERE project_id = ? AND agent = ? AND lease_id = ?').bind(projectId, agent, leaseId).run();
+    } catch {
+      // If the budget service itself is unavailable, keep its reservation and
+      // still attempt to stop the machine whose ID only this caller may know.
+      if (desktop && !attached) { try { await Sandbox.kill(desktop.sandboxId, { apiKey: env.E2B_API_KEY }); } catch { /* The bounded sandbox timeout remains in force. */ } }
+    }
+    throw e;
+  }
+}
+export async function releaseDesktop(env: Bindings, projectId: string, agent: AgentId, leasePrefix?: string): Promise<boolean> {
+  const row = await env.DB.prepare('SELECT sandbox_id,lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId, agent).first<DesktopRow>();
+  if (!row || (leasePrefix && row.lease_id !== leasePrefix && !row.lease_id.startsWith(leasePrefix.endsWith('-') ? leasePrefix : `${leasePrefix}-`))) return true;
+  if (!await env.BUDGET.getByName('desktop-budget').release(row.lease_id, row.sandbox_id)) return false;
+  await env.DB.prepare('DELETE FROM desktop_sessions WHERE project_id = ? AND agent = ? AND lease_id = ?').bind(projectId, agent, row.lease_id).run();
+  return true;
 }
 export async function syncDesktop(desktop: Sandbox, design: Design) {
   await desktop.files.write('/home/user/project/design.json', JSON.stringify(design, null, 2));

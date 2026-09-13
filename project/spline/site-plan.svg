@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1220" viewBox="0 0 900 1220">
+<rect width="900" height="1220" fill="#f8f6f0"/>
+<style>text{font-family:Arial,sans-serif;fill:#283d36}.small{font-size:13px}.body{font-size:17px}.label{font-size:19px;font-weight:600}.dim{stroke:#627469;stroke-width:1;fill:none}</style>
+<text x="66" y="57" class="small" >PIKACHU HOUSE / SPLINE STUDY</text>
+<text x="66" y="98" class="body" style="font-size:34px;font-weight:600">Site &amp; garden</text>
+<text x="66" y="128" class="body" >Hypothetical Joo Chiat plot · 20 × 30 m · North ↑</text>
+<rect x="170" y="170" width="560" height="840" fill="#dce4cc" stroke="#5e7563" stroke-width="2"/>
+<rect x="240.0" y="478" width="420.0" height="336" fill="#42514b" stroke="#283d36" stroke-width="2"/>
+<line x1="371.6" y1="814" x2="371.6" y2="478" stroke="#879281" stroke-width="3"/>
+<rect x="483.59999999999997" y="511.59999999999997" width="61.60000000000001" height="50.39999999999999" fill="#c8dfdc"/>
+<rect x="240.0" y="433.2" width="420.0" height="44.79999999999999" fill="#c3a786"/>
+<rect x="394" y="814" width="95.2" height="196" fill="#e8e3d4"/>
+<rect x="567.5999999999999" y="830.8000000000001" width="78.39999999999999" height="179.20000000000002" fill="#c9cabe"/>
+<rect x="660.0" y="478" width="28.0" height="336" fill="#e3ddcc"/>
+<rect x="363.20000000000005" y="791.6" width="126.0" height="22.399999999999995" fill="#e8b42e"/>
+<circle cx="210.59999999999997" cy="889.6" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="301.6" cy="928.8000000000001" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="690.8000000000001" cy="727.1999999999999" r="25" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="209.20000000000002" cy="545.2" r="25" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="231.60000000000002" cy="346.40000000000003" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="640.4000000000001" cy="338" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="338" cy="220.40000000000003" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<circle cx="685.1999999999999" cy="223.20000000000002" r="39" fill="#819774" fill-opacity=".68" stroke="#667f5c"/>
+<rect x="417.79999999999995" y="403.80000000000007" width="22.4" height="16.79999999999999" fill="#e4dfce"/>
+<rect x="417.79999999999995" y="377.20000000000005" width="22.4" height="16.79999999999999" fill="#e4dfce"/>
+<rect x="417.79999999999995" y="350.59999999999997" width="22.4" height="16.800000000000015" fill="#e4dfce"/>
+<rect x="417.79999999999995" y="324.0" width="22.4" height="16.80000000000004" fill="#e4dfce"/>
+<rect x="417.79999999999995" y="297.4" width="22.4" height="16.80000000000004" fill="#e4dfce"/>
+<rect x="417.79999999999995" y="270.79999999999995" width="22.4" height="16.80000000000004" fill="#e4dfce"/>
+<rect x="105" y="1012" width="690" height="55" fill="#7e8581"/>
+<text x="450" y="1048" class="label" text-anchor="middle" fill="#ffffff">SOUTH / NEIGHBORHOOD STREET</text>
+<text x="450" y="302" class="label" text-anchor="middle">Connected rear family garden</text>
+<text x="450" y="330" class="small" text-anchor="middle">11 m from house to north boundary</text>
+<text x="450" y="615" class="label" text-anchor="middle" style="fill:#f1eddd">FOLDED ROOF</text>
+<text x="450" y="642" class="body" text-anchor="middle" style="fill:#e1e7d5">180 m² covered projection</text>
+<text x="450" y="676" class="small" text-anchor="middle" style="fill:#e1e7d5">320 m² enclosed across two storeys</text>
+<text x="606.8" y="926" class="small" text-anchor="middle">1 car</text>
+<text x="441.59999999999997" y="900.8000000000001" class="small" text-anchor="middle">Entry</text>
+<text x="170" y="1109" class="label" >30% coverage</text>
+<text x="460" y="1109" class="label" >319.6 m² planted</text>
+<text x="170" y="1136" class="small" >180 m² maximum covered footprint</text>
+<text x="460" y="1136" class="small" >Conservative residual after all exclusions</text>
+<text x="66" y="1185" class="small" >Concept only. Dimensions are fictional design inputs, not local planning rules.</text>
+<text x="133" y="590" class="small" transform="rotate(-90 133 590)" text-anchor="middle">WEST NEIGHBOR · 2.5 m setback</text>
+<text x="770" y="590" class="small" transform="rotate(90 770 590)" text-anchor="middle">EAST NEIGHBOR · 2.5 m setback</text>
+</svg>

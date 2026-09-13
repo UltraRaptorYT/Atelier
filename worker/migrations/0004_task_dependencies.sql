@@ -1,0 +1,7 @@
+ALTER TABLE tasks ADD COLUMN kind TEXT;
+ALTER TABLE tasks ADD COLUMN objective TEXT;
+ALTER TABLE tasks ADD COLUMN dependencies TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE tasks ADD COLUMN deliverables TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE tasks ADD COLUMN base_revision INTEGER;
+ALTER TABLE tasks ADD COLUMN artifact_id TEXT;
+ALTER TABLE tasks ADD COLUMN artifact_revision INTEGER;

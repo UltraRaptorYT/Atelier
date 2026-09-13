@@ -1,8 +1,10 @@
 # Atelier
 
-An AI architecture studio with four specialists, observable tool work, persistent design revisions and an explorable 3D office and building. The Principal coordinates the brief; the Architect develops layout and structure; the Interior Designer handles materials, furniture and lighting; the Critic reviews the result.
+An AI architecture studio with four specialists, observable tool work, persistent design revisions and an explorable 3D office and building. The Principal plans tasks and dependencies; independent specialists can work concurrently. The Architect develops layout and structure, the Interior Designer handles materials, furniture and lighting, and the Critic reviews the combined result.
 
 The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.
+
+The [collaboration guide](docs/concurrent-agents.md) explains concurrent tasks, proposal merging, coordination meetings and bounded correction rounds. Apply the new task-dependency migration with `npm run db:local` when updating an existing local checkout. Activity now shows the current task graph, dependencies and actual active specialists.
 
 ## Run the local preview
 

@@ -17,6 +17,17 @@ async function commit(projectId: string, baseRevision: number, operationId: stri
   if (!response.ok) throw new Error(result.error);
   return result.revision;
 }
+async function proposal(projectId: string, baseRevision: number, operationId: string, design: unknown, runId: string, agent: string): Promise<{ revision: number | null; conflicts: string[] }> {
+  const response = await commitWorker.fetch('http://test/proposal', { method: 'POST', body: JSON.stringify([projectId, baseRevision, operationId, design, runId, agent]) });
+  const result = await response.json() as { revision: number | null; conflicts: string[]; error?: string };
+  if (!response.ok) throw new Error(result.error);
+  return result;
+}
+async function proposalRun(projectId: string, status = 'in_progress') {
+  const id = crypto.randomUUID();
+  await env.DB.prepare("INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,created_at) VALUES(?,?,'user-a','change',?,1,?)").bind(id, projectId, status, new Date().toISOString()).run();
+  return id;
+}
 beforeAll(async()=>{
   const {publicKey,privateKey}=await generateKeyPair('RS256');
   const token=(sub:string)=>new SignJWT({azp:'http://127.0.0.1:3000',sid:'session-test'}).setProtectedHeader({alg:'RS256'}).setSubject(sub).setIssuer('https://atelier-test.clerk.accounts.dev').setIssuedAt().setNotBefore('0 seconds').setExpirationTime('1 hour').sign(privateKey);
@@ -34,7 +45,13 @@ beforeAll(async()=>{
       durableObjects:{PROJECTS:{className:'ProjectCoordinator',scriptName:'atelier-test',useSQLite:true}},
       script:`export default { async fetch(request, env) {
         const args = await request.json();
-        try { return Response.json({ revision: await env.PROJECTS.getByName(args[0]).commit(...args) }); }
+        try {
+          if (new URL(request.url).pathname === '/proposal') {
+            const result = await env.PROJECTS.getByName(args[0]).commitProposal(...args);
+            return Response.json({ revision: result.revision, conflicts: [...result.conflicts] });
+          }
+          return Response.json({ revision: await env.PROJECTS.getByName(args[0]).commit(...args) });
+        }
         catch (error) { return Response.json({ error: error.message }, { status: 500 }); }
       } };`
     }] }));
@@ -88,14 +105,69 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     expect(saved.events.filter((e:any)=>e.type==='artifact_updated')).toHaveLength(1);
     expect(await (await call(`/projects/${id}/revisions/1`)).json()).toEqual(original);
   });
-  it('enforces the global computer count atomically and retains daily charges after release',async()=>{
+  it('merges concurrent sibling proposals from the same saved revision without losing either agent’s work', async () => {
+    const id = await project(), original = exampleDesign();
+    await commit(id, 0, `initial-${id}`, original);
+    const runId = await proposalRun(id);
+    try {
+      const architecture = structuredClone(original);
+      architecture.elements.find(element => element.id === 'roof')!.position[1] += .3;
+      const interiors = recolor(original, 'front-left', '#ff0000');
+      const results = await Promise.all([
+        proposal(id, 1, `architecture-${id}`, architecture, runId, 'architect'),
+        proposal(id, 1, `interiors-${id}`, interiors, runId, 'designer'),
+      ]);
+      expect(results.map(result => result.revision).sort()).toEqual([2, 3]);
+      expect(results.every(result => result.conflicts.length === 0)).toBe(true);
+      const current = await (await call(`/projects/${id}`)).json() as any;
+      expect(current.project.revision).toBe(3);
+      expect(current.design).toEqual(recolor(architecture, 'front-left', '#ff0000'));
+      expect(current.events.filter((event: any) => event.type === 'artifact_updated')).toHaveLength(3);
+      expect(current.events.find((event: any) => event.type === 'artifact_updated' && event.revision === results[1].revision)?.agent).toBe('designer');
+      expect(await proposal(id, 1, `interiors-${id}`, interiors, runId, 'designer')).toEqual(results[1]);
+      expect(await (await call(`/projects/${id}/revisions/1`)).json()).toEqual(original);
+    } finally { await env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(runId).run(); }
+  });
+  it('reports a conflicting proposal path without advancing the canonical revision or publishing an event', async () => {
+    const id = await project(), original = exampleDesign();
+    await commit(id, 0, `initial-${id}`, original);
+    const runId = await proposalRun(id);
+    try {
+      const first = structuredClone(original), second = structuredClone(original);
+      first.elements.find(element => element.id === 'sofa')!.position[0] += .5;
+      second.elements.find(element => element.id === 'sofa')!.position[0] -= .5;
+      expect(await proposal(id, 1, `first-${id}`, first, runId, 'designer')).toEqual({ revision: 2, conflicts: [] });
+      expect(await proposal(id, 1, `second-${id}`, second, runId, 'architect')).toEqual({ revision: null, conflicts: ['/elements/sofa/position'] });
+      const current = await (await call(`/projects/${id}`)).json() as any;
+      expect(current.project.revision).toBe(2);
+      expect(current.design).toEqual(first);
+      expect(current.events.filter((event: any) => event.type === 'artifact_updated')).toHaveLength(2);
+      expect(await env.DB.prepare('SELECT revision FROM revisions WHERE operation_id = ?').bind(`second-${id}`).first()).toBeNull();
+    } finally { await env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(runId).run(); }
+  });
+  it('fences a cancelled proposal writer even when its base-relative edit can merge cleanly', async () => {
+    const id = await project(), original = exampleDesign();
+    await commit(id, 0, `initial-${id}`, original);
+    const runId = await proposalRun(id, 'cancelled');
+    await expect(proposal(id, 1, `cancelled-proposal-${id}`, recolor(original, 'roof', '#ff0000'), runId, 'designer')).rejects.toThrow(/stopped|cancelled/);
+    const current = await (await call(`/projects/${id}`)).json() as any;
+    expect(current.project.revision).toBe(1);
+    expect(current.design).toEqual(original);
+    expect(current.events.filter((event: any) => event.type === 'artifact_updated')).toHaveLength(1);
+    expect(await env.DB.prepare('SELECT revision FROM revisions WHERE operation_id = ?').bind(`cancelled-proposal-${id}`).first()).toBeNull();
+  });
+  it('enforces the global computer count atomically and refunds reservations that never allocated a sandbox',async()=>{
     const budget=env.BUDGET.getByName('test-budget');
-    const results=await Promise.all(['a','b','c'].map(id=>budget.reserve(id,'owner',900)));
+    const ids = ['a','b','c'], results=await Promise.all(ids.map(id=>budget.reserve(id,'owner',900)));
     expect(results.filter(r=>r.allowed)).toHaveLength(2);
-    await budget.release('a'); await budget.release('b');
-    expect((await budget.reserve('d','owner',900)).allowed).toBe(true); await budget.release('d');
-    expect((await budget.reserve('e','owner',900)).allowed).toBe(true); await budget.release('e');
-    expect((await budget.reserve('f','owner',900)).reason).toMatch(/daily/);
+    for (let index = 0; index < ids.length; index++) if (results[index].allowed) expect(await budget.release(ids[index])).toBe(true);
+    for (let index = 0; index < 6; index++) {
+      const id = `unused-${index}`;
+      expect((await budget.reserve(id,'owner',900)).allowed).toBe(true);
+      expect((await budget.reserve(id,'another-owner',900)).reason).toMatch(/another owner/);
+      expect(await budget.release(id)).toBe(true);
+      expect(await budget.release(id)).toBe(true);
+    }
   });
   it('keeps saved projects accessible when generation is paused',async()=>{
     const id=await project();

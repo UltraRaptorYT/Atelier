@@ -58,7 +58,7 @@ export const ChangeSchema = z.object({
 });
 export type Change = z.infer<typeof ChangeSchema>;
 export type TaskStatus = 'queued' | 'blocked' | 'in_progress' | 'review' | 'completed' | 'cancelled' | 'failed';
-export type Task = { id: string; agent: AgentId; title: string; status: TaskStatus; detail: string; runId: string };
+export type Task = { id: string; agent: AgentId; title: string; status: TaskStatus; detail: string; runId: string; kind?: string; objective?: string; dependencies?: string[]; deliverables?: string[]; baseRevision?: number | null; artifactId?: string | null; artifactRevision?: number | null };
 export type StudioEvent = { id: number; projectId: string; type: string; agent: AgentId | null; taskId: string | null; revision: number; message: string; createdAt: string };
 export type Artifact = { id: string; name: string; kind: string; revision: number; createdAt: string; size: number };
 export type Project = { id: string; name: string; brief: Brief; revision: number; status: string; createdAt: string; updatedAt: string; selectedConceptId?: string | null };

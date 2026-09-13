@@ -64,6 +64,11 @@ def record(e):
     name=f"PH26 | {e['id']} | {e['name']}"
     p=e['position']; dims=e['size']; shape=b['shape']
     data={"n":name,"m":e['materialId'],"p":[p[0]*S,p[1]*S,-p[2]*S],"s":[v*S for v in dims],"r":-e['rotation']*180/math.pi,"t":shape}
+    if b.get('rotation_z'):data['r']=math.degrees(b['rotation_z'])
+    if e['id'] in ['ph_0326','ph_0327','ph_0328','ph_0329']:
+        factors={'ph_0326':(.994,.994),'ph_0327':(.994,.994),'ph_0328':(.99,.94),'ph_0329':(.99,.99)}[e['id']]
+        data['s'][0]*=factors[0];data['s'][2]*=factors[1]
+        if e['id']=='ph_0328':data['p'][1]+=.7
     # Join window bars between head and sill, avoiding coincident front faces.
     for suffix in [' left jamb',' right jamb',' mullion']:
         if e['name'].endswith(suffix):

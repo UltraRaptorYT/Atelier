@@ -1,8 +1,8 @@
 const data = [
-{"n":"PH26 | ph_0480 | Gallery yellow screen accent","m":"yellow","p":[198.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":0.0,"t":"box","rev":2},
-{"n":"PH26 | ph_0481 | Gallery yellow screen accent","m":"yellow","p":[216.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":0.0,"t":"box","rev":2},
-{"n":"PH26 | ph_0482 | Gallery yellow screen accent","m":"yellow","p":[234.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":0.0,"t":"box","rev":2},
-{"n":"PH26 | ph_0483 | Gallery yellow screen accent","m":"yellow","p":[252.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":0.0,"t":"box","rev":2}
+{"n":"PH26 | ph_0480 | Gallery yellow screen accent","m":"yellow","p":[198.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":17.188733853924695,"t":"box","rev":2},
+{"n":"PH26 | ph_0481 | Gallery yellow screen accent","m":"yellow","p":[216.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":17.188733853924695,"t":"box","rev":2},
+{"n":"PH26 | ph_0482 | Gallery yellow screen accent","m":"yellow","p":[234.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":17.188733853924695,"t":"box","rev":2},
+{"n":"PH26 | ph_0483 | Gallery yellow screen accent","m":"yellow","p":[252.0,250.0,388.0],"s":[2.25,75.0,7.5],"r":17.188733853924695,"t":"box","rev":2}
 ];
 for (const q of data) {
   if (q.t === 'joinedwall') {

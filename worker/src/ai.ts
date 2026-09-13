@@ -1,12 +1,13 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import type { Sandbox } from '@e2b/desktop';
-import { agents, type AgentId, type Design } from '../../shared/design';
+import { agents, AgentIdSchema, type AgentId, type Design } from '../../shared/design';
 import type { Bindings } from './types';
 import { credential, HttpError } from './security';
 import { emit } from './store';
 import { agentInstructions } from './prompts';
-export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId, prompt: string, schema: z.ZodType<T>, context?: { desktop: Sandbox; projectId: string; taskId: string; design: Design | null }, images: string[] = []): Promise<T> {
+const CoordinationSchema = z.object({ target: AgentIdSchema, message: z.string().trim().min(1).max(1000) }).strict();
+export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId, prompt: string, schema: z.ZodType<T>, context?: { desktop: Sandbox; projectId: string; taskId: string; design: Design | null; communications?: Array<{ target: AgentId; message: string }> }, images: string[] = []): Promise<T> {
   const client = new OpenAI({ apiKey: await credential(env, owner), maxRetries: 0, timeout: 120000 });
   const input: OpenAI.Responses.ResponseInput = [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images.map(image_url => ({ type: 'input_image' as const, image_url, detail: 'high' as const }))] }];
   const tools: OpenAI.Responses.Tool[] = context ? [
@@ -15,7 +16,9 @@ export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId,
     { type: 'function', name: 'desktop_screenshot', description: 'Inspect your current real desktop.', parameters: { type: 'object', properties: {}, required: [], additionalProperties: false }, strict: true },
     { type: 'function', name: 'desktop_click', description: 'Click a position on the real desktop.', parameters: { type: 'object', properties: { x: { type: 'integer' }, y: { type: 'integer' } }, required: ['x','y'], additionalProperties: false }, strict: true },
     { type: 'function', name: 'desktop_type', description: 'Type into the focused desktop application.', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'], additionalProperties: false }, strict: true },
+    { type: 'function', name: 'report_coordination', description: 'Record a concise cross-domain issue or handoff for a teammate. This saves a coordination note; it does not start another agent, change task dependencies, or authorize work outside your ownership.', parameters: { type: 'object', properties: { target: { type: 'string', enum: ['principal', 'architect', 'designer', 'critic'] }, message: { type: 'string', minLength: 1, maxLength: 1000 } }, required: ['target', 'message'], additionalProperties: false }, strict: true },
   ] : [];
+  const recordedCoordination = new Map<string, z.infer<typeof CoordinationSchema>>();
   for (let step = 0; step < 12; step++) {
     const result = await client.responses.create({
       model: env.OPENAI_MODEL, store: false, max_output_tokens: 18000,
@@ -37,6 +40,16 @@ export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId,
       try {
         const args = JSON.parse(call.arguments);
         if (call.name === 'read_design') output = await context.desktop.files.read('/home/user/project/design.json');
+        else if (call.name === 'report_coordination') {
+          const note = CoordinationSchema.parse(args), previous = recordedCoordination.get(call.call_id);
+          if (previous && (previous.target !== note.target || previous.message !== note.message)) throw new Error('Coordination call ID was reused with different arguments.');
+          if (!previous) {
+            await emit(env, context.projectId, 'agent_message', `To ${note.target}: ${note.message}`, agent, context.taskId, `${context.taskId}-coordination-${call.call_id}`);
+            recordedCoordination.set(call.call_id, note);
+            if (!context.communications?.some(item => item.target === note.target && item.message === note.message)) context.communications?.push(note);
+          }
+          output = `Coordination note recorded for ${note.target}; continue within your task ownership.`;
+        }
         else if (call.name === 'execute_python') {
           const { code } = z.object({ code: z.string().max(12000) }).parse(args);
           await context.desktop.files.write('/home/user/project/agent_task.py', code);

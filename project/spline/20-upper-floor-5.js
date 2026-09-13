@@ -1,5 +1,5 @@
 const data = [
-{"n":"PH26 | ph_0329 | Shared bathroom ceiling","m":"plaster","p":[218.75,317.5,151.25000000000003],"s":[162.5,5.000000000000027,167.5],"r":0.0,"t":"box","rev":1}
+{"n":"PH26 | ph_0329 | Shared bathroom ceiling","m":"plaster","p":[218.75,317.5,151.25000000000003],"s":[160.875,5.000000000000027,165.825],"r":0.0,"t":"box","rev":1}
 ];
 for (const q of data) {
   if (q.t === 'joinedwall') {

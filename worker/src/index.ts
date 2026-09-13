@@ -151,9 +151,9 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     }
     if (method === 'DELETE' && path[3]) {
       const run = await env.DB.prepare('SELECT id,kind,status FROM runs WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first<{ id: string; kind: string; status: string }>(); if (!run) throw new HttpError(404, 'Run not found.');
-      const changed = await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress')").bind(run.id).run();
+      const changed = await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id).run();
       if (!changed.meta.changes) return Response.json({ cancelled: run.status === 'cancelled' });
-      await env.DB.batch([env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress')").bind(run.id), env.DB.prepare("UPDATE changes SET status = 'cancelled' WHERE id = ? AND status IN ('pending','in_progress')").bind(run.id)]);
+      await env.DB.batch([env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id), env.DB.prepare("UPDATE changes SET status = 'cancelled' WHERE id = ? AND status IN ('pending','in_progress')").bind(run.id)]);
       try { await (await env.JOBS.get(run.id)).terminate(); } catch { /* D1 cancellation is the commit fence. */ }
       if (run.kind !== 'image') {
         const prefix = `${run.id}-`;

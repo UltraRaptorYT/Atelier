@@ -1,0 +1,68 @@
+{
+  "project": {
+    "id": "pikachu-house-spline",
+    "name": "Pikachu House \u2014 Spline V2",
+    "status": "completed"
+  },
+  "canonicalDesign": "project/design.json",
+  "brief": "docs/draftroom/prompts/projects/03-pikachu-house.md",
+  "splineUrl": "https://app.spline.design/file/ef8ae053-66b7-4c9a-bda7-0f41f999bc66",
+  "tasks": [
+    {
+      "id": "spline_model",
+      "status": "completed",
+      "deliverable": "Editable native scene, 826 source elements plus native planting children"
+    },
+    {
+      "id": "spline_views",
+      "status": "completed",
+      "deliverable": "Street V1/V2, floor captures, labeled site SVG, saved eye-level garden camera",
+      "limitation": "Working screenshot budget prevented a separate image of the garden camera"
+    }
+  ],
+  "artifacts": [
+    {
+      "type": "scene",
+      "version": 2,
+      "url": "https://app.spline.design/file/ef8ae053-66b7-4c9a-bda7-0f41f999bc66"
+    },
+    {
+      "type": "presentation",
+      "path": "project/spline/index.html"
+    },
+    {
+      "type": "area_check",
+      "path": "project/spline/area-checks.json"
+    },
+    {
+      "type": "source_manifest",
+      "path": "project/spline/manifest.json"
+    }
+  ],
+  "verification": {
+    "nativeObjectCount": 898,
+    "sourceElements": 826,
+    "bedrooms": 3,
+    "enclosedM2": 320,
+    "coveredM2": 180,
+    "conservativeGardenM2": 319.56,
+    "liveFrame": "Passed final live check: all major objects visible; content 82% and house 50% of frame height.",
+    "cameraIds": {
+      "street": "b9ff6c10-c9d9-4683-9c0d-83951122fae8",
+      "familyGarden": "54de2185-560f-49a5-b51e-a0471a0ec846"
+    }
+  },
+  "decisions": [
+    "Preserve canonical roof, entry, bedroom areas and garden sequence.",
+    "V2 adds 82 privacy/gallery fins.",
+    "Native window joints and wall intersections adjusted to remove coincident surfaces.",
+    "Two side trees narrowed to avoid bedroom-window intrusion."
+  ],
+  "review": {
+    "source": "Codex self-review after user feedback",
+    "separateCriticAgentUsed": false,
+    "finding": "V2 adds visual clutter; front fins compete with the roof and yellow entrance. Privacy has not been validated against neighboring sightlines.",
+    "recommendation": "Retain V1 as the visual baseline and limit future screening to demonstrated side-neighbor sightlines.",
+    "status": "recorded; no further scene revision applied"
+  }
+}

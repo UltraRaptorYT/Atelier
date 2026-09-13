@@ -15,13 +15,13 @@ export async function eventsAfter(env: Bindings, projectId: string, after = 0): 
 export async function snapshot(env: Bindings, row: ProjectRow): Promise<Snapshot> {
   const [design, tasks, events, artifacts, images, runs] = await Promise.all([
     designFromRow(env, row),
-    env.DB.prepare('SELECT id, agent, title, status, detail, run_id as runId FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 100').bind(row.id).all<Task>(),
+    env.DB.prepare('SELECT id, agent, title, status, detail, run_id as runId, kind, objective, dependencies, deliverables, base_revision as baseRevision, artifact_id as artifactId, artifact_revision as artifactRevision FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 100').bind(row.id).all<Omit<Task, 'dependencies' | 'deliverables'> & { dependencies: string; deliverables: string }>(),
     env.DB.prepare('SELECT id, project_id as projectId, type, agent, task_id as taskId, revision, message, created_at as createdAt FROM (SELECT * FROM events WHERE project_id = ? ORDER BY id DESC LIMIT 200) ORDER BY id').bind(row.id).all<StudioEvent>(),
     env.DB.prepare('SELECT id, name, kind, revision, size, created_at as createdAt FROM artifacts WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<Artifact>(),
     env.DB.prepare('SELECT id, name, prompt, model, revision, source_artifact_id as sourceArtifactId, created_at as createdAt, metadata_artifact_id as metadataArtifactId FROM image_studies WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<ImageStudy>(),
     env.DB.prepare('SELECT id, kind, status FROM runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<StudioRun>(),
   ]);
-  return { project: projectFromRow(row), design, tasks: tasks.results, events: events.results, artifacts: artifacts.results, images: images.results, runs: runs.results };
+  return { project: projectFromRow(row), design, tasks: tasks.results.map(task => ({ ...task, dependencies: JSON.parse(task.dependencies), deliverables: JSON.parse(task.deliverables) })), events: events.results, artifacts: artifacts.results, images: images.results, runs: runs.results };
 }
 export async function emit(env: Bindings, projectId: string, type: string, message: string, agent: AgentId | null = null, taskId: string | null = null, operationId: string | null = null) {
   await env.DB.prepare('INSERT OR IGNORE INTO events(project_id,type,agent,task_id,revision,message,created_at,operation_id) SELECT id,?,?,?,?,?,?,? FROM projects WHERE id = ?')
@@ -35,9 +35,23 @@ export async function artifact(env: Bindings, projectId: string, runId: string, 
   if (existing) return artifactId;
   if (bytes.byteLength > 25 * 1024 * 1024) throw new HttpError(413, 'Artifact exceeds the 25 MB beta limit.');
   const total = await env.DB.prepare('SELECT COALESCE(SUM(size),0) as total FROM artifacts WHERE project_id = ?').bind(projectId).first<{ total: number }>();
-  if ((total?.total || 0) + bytes.byteLength > 250 * 1024 * 1024) throw new HttpError(429, 'This project has reached its 250 MB artifact allowance.');
+  if ((total?.total || 0) + bytes.byteLength > 250 * 1024 * 1024) {
+    // A concurrent copy may have filled the allowance after our first lookup.
+    const saved = await env.DB.prepare('SELECT id FROM artifacts WHERE id = ? AND project_id = ?').bind(artifactId, projectId).first();
+    if (saved) return artifactId;
+    throw new HttpError(429, 'This project has reached its 250 MB artifact allowance.');
+  }
   const key = `${projectId}/runs/${runId}/${crypto.randomUUID()}/${name}`;
   await env.FILES.put(key, bytes, { httpMetadata: { contentType: mime } });
-  await env.DB.prepare('INSERT OR IGNORE INTO artifacts(id,project_id,name,kind,revision,object_key,mime,size,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(artifactId, projectId, name, kind, revision, key, mime, bytes.length, new Date().toISOString()).run();
-  return artifactId;
+  // The precheck avoids unnecessary uploads, but only this atomic statement
+  // can enforce the allowance when multiple specialists finish together.
+  const inserted = await env.DB.prepare('INSERT OR IGNORE INTO artifacts(id,project_id,name,kind,revision,object_key,mime,size,created_at) SELECT ?,?,?,?,?,?,?,?,? WHERE (SELECT COALESCE(SUM(size),0) FROM artifacts WHERE project_id = ?) + ? <= ?')
+    .bind(artifactId, projectId, name, kind, revision, key, mime, bytes.byteLength, new Date().toISOString(), projectId, bytes.byteLength, 250 * 1024 * 1024).run();
+  if (inserted.meta.changes) return artifactId;
+  // Every upload has a unique key: never delete the object chosen by a
+  // concurrent successful writer of the same artifact ID.
+  await env.FILES.delete(key);
+  const saved = await env.DB.prepare('SELECT id FROM artifacts WHERE id = ? AND project_id = ?').bind(artifactId, projectId).first();
+  if (saved) return artifactId;
+  throw new HttpError(429, 'This project has reached its 250 MB artifact allowance.');
 }
