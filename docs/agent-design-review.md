@@ -1,6 +1,6 @@
 # Agent workflow readiness review
 
-Updated 2026-09-13 from the current implementation. Atelier now runs a Principal-authored dependency graph with concurrent specialist work, persistent outputs and coordinated canonical commits. Steering has a dedicated progress tracker and a durable record of applied requirement amendments. The remaining gaps concern interaction intent, requirement interpretation and design evidence.
+Updated 2026-09-13 from the current implementation. Atelier now runs a Principal-authored dependency graph with concurrent specialist work, persistent outputs and coordinated canonical commits. Steering has a dedicated progress tracker and a durable record of applied requirement amendments. Text and voice share conversation routing and persistent clarification continuation. The remaining gaps concern live interaction acceptance, requirement interpretation and design evidence.
 
 This review describes code and automated coverage. This documentation update did not run paid OpenAI/E2B generation, measure live latency or establish a live demo success rate. See the [collaboration contract](concurrent-agents.md), [image integration](image-generation-integration.md) and [walkthrough](walkthrough.md). The [original audit is archived](history/agent-design-review-before-concurrency.md); its fixed findings are historical.
 
@@ -41,7 +41,7 @@ Plans, proposals, reviews, visual directions, conflict decisions and workstation
 
 Snapshots also expose complete structured change history. Activity's [ChangeTracker](../components/ChangeTracker.tsx) shows **Queued → Working → Applied → Reviewed** from persisted milestone timestamps, rather than inferring progress from the latest event. Each request retains its scope, revision references, review findings and failure details. Review with findings needs attention; reaching “Applied” is not proof of a clean review. A stopped or failed run retains evidence of milestones already reached. See [change lifecycle](../worker/src/changes.ts) and [0006_change_tracking.sql](../worker/migrations/0006_change_tracking.sql).
 
-Replay uses durable steps and saved plans, task results and conflict resolutions. Indexed runtime task identities keep model-supplied names separate from retry identities. Within `runTeam`, cancellation fences prevent stopped runs from reviving graph-task statuses or publishing canonical revisions. Final readiness has a run/revision fence, and workstation release is scoped to the stopped run. The outer brief/clarification flow still has a status race described below. Dispatch reconciliation exposes failed requests instead of treating failed workflow creation as successful work. See [workflow.ts](../worker/src/workflow.ts), [team.ts](../worker/src/team.ts), [steering.ts](../worker/src/steering.ts) and [index.ts](../worker/src/index.ts).
+Replay uses durable steps and saved plans, task results and conflict resolutions. Indexed runtime task identities keep model-supplied names separate from retry identities. Within `runTeam`, cancellation fences prevent stopped runs from reviving graph-task statuses or publishing canonical revisions. Final readiness has a run/revision fence, and workstation release is scoped to the stopped run. Principal brief saves and clarification continuation also check the authoritative run state. Dispatch reconciliation exposes failed requests instead of treating failed workflow creation as successful work. See [workflow.ts](../worker/src/workflow.ts), [team.ts](../worker/src/team.ts), [steering.ts](../worker/src/steering.ts) and [index.ts](../worker/src/index.ts).
 
 Computer caps remain unchanged: two global desktops, 900 seconds per lease, 3,600 user seconds per day, and the configured global monthly allowance. Unused reserved time is refunded only after confirmed shutdown; uncertain or legacy usage retains its conservative charge. A deterministic single-element color patch needs no editing desktop, while its model review still uses the Critic workstation. Long work or retries can still exhaust the allowance. Image requests have a separate allowance and do not reserve desktops. See [budget limits](../shared/budget.ts), [budget accounting](../worker/src/budget.ts) and [desktop lifecycle](../worker/src/desktop.ts).
 
@@ -57,11 +57,11 @@ This closes the missing-history/context gap without creating an extracted semant
 
 ## Remaining work
 
-### Typed intent and clarification resume
+### Conversation routing and clarification continuation
 
-The normal text composer still submits a change request. A question such as “Why is the roof sloped?” has no explicit read-only text route and can enter a design workflow. The selected room supplies context and attribution; the Principal’s plan chooses actual ownership.
+The normal text composer now routes messages through the shared conversation service: read-only questions, initial brief details, answers to pending questions, and explicit design changes. Read-only answers receive no computer tools and do not enqueue design tasks. Room and element selection supply context; only an explicit change reaches the existing steering queue.
 
-A generation clarification completes the current run with a blocked Principal task. A normal typed answer does not identify and resume that question. Voice can append requirements to the brief before a first design exists and while work is idle, but a unified question/answer/resume lifecycle remains absent. Add explicit `ask`, `answer_clarification`, `change` and `start_work` intents with durable question IDs and brief updates. See [Studio.tsx](../components/Studio.tsx), [workflow.ts](../worker/src/workflow.ts) and [voice.ts](../worker/src/voice.ts).
+A generation clarification persists versioned question IDs and leaves the run `awaiting_input`. Text question cards and the voice answer tool save partial answers without losing prior requirements. Once all questions are answered, a durable dispatch record starts one linked continuation of the requested generation. Initial work still starts through the project controls or an explicitly confirmed voice meeting. Stale answers, cancelled briefings and replaced briefs cannot revive old work. Conversation replies and accepted answers survive refreshes. Apply [migration 0007](../worker/migrations/0007_conversations.sql) before using this Worker. See [conversation.ts](../worker/src/conversation.ts), [clarifications.ts](../worker/src/clarifications.ts) and [ClarificationCard.tsx](../components/ClarificationCard.tsx).
 
 ### Required geometry evidence
 
@@ -77,7 +77,7 @@ The Presentation room still contains a fixed exhibit. The accepted building is e
 
 ### Smaller state and schema gaps
 
-- The outer Principal brief step can save a model response after cancellation without renewing its cancellation fence. Its clarification branch can also mark the run completed and wrapper task blocked after Stop work. Graph tasks, canonical publication and final readiness have stronger fences; the wrapper needs the same status-aware updates.
+- Principal brief saves and clarification creation now check the active run. Cancelling a pending briefing also fences its linked continuation, including dispatch retries. Live cancellation and reconnect behavior still belongs in deployment acceptance.
 - Image and browser-capture storage check the project allowance before insertion, without an atomic SQL capacity condition. Concurrent saves can therefore exceed the shared cap even though specialist artifact admission is atomic.
 - Decisions remain exposed through events/artifacts rather than a complete dedicated decision-history view. Changes now have full structured snapshot history and their own tracker.
 - Semantic target selection still relies on planning a proposal. A typed set of affected IDs and scoped change operations would make multi-element steering more explicit.
@@ -102,4 +102,4 @@ Relevant automated suites are:
 
 Run `npm test` and `npm run typecheck` for the repository’s current checks. Automated storage, scheduling and physics coverage does not verify live provider availability, architectural quality, complete evidence capture or the final Presentation-room experience.
 
-The next product priorities are a shared intent/clarification path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should then measure generation, repeated scoped steering against the saved requirements record, review and optional rendering within the unchanged allowances. Mocked execution tests can verify persistence and context propagation; they do not establish that live models consistently preserve every prior requirement.
+The next product priorities are live acceptance of the shared conversation path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should measure generation, repeated scoped steering against the saved requirements record, review and optional rendering within the unchanged allowances. Mocked execution tests can verify persistence and context propagation; they do not establish that live models consistently preserve every prior requirement.

@@ -1,0 +1,17 @@
+.card { margin: 20px 22px; padding: 17px; border: 1px solid #cbd9bb; border-radius: 9px; background: #edf3e4; overflow-wrap: anywhere; }
+.heading { display: flex; align-items: center; gap: 8px; color: #647a52; font-size: 9px; letter-spacing: 1.2px; font-weight: 600; }
+.card h3 { margin-top: 12px; font-family: var(--serif, Georgia, serif); font-size: 23px; line-height: 1.25; font-weight: 400; color: #455d37; }
+.introduction, .continuing { margin-top: 10px; color: #67775b; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.question { margin-top: 16px; font-size: 12px; line-height: 1.65; color: #425a35; }
+.question label { margin: 0; font-size: 12px; line-height: 1.65; }
+.question textarea { font-weight: 400; font-size: 12px; }
+.saved { display: flex; align-items: flex-start; gap: 6px; color: #6a7c5e; margin-top: 5px; white-space: pre-wrap; }
+.saved svg { flex-shrink: 0; margin-top: 3px; }
+.hint { margin-top: 9px; font-size: 10px; line-height: 1.6; color: #738366; }
+.error { margin-top: 12px; font-size: 12px; line-height: 1.6; color: #934c2e; }
+.conversation { max-height: 190px; overflow-y: auto; margin: 10px 0; color: #536749; scrollbar-width: thin; font-size: 12px; line-height: 1.65; }
+.turn { padding: 8px 2px; border-bottom: 1px solid #e2e7d8; overflow-wrap: anywhere; }
+.turn p { white-space: pre-wrap; }
+.turn p + p { margin-top: 7px; }
+.turn strong { font-size: 10px; font-weight: 600; color: #718063; }
+@media (max-width: 800px) { .card { margin: 20px 25px; } .question label, .introduction, .continuing, .conversation { font-size: 14px; } .question textarea { font-size: 16px; } }

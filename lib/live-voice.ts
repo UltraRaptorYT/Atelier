@@ -3,7 +3,7 @@ import type { InputTranscriptDeltaEvent, OutputTranscriptDeltaEvent } from 'open
 
 export type VoiceStatus = 'off' | 'connecting' | 'live';
 type TranscriptDelta = InputTranscriptDeltaEvent | OutputTranscriptDeltaEvent;
-type DisplayEvent = TranscriptDelta | { type: 'session.started' } | { type: 'session.closed' } | { type: 'error' };
+type DisplayEvent = TranscriptDelta | { type: 'session.started' } | { type: 'session.closed'; reason?: string } | { type: 'error'; code?: string };
 
 /** Consume only public Live display events; the server owns project actions. */
 export function parseLiveDisplayEvent(raw: unknown): DisplayEvent | null {
@@ -12,7 +12,12 @@ export function parseLiveDisplayEvent(raw: unknown): DisplayEvent | null {
   try { value = JSON.parse(raw); } catch { return null; }
   if (!value || typeof value !== 'object') return null;
   const event = value as Record<string, unknown>;
-  if (event.type === 'session.started' || event.type === 'session.closed' || event.type === 'error') return { type: event.type };
+  if (event.type === 'session.started') return { type: event.type };
+  if (event.type === 'session.closed') return { type: event.type, ...(typeof event.reason === 'string' ? {reason:event.reason} : {}) };
+  if (event.type === 'error') {
+    const error = event.error as {code?:unknown} | undefined;
+    return { type: event.type, ...(typeof error?.code === 'string' ? {code:error.code} : {}) };
+  }
   if (event.type !== 'session.input_transcript.delta' && event.type !== 'session.output_transcript.delta') return null;
   if (typeof event.event_id !== 'string' || !event.event_id || typeof event.delta !== 'string'
     || typeof event.start_ms !== 'number' || !Number.isSafeInteger(event.start_ms) || event.start_ms < 0
@@ -24,7 +29,7 @@ type VoiceOptions = {
   projectId: string; agent: string; elementId: string | null; agentName: string; meeting?: boolean;
   onStatus: (status: VoiceStatus) => void;
   onTranscript: (text: string) => void;
-  onError: (message: string) => void;
+  onError: (message: string, retryable?: boolean) => void;
 };
 export type VoiceEnvironment = {
   getUserMedia: () => Promise<MediaStream>;
@@ -46,7 +51,8 @@ export class LiveVoiceSession {
   private proximityRevision = 0;
   private disconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private cancelIceWait: (() => void) | null = null;
-  private readonly transcript = new TranscriptGrouper({ backchannelMaxDurationMs: 0 });
+  private transcript: TranscriptGrouper;
+  private proximityQueue = Promise.resolve();
   private readonly url: string;
 
   constructor(private readonly options: VoiceOptions, private readonly environment: VoiceEnvironment = {
@@ -58,9 +64,15 @@ export class LiveVoiceSession {
     this.url = `/api/studio/projects/${encodeURIComponent(options.projectId)}/voice`;
     // Live deltas have no server "done" event. These are local display segments,
     // finalized by speaker changes/inactivity, never treated as tool instructions.
-    this.transcript.on('segment.closed', ({ segment }) => {
-      if (segment.text.trim()) options.onTranscript(`${segment.speaker === 'user' ? 'You' : options.agentName}: ${segment.text}`);
+    this.transcript = this.createTranscript();
+  }
+
+  private createTranscript(): TranscriptGrouper {
+    const transcript = new TranscriptGrouper({ backchannelMaxDurationMs: 0 });
+    transcript.on('segment.closed', ({ segment }) => {
+      if (segment.text.trim()) this.options.onTranscript(`${segment.speaker === 'user' ? 'You' : this.options.agentName}: ${segment.text}`);
     });
+    return transcript;
   }
 
   async start(): Promise<void> {
@@ -106,7 +118,8 @@ export class LiveVoiceSession {
       if (this.closed) { this.closeServerSession(); await response.body?.cancel(); return; }
       if (!response.ok) {
         const result = await response.json().catch(() => null) as { error?: unknown } | null;
-        throw new Error(typeof result?.error === 'string' ? result.error : 'Voice could not connect.');
+        this.fail(typeof result?.error === 'string' ? result.error : 'Voice could not connect.', ![400,401,402,403,404,415].includes(response.status));
+        return;
       }
       if (!this.sessionId) throw new Error('Voice did not return a session. Please reconnect.');
       const sdp = await response.text();
@@ -114,7 +127,7 @@ export class LiveVoiceSession {
       await pc.setRemoteDescription({ type: 'answer', sdp });
       // session.started, rather than receipt of SDP, confirms the live session.
     } catch (error) {
-      if (!this.closed) this.fail(error instanceof Error ? error.message : 'Microphone unavailable.');
+      if (!this.closed) this.fail(error instanceof Error ? error.message : 'Microphone unavailable.', !(error instanceof DOMException && ['NotAllowedError', 'NotFoundError', 'SecurityError'].includes(error.name)));
     }
   }
 
@@ -123,14 +136,21 @@ export class LiveVoiceSession {
     this.stream?.getAudioTracks().forEach(track => { track.enabled = false; });
     if (this.audio) this.audio.muted = !inRange;
     if (this.closed || !this.sessionId || !inRange) return;
-    const changed = agent !== this.options.agent || elementId !== this.options.elementId || meeting !== Boolean(this.options.meeting);
-    if (changed) {
-      this.transcript.close();
-      const response = await this.environment.fetch(`${this.url}/${encodeURIComponent(this.sessionId)}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({agent, elementId, meeting}) });
-      if (!response.ok) { this.fail('Voice handoff could not complete. Reconnect near your teammate.'); return; }
-      Object.assign(this.options, {agent, agentName, elementId, meeting});
-    }
-    if (!this.closed && update === this.proximityRevision) this.stream?.getAudioTracks().forEach(track => { track.enabled = true; });
+    const handoff = this.proximityQueue.then(async () => {
+      if (this.closed || update !== this.proximityRevision || !this.sessionId) return;
+      const changed = agent !== this.options.agent || elementId !== this.options.elementId || meeting !== Boolean(this.options.meeting);
+      if (changed) {
+        const response = await this.environment.fetch(`${this.url}/${encodeURIComponent(this.sessionId)}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({agent, elementId, meeting}) });
+        if (!response.ok) { this.fail('Voice handoff was interrupted.', ![401,403].includes(response.status)); return; }
+        if (this.closed) return;
+        this.transcript.close();
+        Object.assign(this.options, {agent, agentName, elementId, meeting});
+        this.transcript = this.createTranscript();
+      }
+      if (!this.closed && update === this.proximityRevision) this.stream?.getAudioTracks().forEach(track => { track.enabled = true; });
+    });
+    this.proximityQueue = handoff.catch(() => { this.fail('Voice handoff lost its network connection.'); });
+    await this.proximityQueue;
   }
 
   private waitForIce(pc: RTCPeerConnection): Promise<void> {
@@ -159,14 +179,14 @@ export class LiveVoiceSession {
     const event = parseLiveDisplayEvent(raw);
     if (!event) return;
     if (event.type === 'session.started') { clearTimeout(this.timer); this.options.onStatus('live'); }
-    else if (event.type === 'session.closed') this.stop();
-    else if (event.type === 'error') this.fail('The voice service reported an error. Start live voice to reconnect.');
+    else if (event.type === 'session.closed') this.fail(event.reason === 'content' ? 'The voice service ended this session for a content safety restriction.' : 'Voice session ended. Renewing the connection.', event.reason !== 'content');
+    else if (event.type === 'error') this.fail('The voice service reported an error.', !/auth|api_key|quota|billing|content|policy|permission/i.test(event.code || ''));
     else this.transcript.push(event);
   }
 
-  private fail(message: string): void {
+  private fail(message: string, retryable = true): void {
     if (this.closed) return;
-    this.options.onError(message);
+    this.options.onError(message, retryable);
     this.stop();
   }
 

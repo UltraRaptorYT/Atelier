@@ -53,6 +53,7 @@ export const BriefSchema = z.object({
   request: z.string().min(10).max(8000), summary: z.string().max(2000),
   goals: z.array(z.string().max(500)).max(30), constraints: z.array(z.string().max(500)).max(30),
   questions: z.array(z.string().max(500)).max(3),
+  clarificationAnswers: z.array(z.object({ question: z.string().max(500), answer: z.string().max(2000) })).max(30).nullish(),
 });
 export type Brief = z.infer<typeof BriefSchema>;
 export const ChangeSchema = z.object({
@@ -73,7 +74,7 @@ export type Task = { id: string; agent: AgentId; title: string; status: TaskStat
 export type StudioEvent = { id: number; projectId: string; type: string; agent: AgentId | null; taskId: string | null; revision: number; message: string; createdAt: string };
 export type Artifact = { id: string; name: string; kind: string; revision: number; createdAt: string; size: number };
 export type Project = { id: string; name: string; brief: Brief; revision: number; status: string; createdAt: string; updatedAt: string; selectedConceptId?: string | null };
-export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[]; images?: ImageStudy[]; runs?: StudioRun[]; changes?: ChangeRecord[]; requirements?: import('./requirements').EffectiveRequirements };
+export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[]; images?: ImageStudy[]; runs?: StudioRun[]; changes?: ChangeRecord[]; requirements?: import('./requirements').EffectiveRequirements; clarification?: import('./conversation').Clarification | null; messages?: import('./conversation').ConversationTurn[] };
 
 export function recolor(d: Design, elementId: string, newColor: string): Design {
   color.parse(newColor);

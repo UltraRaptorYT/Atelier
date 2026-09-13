@@ -24,9 +24,11 @@ Saving a project or speaking a brief does not automatically start generation. Li
 
 The user clicks **Start team briefing**. Atelier creates a tracked run and opens **Activity**. The Principal turns the request into a structured brief containing a summary, goals, constraints and any important unresolved questions.
 
-When clarification is necessary, the Principal asks up to three questions and stops before dispatching design work. The current manual continuation is **View & edit brief → Save existing brief**, then **Start team briefing** again. Before a first design exists, voice can also save additional brief details while work is idle.
+When clarification is necessary, the Principal asks up to three questions and the run enters `awaiting_input` before dispatching design work. The conversation shows the pending questions with their saved answers. Answer through that question card, the normal text composer or voice. An answer is attached to the relevant question ID and clarification version; partial answers remain saved across refreshes.
 
-Simply answering in the normal text composer does not automatically resume a clarification: that composer currently submits contextual change requests. A unified question-and-answer flow remains unfinished.
+Once every required question has an answer, Atelier saves the updated brief and queues a linked continuation of the work the user already requested. There is no need to edit the whole brief or click Start again. Repeated submissions reuse the saved operation, and stale or cancelled clarification answers cannot restart work. The continuation still respects generation configuration and the existing one-active-run-per-user limit; a queued continuation is not evidence that specialists have started.
+
+The same composer distinguishes discussion from action. “Why is the roof sloped?” receives an explanation without design work. “Can you make the roof red?” is an explicit change request. Before a first design exists, a new requirement updates the brief without automatically starting initial generation. If an answer or requested change is ambiguous, the Principal can ask a short follow-up. Suggestions such as “What would you recommend?” are not saved as accepted requirements.
 
 ## 4. Establish a visual reference when enabled
 
@@ -93,6 +95,7 @@ The office's final Presentation room is not yet connected to this handoff. Today
 
 - [Studio.tsx](../components/Studio.tsx): entry, project creation, brief editing, navigation, activity and steering controls.
 - [workflow.ts](../worker/src/workflow.ts): briefing, clarification, visual references and run orchestration.
+- [conversation.ts](../worker/src/conversation.ts) and [clarifications.ts](../worker/src/clarifications.ts): typed/voice intent operations, saved answers and linked continuation.
 - [team.ts](../worker/src/team.ts): task planning, concurrent execution, dependency handoffs, conflicts and correction rounds.
 - [collaboration.ts](../shared/collaboration.ts): plan validation, ownership and proposal merging.
 - [World.tsx](../components/World.tsx): office and accepted-design rendering.

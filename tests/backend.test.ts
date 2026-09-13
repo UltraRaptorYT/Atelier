@@ -194,9 +194,18 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     // While a workflow is active, voice cannot replace the brief it is using.
     await env.DB.prepare("INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,created_at) VALUES(?,?,'user-a','generate','in_progress',0,?)").bind(`voice-run-${id}`, id, new Date().toISOString()).run();
     const blocked = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id: 'while-running' });
-    expect(blocked).toMatchObject({ error: expect.stringMatching(/work started/) });
+    expect(blocked).toMatchObject({ error: expect.stringMatching(/wait for active work to finish/) });
     await env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(`voice-run-${id}`).run();
     await commit(id,0,`voice-design-${id}`,exampleDesign());
+    // Recover a lost voice receipt from the saved conversation after revision
+    // advancement, while rejecting a reused call ID with different requirements.
+    await env.DB.prepare('DELETE FROM voice_tool_results WHERE project_id = ?').bind(id).run();
+    const mismatched = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, arguments: JSON.stringify({ details: 'Three floors instead.' }) });
+    expect(mismatched).toMatchObject({ error: expect.stringMatching(/already used for another request/) });
+    expect(await apply()).toMatchObject({ saved: true });
+    const recovered = await (await call(`/projects/${id}`)).json() as any;
+    expect(recovered.project.revision).toBe(1);
+    expect(recovered.project.brief.request.match(/Two floors/g)).toHaveLength(1);
     const afterDesign = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id: 'after-design' });
     expect(afterDesign).toMatchObject({ error: expect.stringMatching(/design already exists/) });
     const change = await executeVoiceTool(env,id,'user-a',voiceId,'designer',null,{ call_id: 'paused-change', name:'request_change', arguments:JSON.stringify({instruction:'Make the roof red',elementId:null,baseRevision:1}) });

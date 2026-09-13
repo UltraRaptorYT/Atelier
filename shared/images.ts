@@ -6,4 +6,4 @@ export const ImageRequestSchema = z.object({ ...operation, instruction: z.string
 export const CaptureRequestSchema = z.object({ ...operation, dataUrl: z.string() });
 export const ConceptRequestSchema = z.object({ ...operation, artifactId: artifactIdSchema, apply: z.boolean() });
 export type ImageStudy = { id: string; name: string; prompt: string; model: string; revision: number; sourceArtifactId: string | null; createdAt: string; metadataArtifactId: string };
-export type StudioRun = { id: string; kind: string; status: string };
+export type StudioRun = { id: string; kind: string; status: string; resumesRunId?: string | null };

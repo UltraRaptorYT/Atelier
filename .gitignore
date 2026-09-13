@@ -16,3 +16,6 @@ playwright-report/
 worker/env.d.ts
 __pycache__/
 *.pyc
+
+# Generated deployment output is rebuilt, never merged.
+/out/

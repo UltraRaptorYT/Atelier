@@ -1,10 +1,13 @@
 import { z, ZodError } from 'zod';
-import { BriefSchema, ChangeSchema, AgentIdSchema, recolor } from '../../shared/design';
+import { BriefSchema, AgentIdSchema, recolor } from '../../shared/design';
 import { credential, encryptCredential, userId, ownedProject, bodyJSON, HttpError } from './security';
 import { designFromRow, eventsAfter, projectFromRow, snapshot, emit } from './store';
 import { openDesktopStream } from './desktop';
 import { queueChange } from './steering';
 import { changeFailedStatement } from './changes';
+import { handleInteraction } from './conversation';
+import { InteractionRequestSchema } from '../../shared/conversation';
+import { cancelClarification, replaceBrief } from './clarifications';
 import { startVoice } from './voice';
 import { CaptureRequestSchema, ConceptRequestSchema, ImageRequestSchema } from '../../shared/images';
 import { loadImageReference, saveCapture, selectConcept } from './images';
@@ -91,11 +94,7 @@ async function route(request: Request, env: Bindings): Promise<Response> {
   }
   if (path[2] === 'brief' && method === 'PUT') {
     const data = CreateSchema.parse(await bodyJSON(request));
-    const active = await env.DB.prepare("SELECT id FROM runs WHERE project_id = ? AND status IN ('queued','in_progress')").bind(id).first();
-    if (active) throw new HttpError(409, 'Send a steering message while work is running. Edit the full brief after it finishes.');
-    await env.DB.prepare('UPDATE projects SET name = ?, brief = ?, updated_at = ? WHERE id = ?').bind(data.name, JSON.stringify(data.brief), new Date().toISOString(), id).run();
-    await emit(env, id, 'clarification_received', 'The project brief was updated.', 'principal');
-    return Response.json({ saved: true });
+    return Response.json(await replaceBrief(env, id, owner, data));
   }
   if (path[2] === 'events' && method === 'GET') {
     const url = new URL(request.url); let after = Number(request.headers.get('Last-Event-ID') || url.searchParams.get('after') || 0);
@@ -167,6 +166,8 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     }
     if (method === 'DELETE' && path[3]) {
       const run = await env.DB.prepare('SELECT id,kind,status FROM runs WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first<{ id: string; kind: string; status: string }>(); if (!run) throw new HttpError(404, 'Run not found.');
+      const clarification = await cancelClarification(env, id, owner, run.id);
+      if (clarification.cancelled) return Response.json(clarification);
       const changed = await env.DB.batch([
         env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id),
         env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress','review','blocked') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = 'cancelled')").bind(run.id, run.id),
@@ -183,7 +184,10 @@ async function route(request: Request, env: Bindings): Promise<Response> {
       return Response.json({ cancelled: true });
     }
   }
-  if (path[2] === 'messages' && method === 'POST') { enabled(env); await credential(env, owner); return Response.json(await queueChange(env, id, owner, ChangeSchema.parse(await bodyJSON(request))), { status: 202 }); }
+  if (path[2] === 'messages' && method === 'POST') {
+    const result = await handleInteraction(env, id, owner, InteractionRequestSchema.parse(await bodyJSON(request)));
+    return Response.json(result, { status: result.queued ? 202 : 200 });
+  }
   if (path[2] === 'desktop' && method === 'POST') {
     const agent = AgentIdSchema.parse(path[3]);
     const desktop = await env.DB.prepare('SELECT lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(id, agent).first<{ lease_id: string; expires_at: number }>();
