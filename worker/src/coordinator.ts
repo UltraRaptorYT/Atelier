@@ -122,7 +122,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
       if (!remaining) await this.ctx.storage.delete('pending-project');
     }
     const sessions = await this.ctx.storage.list<{owner:string; created:number}>({ prefix: 'voice-' });
-    for (const [id, session] of sessions) if (Date.now()-session.created > 15*60000 || !this.voices.has(id.slice(6))) await this.closeVoice(id.slice(6));
+    for (const [id, session] of sessions) if (Date.now()-session.created > 60*60000 || !this.voices.has(id.slice(6))) await this.closeVoice(id.slice(6));
     if ((await this.ctx.storage.list({ prefix: 'voice-' })).size || await this.ctx.storage.get('pending-project')) await this.ctx.storage.setAlarm(Date.now()+60000);
   }
   async commitProposal(projectId: string, baseRevision: number, operationId: string, proposal: Design, runId: string, agent: AgentId): Promise<{ revision: number | null; conflicts: string[] }> {

@@ -6,7 +6,7 @@ import { modelJSON } from './ai';
 import { reviewMeeting } from './meeting';
 import { generateStudy, loadImageReference } from './images';
 import { artifact, designFromRow, emit } from './store';
-import { createDesktop, idleDesktop, syncDesktop, checkpointDesktop } from './desktop';
+import { createDesktop, idleDesktop, syncDesktop, checkpointDesktop, runVisible } from './desktop';
 import { ownedProject, HttpError } from './security';
 import { runTeam } from './team';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
@@ -66,7 +66,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await syncDesktop(desktop, design, this.env, p.projectId);
           await emit(this.env, p.projectId, 'tool_started', 'Compiling the canonical design and rendering a presentation image in Blender.', 'designer');
           let completed = false;
-          try { const result = await desktop.commands.run(`timeout 780s blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision ${row.revision}`, { timeoutMs: 790000 }); completed = result.exitCode === 0; }
+          try { const result = await runVisible(desktop, `blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision ${row.revision}`, 780000); completed = result.exitCode === 0; }
           catch { /* Retain any model/source files completed before the renderer stopped. */ }
           for (const [name, mime, kind] of [['design.blend', 'application/octet-stream', 'blender'], ['design.glb', 'model/gltf-binary', 'model'], ['presentation.png', 'image/png', 'render']]) {
             try { await artifact(this.env, p.projectId, p.runId, name, kind, row.revision, await desktop.files.read(`/home/user/project/output/${name}`, { format: 'bytes' }), mime); }
@@ -80,13 +80,13 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('designer', 'Render presentation', `Presentation files for revision ${row.revision} are ready.`, 'completed');
         });
       } else {
-        const perspectives = p.kind === 'generate' ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
+        const perspectives = p.kind === 'generate' && !p.instruction?.startsWith('[VOICE_START]') ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
         const brief = await step.do('principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId);
           const original = BriefSchema.parse(JSON.parse(row.brief));
           await task('principal', 'Prepare the project brief', p.kind === 'change' ? 'Assessing the requested design change.' : 'Interpreting the brief and assigning specialists.');
           if (p.kind === 'change') return original;
-          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the brief. If the user explicitly asks you to choose defaults, do so.`, BriefSchema);
+          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Start authorization: ${p.instruction || 'No explicit voice start instruction.'}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the brief. If the user explicitly asks you to choose defaults, do so.`, BriefSchema);
           await this.env.DB.prepare('UPDATE projects SET brief = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(parsed), new Date().toISOString(), p.projectId).run();
           if (parsed.questions.length) await emit(this.env, p.projectId, 'clarification_requested', parsed.questions.join('\n'), 'principal');
           return parsed;

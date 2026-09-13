@@ -6,7 +6,7 @@ import type { Bindings, RunParams } from './types';
 import { modelJSON } from './ai';
 import { artifact, designFromRow, emit } from './store';
 import { ownedProject, HttpError } from './security';
-import { createDesktop, releaseDesktop, syncDesktop, checkpointDesktop } from './desktop';
+import { createDesktop, releaseDesktop, syncDesktop, checkpointDesktop, runVisible } from './desktop';
 import { loadImageReference, visualReferenceInstructions } from './images';
 
 const ReviewSchema = z.object({ findings: z.array(z.string().max(1000)).max(20), summary: z.string().max(3000) });
@@ -112,7 +112,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
           result.summary = `${task.title}: design proposal prepared from revision ${base.revision}.`;
           if (desktop) {
             await syncDesktop(desktop, result.proposal, env, p.projectId);
-            const validation = await desktop.commands.run('python3 -m json.tool /home/user/project/design.json /home/user/project/validated-design.json', { timeoutMs: 10000 });
+            const validation = await runVisible(desktop, 'python3 -m json.tool /home/user/project/design.json /home/user/project/validated-design.json', 10000);
             if (validation.exitCode !== 0) throw new HttpError(422, 'The workstation could not validate its design proposal.');
           }
         }

@@ -3,6 +3,8 @@ import type { AgentId, Design } from '../../shared/design';
 import type { Bindings } from './types';
 import { HttpError } from './security';
 import { artifact, emit } from './store';
+import watchTerminal from '../../scripts/watch_terminal.py';
+import { z } from 'zod';
 import compiler from '../../scripts/blender_compile.py';
 import { limits } from '../../shared/budget';
 import furniture from '../../shared/furniture.json';
@@ -40,7 +42,11 @@ export async function createDesktop(env: Bindings, projectId: string, owner: str
     await desktop.files.write('/home/user/project/blender_compile.py', compiler);
     await desktop.files.write('/home/user/project/furniture.json', JSON.stringify(furniture));
     await desktop.files.write('/home/user/project/blender_asset.py', assetCompiler);
-    await emit(env, projectId, 'tool_completed', 'Remote workstation connected.', agent);
+    await desktop.files.write('/home/user/project/watch_terminal.py', watchTerminal);
+    await desktop.commands.run('mkdir -p /home/user/project/.watch', { timeoutMs: 10000 });
+    await (await desktop.commands.run('xfce4-terminal --disable-server --title="Atelier live work" --geometry=120x38 -e "python3 /home/user/project/watch_terminal.py"', { background: true, timeoutMs: 0 })).disconnect();
+    await desktop.commands.run('timeout 12s sh -c \'while [ ! -f /home/user/project/.watch/ready ]; do sleep 0.2; done\'', { timeoutMs: 15000 });
+    await emit(env, projectId, 'tool_completed', 'Remote workstation connected. Actual commands are visible in its live terminal.', agent);
     return desktop;
   } catch (e) {
     if (desktop && !attached) {
@@ -60,6 +66,16 @@ export async function createDesktop(env: Bindings, projectId: string, owner: str
     }
     throw e;
   }
+}
+// The terminal owns execution. Waiting here only collects its bounded result.
+export async function runVisible(desktop: Sandbox, command: string, timeoutMs: number, source = '') {
+  const id = crypto.randomUUID(), root = '/home/user/project/.watch';
+  // Focus the real terminal window before submitting work; no decorative cursor motion.
+  await desktop.commands.run("xdotool search --name 'Atelier live work' windowactivate --sync", {timeoutMs:5000}).catch(() => {});
+  await desktop.files.write(`${root}/${id}.tmp`, JSON.stringify({command,timeout:Math.ceil(timeoutMs/1000),source}));
+  await desktop.commands.run(`mv ${root}/${id}.tmp ${root}/${id}.request.json`, {timeoutMs:5000});
+  await desktop.commands.run(`timeout ${Math.ceil(timeoutMs/1000)+5}s sh -c 'while [ ! -f ${root}/${id}.result.json ]; do sleep 0.25; done'`, {timeoutMs:timeoutMs+10000});
+  return z.object({exitCode:z.number().int(),stdout:z.string().max(14000),stderr:z.string()}).parse(JSON.parse(await desktop.files.read(`${root}/${id}.result.json`)));
 }
 export async function releaseDesktop(env: Bindings, projectId: string, agent: AgentId, leasePrefix?: string): Promise<boolean> {
   const row = await env.DB.prepare('SELECT sandbox_id,lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId, agent).first<DesktopRow>();

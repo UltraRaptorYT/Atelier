@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, PhoneOff } from 'lucide-react';
 import type { AgentId } from '@/shared/design';
 import { agents } from '@/shared/design';
@@ -76,7 +77,9 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
 
   startLatest.current = () => { if (inRange) start(true); else { reconnect.current = false; setStatus('off'); } };
 
-  return <button
+  function endCall() { clearTimeout(retryTimer.current); reconnect.current = false; active.current?.stop(); setStatus('off'); }
+
+  return <><button
     type="button"
     className={`voice-button ${status === 'live' ? 'live' : ''}`}
     onClick={() => { if (status === 'off') start(); else { clearTimeout(retryTimer.current); reconnect.current = false; active.current?.stop(); setStatus('off'); } }}
@@ -85,5 +88,5 @@ export default function Voice({ projectId, agent, elementId = null, meeting = fa
   >
     {status === 'off' ? <Mic size={17} /> : <PhoneOff size={17} />}
     {status === 'connecting' ? 'Cancel connection' : status === 'live' ? (inRange ? 'End call' : 'Mic paused · End') : 'Live voice'}
-  </button>;
+  </button>{status !== 'off' && createPortal(<button className="voice-floating" onClick={endCall} aria-label="End live microphone connection"><PhoneOff size={16}/><span>{status === 'connecting' ? 'Reconnecting / connecting' : inRange ? `Mic live · ${meeting ? 'Team' : agents[agent].name.split(' ')[0]}` : 'Connected · mic paused out of range'}<small>End call</small></span></button>, document.body)}</>;
 }
