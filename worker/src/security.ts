@@ -1,10 +1,20 @@
 import { verifyToken } from '@clerk/backend';
+import { jwtVerify } from 'jose';
 import type { Bindings, ProjectRow } from './types';
 export class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
 export async function userId(request: Request, env: Bindings): Promise<string> {
   const url = new URL(request.url);
   if (env.ENVIRONMENT === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname) && request.headers.get('X-Atelier-Local') === 'true') return 'local-developer';
   const token = request.headers.get('Authorization')?.replace(/^Bearer /, '');
+  if (token && env.SITES_PROXY_SECRET) {
+    try {
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(env.SITES_PROXY_SECRET), {
+        algorithms: ['HS256'], issuer: 'atelier-sites', audience: 'atelier-api', maxTokenAge: '2m',
+        requiredClaims: ['sub', 'exp', 'iat'],
+      });
+      if (payload.sub?.startsWith('sites:')) return payload.sub;
+    } catch { /* Other deployments may still use Clerk. */ }
+  }
   if (!token || (!env.CLERK_SECRET_KEY && !env.CLERK_JWT_KEY)) throw new HttpError(401, 'Sign in to use your studio.');
   try { const payload = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY, jwtKey: env.CLERK_JWT_KEY, authorizedParties: [env.APP_ORIGIN] }); if (!payload.sub) throw new Error(); return payload.sub; }
   catch { throw new HttpError(401, 'Your sign-in has expired. Please sign in again.'); }

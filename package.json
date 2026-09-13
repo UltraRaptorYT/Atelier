@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build && node scripts/export-sites-static.mjs",
+    "build": "node scripts/build-sites.mjs",
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit && tsc -p worker/tsconfig.json --noEmit",
     "test": "npm run worker:test-build && vitest run",
@@ -25,6 +25,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "esbuild": "^0.28.2",
     "miniflare": "^5.20260911.0-alpha",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",

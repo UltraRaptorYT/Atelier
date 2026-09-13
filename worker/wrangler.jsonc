@@ -5,7 +5,6 @@
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {"enabled": true, "head_sampling_rate": 0.1},
-  "limits": {"cpu_ms": 30000},
   "rules": [{"type": "Text", "globs": ["**/*.py", "**/*.md"], "fallthrough": true}],
   "migrations": [{"tag": "v1", "new_sqlite_classes": ["ProjectCoordinator", "ComputeBudget"]}],
   "env": {
@@ -29,8 +28,8 @@
     },
     "production": {
       "name": "atelier-api-production",
-      "vars": {"ENVIRONMENT": "production", "APP_ORIGIN": "https://replace-with-production.vercel.app", "GENERATION_ENABLED": "false", "RENDER_ENABLED": "false", "OPENAI_MODEL": "gpt-6-astra", "VOICE_MODEL": "gpt-live-1", "VOICE_ENABLED": "false", "KEY_VERSION": "v1", "E2B_TEMPLATE": "atelier-desktop", "IMAGE_GENERATION_ENABLED": "false", "OPENAI_IMAGE_CONCEPT_MODEL": "gpt-image-2.5-flare", "OPENAI_IMAGE_EDIT_MODEL": "gpt-image-2.5-sunburst"},
-      "d1_databases": [{"binding": "DB", "database_name": "atelier-production", "database_id": "REPLACE_AFTER_PROVISIONING", "migrations_dir": "migrations"}],
+      "vars": {"ENVIRONMENT": "production", "APP_ORIGIN": "https://atelier-architecture-studio.z3e0.chatgpt.site", "GENERATION_ENABLED": "true", "RENDER_ENABLED": "true", "OPENAI_MODEL": "gpt-6-astra", "VOICE_MODEL": "gpt-live-1", "VOICE_ENABLED": "true", "KEY_VERSION": "v1", "E2B_TEMPLATE": "atelier-desktop", "IMAGE_GENERATION_ENABLED": "true", "OPENAI_IMAGE_CONCEPT_MODEL": "gpt-image-2.5-flare", "OPENAI_IMAGE_EDIT_MODEL": "gpt-image-2.5-sunburst"},
+      "d1_databases": [{"binding": "DB", "database_name": "atelier-production", "database_id": "664cf7d4-f28b-4cd9-97a9-b0d90a2c2ca1", "migrations_dir": "migrations"}],
       "r2_buckets": [{"binding": "FILES", "bucket_name": "atelier-artifacts-production"}],
       "durable_objects": {"bindings": [{"name": "PROJECTS", "class_name": "ProjectCoordinator"}, {"name": "BUDGET", "class_name": "ComputeBudget"}]},
       "workflows": [{"name": "atelier-jobs-production", "binding": "JOBS", "class_name": "DesignWorkflow"}],
