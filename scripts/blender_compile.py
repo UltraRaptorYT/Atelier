@@ -2,7 +2,46 @@
 import argparse
 import json
 import math
+import re
 from pathlib import Path
+
+def presentation_camera(design, view='front'):
+    """Frame actual bounds from the entrance side in canonical Y-up coordinates."""
+    low = [math.inf] * 3
+    high = [-math.inf] * 3
+    for element in design['elements']:
+        w, h, depth = element['size']
+        angle = element['rotation']
+        cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
+        extents = [(w*cosine + depth*sine)/2, h/2, (w*sine + depth*cosine)/2]
+        for axis in range(3):
+            low[axis] = min(low[axis], element['position'][axis] - extents[axis])
+            high[axis] = max(high[axis], element['position'][axis] + extents[axis])
+    center = [(a+b)/2 for a, b in zip(low, high)]
+    half_x, half_z = max((high[0]-low[0])/2, .01), max((high[2]-low[2])/2, .01)
+    candidates = []
+    for index, element in enumerate(design['elements']):
+        words = set(re.findall('[a-z]+', (element['id'] + ' ' + element['name']).lower()))
+        rank = 4 if 'exterior' in words else 3 if 'front' in words else 2 if 'entrance' in words else 1 if 'entry' in words else 0
+        if element['kind'] != 'door' or not rank:
+            continue
+        dx = (element['position'][0]-center[0])/half_x
+        dz = (element['position'][2]-center[2])/half_z
+        distance = min(half_x-abs(element['position'][0]-center[0]), half_z-abs(element['position'][2]-center[2]))
+        candidates.append((rank, -distance, -index, dx, dz))
+    front = [0, -1]
+    if candidates:
+        _, _, _, dx, dz = max(candidates)
+        if max(abs(dx), abs(dz)) > .01:
+            front = [1 if dx >= 0 else -1, 0] if abs(dx) > abs(dz) else [0, 1 if dz >= 0 else -1]
+    if view == 'rear':
+        front = [-front[0], -front[1]]
+    right = [-front[1], front[0]]
+    radius, height = max(half_x, half_z, 5), high[1]-low[1]
+    position = [center[0]+radius*(front[0]*2.1+right[0]*1.9),
+                low[1]+max(height*1.35, radius*1.1),
+                center[2]+radius*(front[1]*2.1+right[1]*1.9)]
+    return {'position': position, 'target': [center[0], low[1]+height*.38, center[2]], 'front': front}
 
 def parts(element):
     w, h, length = element['size']
@@ -21,7 +60,7 @@ def parts(element):
     return [([0, -h/2 + h*(i+1)/count/2, -length/2 + length*(i+0.5)/count],
              [w, h*(i+1)/count, length/count]) for i in range(count)]
 
-def compile_design(design, output, render=False, revision=0):
+def compile_design(design, output, render=False, revision=0, preview=False, view='front'):
     import bpy
     from mathutils import Vector
     bpy.ops.object.select_all(action='SELECT')
@@ -94,20 +133,20 @@ def compile_design(design, output, render=False, revision=0):
             bpy.context.object.data.energy = 250
             bpy.context.object.data.shape = 'DISK'
             bpy.context.object.data.size = 3
-    bounds = [max(abs(e['position'][0])+e['size'][0]/2, abs(e['position'][2])+e['size'][2]/2) for e in design['elements']]
-    radius = max(max(bounds), 5)
-    height = max(e['position'][1]+e['size'][1]/2 for e in design['elements'])
-    bpy.ops.object.camera_add(location=(radius*1.9, radius*2.1, max(height*1.5, radius*1.3)))
+    framing = presentation_camera(design, view)
+    px, py, pz = framing['position']
+    tx, ty, tz = framing['target']
+    bpy.ops.object.camera_add(location=(px, pz, py))
     camera = bpy.context.object
-    camera.rotation_euler = (Vector((0, 0, height*.35))-camera.location).to_track_quat('-Z', 'Y').to_euler()
+    camera.rotation_euler = (Vector((tx, tz, ty))-camera.location).to_track_quat('-Z', 'Y').to_euler()
     camera.data.lens = 42
     scene.camera = camera
     scene.render.engine = 'CYCLES'
     scene.cycles.device = 'CPU'
-    scene.cycles.samples = 32
+    scene.cycles.samples = 8 if preview else 32
     scene.cycles.use_denoising = True
-    scene.render.resolution_x = 1280
-    scene.render.resolution_y = 960
+    scene.render.resolution_x = 640 if preview else 1280
+    scene.render.resolution_y = 480 if preview else 960
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
     preferred_transform = 'AgX' if bpy.app.version >= (4, 0, 0) else 'Filmic'
@@ -120,12 +159,17 @@ def compile_design(design, output, render=False, revision=0):
         print(json.dumps({'warning': 'Preferred color transform unavailable; rendering with Standard. Use a Blender build with OpenColorIO support and matching color profiles.', 'preferred_transform': preferred_transform, 'view_transform': 'Standard'}))
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(output/'design.blend'))
-    bpy.ops.export_scene.gltf(filepath=str(output/'design.glb'), export_format='GLB', export_extras=True)
-    if render:
-        scene.render.filepath = str(output/'presentation.png')
+    if not preview:
+        bpy.ops.wm.save_as_mainfile(filepath=str(output/'design.blend'))
+        bpy.ops.export_scene.gltf(filepath=str(output/'design.glb'), export_format='GLB', export_extras=True)
+    if render or preview:
+        name = f'preview-{view}' if preview else 'presentation'
+        scene.render.filepath = str(output/(name+'.png'))
         bpy.ops.render.render(write_still=True)
-    print(json.dumps({'ok': True, 'elements': len(design['elements']), 'rendered': render}))
+        (output/(name+'.json')).write_text(json.dumps({'revision': revision, 'view': view, 'camera': framing,
+            'resolution': [scene.render.resolution_x, scene.render.resolution_y], 'samples': scene.cycles.samples,
+            'source': 'canonical design', 'elements': len(design['elements'])}))
+    print(json.dumps({'ok': True, 'elements': len(design['elements']), 'rendered': render or preview, 'preview': preview, 'view': view}))
 
 if __name__ == '__main__':
     import sys
@@ -134,6 +178,8 @@ if __name__ == '__main__':
     parser.add_argument('--design', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--render', action='store_true')
+    parser.add_argument('--preview', action='store_true', help='Render a bounded review image without replacing final model exports.')
+    parser.add_argument('--view', choices=['front', 'rear'], default='front')
     parser.add_argument('--revision', type=int, default=0)
     opts = parser.parse_args(args)
-    compile_design(json.loads(Path(opts.design).read_text()), opts.output, opts.render, opts.revision)
+    compile_design(json.loads(Path(opts.design).read_text()), opts.output, opts.render, opts.revision, opts.preview, opts.view)

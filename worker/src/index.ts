@@ -4,6 +4,7 @@ import { credential, encryptCredential, userId, ownedProject, bodyJSON, HttpErro
 import { designFromRow, eventsAfter, projectFromRow, snapshot, emit } from './store';
 import { openDesktopStream } from './desktop';
 import { queueChange } from './steering';
+import { changeFailedStatement } from './changes';
 import { startVoice } from './voice';
 import { CaptureRequestSchema, ConceptRequestSchema, ImageRequestSchema } from '../../shared/images';
 import { loadImageReference, saveCapture, selectConcept } from './images';
@@ -166,9 +167,12 @@ async function route(request: Request, env: Bindings): Promise<Response> {
     }
     if (method === 'DELETE' && path[3]) {
       const run = await env.DB.prepare('SELECT id,kind,status FROM runs WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first<{ id: string; kind: string; status: string }>(); if (!run) throw new HttpError(404, 'Run not found.');
-      const changed = await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id).run();
-      if (!changed.meta.changes) return Response.json({ cancelled: run.status === 'cancelled' });
-      await env.DB.batch([env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id), env.DB.prepare("UPDATE changes SET status = 'cancelled' WHERE id = ? AND status IN ('pending','in_progress')").bind(run.id)]);
+      const changed = await env.DB.batch([
+        env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress','review','blocked')").bind(run.id),
+        env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress','review','blocked') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = 'cancelled')").bind(run.id, run.id),
+        changeFailedStatement(env, { projectId: id, userId: owner, runId: run.id, kind: 'change', baseRevision: row.revision }, 'cancelled', 'Work stopped. Previously saved revisions remain available.'),
+      ]);
+      if (!changed[0].meta.changes) return Response.json({ cancelled: run.status === 'cancelled' });
       try { await (await env.JOBS.get(run.id)).terminate(); } catch { /* D1 cancellation is the commit fence. */ }
       if (run.kind !== 'image') {
         const prefix = `${run.id}-`;

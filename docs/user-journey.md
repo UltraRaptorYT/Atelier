@@ -69,7 +69,7 @@ Compatible edits merge while preserving unrelated work. Conflicting edits produc
 
 ## 8. Review the combined result
 
-The final Critic task waits for all planned work and checks the saved design against the brief, current instruction, dependency outputs and available evidence.
+The final Critic task waits for all planned work and checks the saved design against the run's frozen effective requirements, current instruction, dependency outputs and available evidence. Effective requirements include the stored brief and previously applied user amendments, with later instructions taking precedence only where their subject and scope overlap.
 
 Findings can trigger one correction round: the Principal assigns targeted fixes, then the Critic reviews again. If findings remain, the project stays in `review`; an empty final finding list permits `ready`. Atelier does not run an unlimited correction loop.
 
@@ -81,7 +81,11 @@ The user opens **Design → Walk inside** or **Click to walk** to explore the sa
 
 For a change, the user can select an exterior element and tell the Designer, “Make this red.” Atelier saves a contextual change request for the existing project. A selected single-element colour change can use a deterministic Designer patch followed by Critic review; broader changes receive a scoped task plan.
 
-If work is already running, steering queues for a subsequent run. It does not interrupt the current model call or rewrite its task graph. Accepted changes become new saved revisions and refresh the viewer. Persistent effective requirements across many steering rounds still need refinement.
+If work is already running, steering queues for a subsequent run. It does not interrupt the current model call or rewrite its task graph. Open **Activity → Your changes** to follow the saved request through **Queued → Working → Applied → Reviewed**. The dedicated change tracker retains the instruction, selected specialist/element, saved revisions, review findings and errors. Expand **Current requirements** to inspect the stored brief and applied feedback in order. “Applied” means all planned canonical writes have integrated, before final Critic review; “Reviewed” records a Critic outcome, including any unresolved findings. A failed or stopped request retains evidence of milestones already reached.
+
+Every team run saves an `effective-requirements.json` artifact that keeps the stored brief and previously applied amendments together. Planning, specialists, coordination and review receive the same frozen record alongside the persisted current instruction. If this selected exterior element was changed to red, a later “add a balcony” request receives that red-element requirement instead of relying on the model to infer it from geometry. A whole-exterior instruction has broader scope; selecting one element does not implicitly change the whole exterior.
+
+Requests that never reach the applied milestone do not become applied requirements. If a request reaches “Applied” before review fails or Stop work, its amendment remains recorded with its progress and revision evidence. Partial task revisions can survive an earlier integration failure without the whole request reaching “Applied”; those saved artifacts remain available for inspection. The requirements record tells future agents what was requested and applied; it does not establish that every requirement or geometry check passed.
 
 The office's final Presentation room is not yet connected to this handoff. Today, the user opens the generated building through the **Design** button. The intended in-world presentation entry remains a separate integration step.
 

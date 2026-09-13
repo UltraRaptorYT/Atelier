@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { completedVoiceTool, hangupVoice, LiveResponseTools, startVoice, voiceOperationId, voiceSessionConfig } from '../worker/src/voice';
 import type { Bindings, ProjectRow } from '../worker/src/types';
 
+vi.mock('../worker/src/prompts', () => ({ agentInstructions: () => 'Keep work within your task ownership.' }));
+
 const modelConfig = { VOICE_MODEL: 'gpt-live-1', OPENAI_MODEL: 'gpt-5.6-terra' };
 const providerKey = 'test-worker-only-openai-key';
 const offer = 'v=0\r\no=- 123 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n';
@@ -65,7 +67,7 @@ describe('GPT-Live session contract', () => {
     if (session.delegation?.type !== 'responses') throw new Error('Missing Responses delegation');
     const tools = session.delegation.responses.tools;
     expect(tools?.map(tool => tool.type === 'function' ? tool.name : tool.type)).toEqual([
-      'get_project_context', 'save_brief', 'request_change',
+      'review_team', 'finish_meeting', 'get_project_context', 'save_brief', 'request_change',
     ]);
     expect(tools?.find(tool => tool.type === 'function' && tool.name === 'request_change')).toMatchObject({
       type: 'function', strict: true,
@@ -113,7 +115,7 @@ describe('server-side voice setup and cleanup', () => {
     expect(payload.transport).toEqual({ type: 'webrtc', sdp: offer });
     expect(payload.session.model).toBe('gpt-live-1');
     expect(init.body).not.toContain(providerKey);
-    expect(attachVoice).toHaveBeenCalledWith(project.id, project.owner_id, sessionId, 'designer', null);
+    expect(attachVoice).toHaveBeenCalledWith(project.id, project.owner_id, sessionId, 'designer', null, false);
     expect(response.headers.get('Content-Type')).toBe('application/sdp');
     expect(response.headers.get('X-Voice-Session')).toBe(sessionId);
     const body = await response.text();

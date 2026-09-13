@@ -139,7 +139,33 @@ describe('image routes with real Worker, D1 and R2 and an inert workflow', () =>
     await env.DB.prepare('UPDATE projects SET revision = 1 WHERE id = ?').bind(id).run();
     const laterId = crypto.randomUUID();
     expect((await call('/test/begin', 'POST', { projectId: id, userId: owner, runId: laterId, kind: 'generate', baseRevision: 1 })).status).toBe(200);
-    expect(await env.DB.prepare('SELECT reference_artifact_id FROM runs WHERE id = ?').bind(laterId).first()).toEqual({ reference_artifact_id: null });
+    expect(await env.DB.prepare('SELECT reference_artifact_id,context_artifact_id FROM runs WHERE id = ?').bind(laterId).first()).toEqual({ reference_artifact_id: null, context_artifact_id: image });
+  });
+
+  it('freezes an original selected concept for later steering without treating it as an explicit image application', async () => {
+    const id = await project(3), image = await study(id, 0), later = await study(id, 3);
+    await env.DB.prepare('UPDATE projects SET concept_artifact_id = ? WHERE id = ?').bind(image, id).run();
+    const request = { projectId: id, userId: owner, runId: crypto.randomUUID(), kind: 'change', baseRevision: 3, instruction: 'Make the exterior red.' };
+    expect((await call('/test/begin', 'POST', request)).status).toBe(200);
+    expect(await env.DB.prepare('SELECT reference_artifact_id,context_artifact_id FROM runs WHERE id = ?').bind(request.runId).first()).toEqual({ reference_artifact_id: null, context_artifact_id: image });
+    await env.DB.prepare('UPDATE projects SET concept_artifact_id = ? WHERE id = ?').bind(later, id).run();
+    expect((await call('/test/begin', 'POST', request)).status).toBe(200);
+    expect(await env.DB.prepare('SELECT context_artifact_id FROM runs WHERE id = ?').bind(request.runId).first()).toEqual({ context_artifact_id: image });
+    await env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(request.runId).run();
+    const explicit = { ...request, runId: crypto.randomUUID(), referenceArtifactId: later };
+    expect((await call('/test/begin', 'POST', explicit)).status).toBe(200);
+    expect(await env.DB.prepare('SELECT reference_artifact_id,context_artifact_id FROM runs WHERE id = ?').bind(explicit.runId).first()).toEqual({ reference_artifact_id: later, context_artifact_id: null });
+  });
+
+  it.each(['edited-study', 'foreign-study', 'wrong-artifact-kind'] as const)('does not reuse a selected %s as historical background', async kind => {
+    const id = await project(3), sourceProject = kind === 'foreign-study' ? await project() : id;
+    const image = await study(sourceProject, 0);
+    if (kind === 'edited-study') await env.DB.prepare('UPDATE image_studies SET source_artifact_id = ? WHERE id = ?').bind('old-capture.png', image).run();
+    if (kind === 'wrong-artifact-kind') await env.DB.prepare("UPDATE artifacts SET kind = 'model_capture' WHERE id = ?").bind(image).run();
+    await env.DB.prepare('UPDATE projects SET concept_artifact_id = ? WHERE id = ?').bind(image, id).run();
+    const runId = crypto.randomUUID();
+    expect((await call('/test/begin', 'POST', { projectId: id, userId: owner, runId, kind: 'change', baseRevision: 3, instruction: 'Refine the home.' })).status).toBe(200);
+    expect(await env.DB.prepare('SELECT reference_artifact_id,context_artifact_id FROM runs WHERE id = ?').bind(runId).first()).toEqual({ reference_artifact_id: null, context_artifact_id: null });
   });
 
   it('queues selected visual direction with a frozen reference and rejects it if the model advances', async () => {

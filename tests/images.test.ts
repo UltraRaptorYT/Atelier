@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { readFileSync, readdirSync } from 'node:fs';
-import { generateStudy, imagePrompt, loadImageReference, saveCapture, selectConcept } from '../worker/src/images';
+import { generateStudy, imagePrompt, loadImageReference, loadConceptContext, originalConceptId, saveCapture, selectConcept, visualReferenceInstructions } from '../worker/src/images';
 import { generateImage } from '../worker/src/image-provider';
 import { exampleDesign } from '../shared/example';
 import type { Bindings, ProjectRow, RunParams } from '../worker/src/types';
@@ -191,6 +191,23 @@ describe('image studies with real D1 and R2', () => {
 });
 
 describe('captured model references and concept selection', () => {
+  it('allows only original same-project concepts as historical context while keeping explicit reference revisions strict', async () => {
+    const { params, row } = await seed();
+    const original = await generateStudy(env, params, 'original', brief);
+    await env.DB.prepare('UPDATE projects SET revision = 3 WHERE id = ?').bind(row.id).run();
+    expect(await originalConceptId(env, row.id, original)).toBe(original);
+    expect((await loadConceptContext(env, row.id, original)).dataUrl).toBe(capture);
+    await expect(loadImageReference(env, row.id, original, 3)).rejects.toMatchObject({ status: 409 });
+    const other = await seed();
+    expect(await originalConceptId(env, other.row.id, original)).toBeNull();
+    await expect(loadConceptContext(env, other.row.id, original)).rejects.toMatchObject({ status: 404 });
+    await env.DB.prepare('UPDATE image_studies SET source_artifact_id = ? WHERE id = ?').bind('older-source.png', original).run();
+    expect(await originalConceptId(env, row.id, original)).toBeNull();
+    await env.DB.prepare('UPDATE image_studies SET source_artifact_id = NULL WHERE id = ?').bind(original).run();
+    await env.DB.prepare("UPDATE artifacts SET kind = 'image_edit' WHERE id = ?").bind(original).run();
+    expect(await originalConceptId(env, row.id, original)).toBeNull();
+    expect(visualReferenceInstructions).toContain('Accepted user changes override conflicting image colours or features');
+  });
   it('cleans a captured image if saving its companion metadata fails', async () => {
     const { row } = await seed({ revision: 1 });
     const files = {

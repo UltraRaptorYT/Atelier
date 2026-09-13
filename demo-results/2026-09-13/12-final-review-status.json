@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-13T06:21:32.911Z",
+  "status": 200,
+  "response": "{\"cancelled\":true}",
+  "reason": "Final Critic request stalled after its two canonical previews; preserve revision 3 and stop this run before exporting."
+}

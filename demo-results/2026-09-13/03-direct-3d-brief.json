@@ -1,0 +1,19 @@
+{
+  "name": "Live demo · Direct 3D home",
+  "brief": {
+    "request": "Design an original futuristic home for four people with two floors, a bright playful yellow exterior, black trim and small red entry accents. Include a large living room, gaming room, collectible display area, bedrooms and bathrooms. Give the building a distinctive but plausible architectural form, with articulated volumes, a usable upper terrace, generous glazing and a welcoming entrance. Keep rooms walkable with real door openings and connected stairs. Generate the editable 3D building directly from this brief; no generated concept image or image reference is requested.",
+    "summary": "Design an original futuristic home for four people with two floors, a bright playful yellow exterior, black trim and small red entry accents. Include a large living room, gaming room, collectible display area, bedrooms and bathrooms. Give the building a distinctive but plausible architectural form, with articulated volumes, a usable upper terrace, generous glazing and a welcoming entrance. Keep rooms walkable with real door openings and connected stairs. Generate the editable 3D building directly from this brief; no generated concept image or image reference is requested.",
+    "goals": [
+      "Two floors for four occupants",
+      "Large living room, gaming room and collectible display area",
+      "Playful yellow exterior with black trim and red entrance accents",
+      "Distinctive stepped volumes, usable upper terrace and generous glazing",
+      "Real door openings, connected stairs and a safe walking spawn"
+    ],
+    "constraints": [
+      "Compact, plausible conceptual home",
+      "Create directly from the text brief without image generation"
+    ],
+    "questions": []
+  }
+}

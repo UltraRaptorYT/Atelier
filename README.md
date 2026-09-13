@@ -6,7 +6,7 @@ The local preview needs no external keys. Live generation uses the configured Op
 
 The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.
 
-The [collaboration guide](docs/concurrent-agents.md) explains scheduling, proposal merging and correction rounds. Activity shows the current task graph, dependencies and actual active specialists.
+The [collaboration guide](docs/concurrent-agents.md) explains scheduling, proposal merging and correction rounds. Activity shows the current task graph, dependencies, actual active specialists and each saved change request's progress.
 
 The [user journey guide](docs/user-journey.md) walks through entering the website, giving a brief, watching the team collaborate, reviewing the generated design and walking inside it, with current interaction gaps called out.
 
@@ -27,7 +27,7 @@ Up to two distinct specialists run together when their dependencies are complete
 
 Conflicting proposals trigger a Principal decision and one targeted retry. Final review can trigger one correction plan and another review; unresolved findings leave the project in `review`. A finishes-only change can involve just the Designer and Critic. A selected single-element colour edit uses a deterministic patch without a Designer workstation.
 
-Steering during an active run queues for the next run. Typed question routing, automatic clarification resume and preserving requirements across all past changes still need refinement; see the [readiness review](docs/agent-design-review.md). Saved canonical models are already explorable through **Design → Walk inside**; the final presentation-room exhibit and Spline/imported-model integration are unfinished.
+Steering during an active run queues for the next run. Activity tracks **Queued → Working → Applied → Reviewed**, with saved revisions, review findings and failures kept distinct. Each team run saves an `effective-requirements.json` artifact containing the stored brief and ordered previously applied user amendments. Planning, specialists and review receive this shared record alongside the persisted current instruction; later feedback overrides earlier requirements only for the subject and scope it changes. Typed question routing and automatic clarification resume still need refinement; see the [readiness review](docs/agent-design-review.md). Saved canonical models are already explorable through **Design → Walk inside**; the final presentation-room exhibit and Spline/imported-model integration are unfinished.
 
 ## Run locally
 
@@ -63,11 +63,13 @@ For an existing checkout, run `npm run worker:types` and `npm run db:local` afte
 - Choose a room or specialist to inspect their task, send a contextual change, or open an available live workstation. Room controls select the workspace and reset the walking start; they do not automatically walk the visitor there.
 - In the design view, select an element to give steering a precise target. **Cutaway** exposes the interior for inspection.
 - **Files** provides canonical JSON, GLB export, floor plans, saved artifacts and comparison with the previous saved revision when available.
-- **Activity** shows running specialists, dependencies, deliverables, saved revisions and real tool events.
+- **Activity → Your changes** retains submitted instructions, targets, progress, revision references and review outcomes, including stopped or failed requests. **Current requirements** exposes the stored brief and applied feedback in order. Activity also shows running specialists, dependencies, deliverables, saved revisions and real tool events.
 
 WASD and E interaction belong to **Walk inside**. Click walking stops for dialogs/workstations or when the window loses focus; click a new destination to continue. Geometry or cutaway changes reset its starting point safely. Routes allow steps up/down of at most 0.2 m, so a raised floor needs a connected step or staircase to reach lower ground.
 
 Start with a brief such as “Design a futuristic Pokémon-inspired home for four people, with two floors, a generous living room and a yellow exterior.” Then select an exterior element and ask the Designer to make it red. The sample and your saved project are distinct; actual generation and steering require the live services below.
+
+Once that selected-element change is applied, later work receives it as a scoped requirement amendment. Adding a balcony should preserve the red element and unrelated requirements. A request that never reaches the applied milestone is excluded from applied amendments; an applied amendment remains recorded if review fails or the run is stopped afterward. “Applied” means the plan's canonical writes were integrated; “Reviewed” identifies the Critic's outcome and may still include findings. The record supports consistent follow-up work but does not prove that a model obeyed every requirement.
 
 ## Live services
 
@@ -98,7 +100,7 @@ These commands consume remote resources. The benchmark writes actual outputs and
 
 Add `OPENAI_API_KEY` to `worker/.dev.vars.local`, apply `npm run db:local`, and restart the Worker. Local image generation is enabled by default and works without E2B. In a saved project, open **Files → Visual concepts** to generate a Flare concept, edit the current model view or a generated reference with Sunburst, and choose a direction. Applying an image direction to an existing model also requires the 3D generation/E2B setup.
 
-The first design run creates one concept automatically when enabled and none is selected. Each dispatched specialist receives the same reference, frozen for that run, as an actual image input; canonical JSON still drives the walkthrough. Calls produce one medium-quality PNG, save provenance and usage, and have a separate allowance of 12 attempts per account per UTC day. See the [integration guide](docs/image-generation-integration.md) for flags, persistence, cancellation and current geometry limits. Automated image tests use mocked provider responses; verify live access with the configured account.
+Design runs build the editable 3D model directly from the brief; they never generate an image automatically. Image generation is optional and runs only when requested in Visual concepts. A selected original concept can remain background direction across later revisions, frozen for each run; accepted steering overrides conflicting image features. Explicit image edits and applications still require the current revision. Image requests produce one medium-quality PNG, save provenance and usage, and have a separate allowance of 12 attempts per account per UTC day. See the [integration guide](docs/image-generation-integration.md) for flags, persistence, cancellation and current geometry limits. Automated image tests use mocked provider responses; verify live access with the configured account.
 
 ## Prompts and documentation
 

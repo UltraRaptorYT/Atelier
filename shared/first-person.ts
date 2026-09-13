@@ -1,4 +1,5 @@
 import type { RapierCollider, RapierContext, RapierRigidBody } from '@react-three/rapier';
+import type { Design } from './design';
 
 export const CAPSULE_HALF_HEIGHT = .66;
 export const CAPSULE_RADIUS = .24;
@@ -20,6 +21,23 @@ export type WalkController = ReturnType<RapierContext['world']['createCharacterC
 export type WalkDirection = { x: number; z: number };
 export type WalkPosition = { x: number; y: number; z: number };
 export type WalkStep = { verticalSpeed: number; position: WalkPosition };
+
+/** Face the building on entry, at eye level; office navigation keeps its existing bearing. */
+export function initialWalkLookTarget(spawn: [number, number, number], design?: Pick<Design, 'elements'> | null): [number, number, number] {
+  const fallback: [number, number, number] = [spawn[0], spawn[1], spawn[2] - 5];
+  if (!design?.elements.length) return fallback;
+  const shell = design.elements.filter(element => ['wall', 'roof', 'door', 'window', 'stair'].includes(element.kind));
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const element of shell.length ? shell : design.elements) {
+    const cosine = Math.abs(Math.cos(element.rotation)), sine = Math.abs(Math.sin(element.rotation));
+    const halfX = (element.size[0] * cosine + element.size[2] * sine) / 2;
+    const halfZ = (element.size[0] * sine + element.size[2] * cosine) / 2;
+    minX = Math.min(minX, element.position[0] - halfX); maxX = Math.max(maxX, element.position[0] + halfX);
+    minZ = Math.min(minZ, element.position[2] - halfZ); maxZ = Math.max(maxZ, element.position[2] + halfZ);
+  }
+  const x = (minX + maxX) / 2, z = (minZ + maxZ) / 2;
+  return Math.hypot(x - spawn[0], z - spawn[2]) < .01 ? fallback : [x, spawn[1], z];
+}
 
 /** Check a nominal body center against current floor support and full standing clearance. */
 export function clearWalkPosition(world: RapierContext['world'], rapier: Pick<RapierContext['rapier'], 'Ray'>, body: RapierRigidBody, collider: RapierCollider, nominal: WalkPosition): WalkPosition | null {

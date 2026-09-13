@@ -1,10 +1,10 @@
 # Atelier prompt library
 
-Adapted from `../draftroom/prompts` on 2026-09-13. Shared/active role instructions are Atelier version 1.3.0, based on Draftroom 1.1.0 and updated for dependency-driven collaboration. The five master briefs remain unchanged at source version 1.0.0. The [original library](../docs/draftroom/prompts/README.md) is preserved for comparison.
+Adapted from `../draftroom/prompts` on 2026-09-13. Shared instructions are Atelier version 1.3.2, based on Draftroom 1.1.0 and updated for dependency-driven collaboration, incremental edits and persistent steering requirements; active role files retain their individual version labels. The five master briefs remain unchanged at source version 1.0.0. The [original library](../docs/draftroom/prompts/README.md) is preserved for comparison.
 
 ## Role composition
 
-The worker composes [shared instructions](shared.md) followed by exactly one role. Runtime briefs, current design, accepted changes, task data and tool evidence remain separate user/context input. Markdown links are references; models do not automatically load them.
+The worker composes [shared instructions](shared.md) followed by exactly one role. Runtime briefs, effective requirements, current design, accepted changes, task data and tool evidence remain separate user/context input. Markdown links are references; models do not automatically load them.
 
 | Atelier role ID | Prompt file | Ownership |
 | --- | --- | --- |
@@ -26,11 +26,12 @@ File names retain their Draftroom counterparts to make comparison easy; `directo
 | Principal plan | `summary`, `tasks`; each task has `id`, `title`, `objective`, `kind`, `agent`, `dependencies`, `deliverables` |
 | Principal selected-color routing | `scope`, `color`, `elementId`, `explanation` |
 | Principal overlap decision | `decision`, `instruction` |
-| Architect / Designer geometry | Complete `DesignSchema` candidate, preserving role-owned scope |
+| Initial Architecture without an existing design | Complete `DesignSchema` candidate |
+| Architecture / Interior with an existing design | `DesignEditsSchema`: explicit collection upserts/removals and nullable metadata, preserving role-owned scope |
 | Designer visual direction | `summary`, `recommendations`, `coordination`; each coordination entry has `target`, `message` |
 | Critic | `summary` as a string, `findings` as a string array |
 
-The source of truth is the versioned canonical design, represented as `project/design.json`. An E2B workstation receives `/home/user/project/design.json` as the task's working copy. Working-copy edits and complete JSON responses remain proposals until the coordinator validates and commits them. Three.js and Blender compile derived views/artifacts. No Spline connection is required.
+The source of truth is the versioned canonical design, represented as `project/design.json`. An E2B workstation receives `/home/user/project/design.json` as the task's working copy. Working-copy edits and JSON responses remain proposals until the coordinator validates and commits them. [DesignEditsSchema](../shared/design-edits.ts) preserves every unmentioned record; the server applies explicit edits and validates the complete result with the unchanged canonical schema. The read-only `read_design_revision` tool can retrieve a saved revision of the same project for selective recovery while retaining newer accepted repairs. Three.js and Blender compile derived views/artifacts. No Spline connection is required.
 
 [team.ts](../worker/src/team.ts) executes the Principal's plan using [collaboration.ts](../shared/collaboration.ts): 2–8 tasks in an acyclic dependency graph, up to two different specialists per batch, one task per specialist at a time. A final Critic task must depend transitively on every other task. A new design requires Architecture and Interior tasks, with Interior depending on Architecture. The Principal can start architecture and a Designer visual study together, then make interior placement depend on both. Existing-design architecture and finish proposals can run together when independent. This is a supported example, not a fixed sequence.
 
@@ -40,13 +41,17 @@ Final findings trigger at most one additional Principal correction plan and revi
 
 Specialists with workstations can read the design, execute bounded Python, inspect/click/type on the real desktop, and use `report_coordination`. That tool records a public note and includes it in the task's saved handoff; it does not spawn an agent, change dependencies, replan, pause a task or interrupt a running sibling. Visual-direction tasks have no workstation tools and return their notes in `coordination`. The image concept and the Designer's visual-direction report are separate artifacts.
 
+Each team run freezes an `effective-requirements.json` artifact containing the stored brief and ordered applied user amendments. The same record is supplied alongside the persisted current instruction to Principal planning, specialists, visual-requirement analysis, conflict resolution, correction plans and Critic review. Requested image concepts also receive the requirements and save them in artifact metadata. Apply amendments in order and let later instructions supersede earlier wording only for the same subject and scope; retain unrelated requirements. A selected-element instruction must not silently expand to a whole-building change. The current run instruction takes priority within its scope. This preserves client wording and application evidence rather than generating a semantic property map.
+
+Activity's change tracker uses persisted **Queued → Working → Applied → Reviewed** milestones and exposes revision references, findings and failures. The snapshot carries complete change history and the project requirements record; voice/project context also receive the requirements. Exclude requests that never reached application from the applied amendment history. Preserve an applied amendment if a later review fails or the run is stopped, without claiming that incomplete work passed review.
+
 ## Current interaction limits
 
 - Steering submitted during a run is saved and queued for a subsequent run; it is not injected into an in-flight specialist call or used to replan the current graph.
 - One owner can have one active run across projects; concurrency is between eligible specialist tasks within that run.
 - Selected single-element color changes can use a deterministic Designer edit followed by Critic review. Other changes receive a scoped Principal plan; they do not inherently require every role.
 - Clarification questions end the generation run with a blocked Principal task. A saved brief update and another **Start team briefing** are needed; there is no automatic clarification resume. Voice can append pre-design clarification details, while the typed message composer currently submits change requests.
-- The current instruction and supplied dependencies inform each task. A versioned effective brief combining all accepted amendments is not yet implemented.
+- The saved requirements record makes applied amendments available across runs, but interpreting natural-language overlap still depends on the model. It does not prove that every requested detail was implemented or verified.
 - Live generation still depends on configuration, credentials, computer capacity and budgets. Source code, prompt updates and mocked-provider tests do not establish live model quality or latency.
 
 ## Master project briefs
@@ -66,6 +71,9 @@ Atelier supports at most four floors, 40 spaces and 1,200 elements. Large progra
 ## Useful review scenarios
 
 - A local recolor changes the selected element's finish while preserving unrelated materials and geometry.
+- A yellow-exterior brief followed by an applied red-exterior change and then a balcony request supplies the red amendment to planning, specialists and review; a selected-element recolor stays scoped to that element.
+- Queued and never-applied failed/cancelled requests do not become applied requirements. A request applied before a failed review or Stop work retains its amendment and reached milestones.
+- The tracker distinguishes a saved revision from review with findings, and reloading the project preserves each request's history.
 - A structural change preserves unaffected IDs and is reviewed against the current revision.
 - Independent architecture and visual-direction tasks begin together; interior placement receives both saved outputs.
 - Two disjoint proposals from the same base revision preserve each other's changes after publication.

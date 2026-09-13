@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -6,6 +6,7 @@ import { generateKeyPair, exportSPKI, SignJWT } from 'jose';
 import { exampleDesign } from '../shared/example';
 import { recolor } from '../shared/design';
 import { executeVoiceTool } from '../worker/src/voice';
+vi.mock('../worker/src/prompts', () => ({ agentInstructions: () => 'Keep work within your task ownership.' }));
 let mf: Miniflare, env: any, tokenA: string, tokenB: string;
 let commitWorker: Awaited<ReturnType<Miniflare['getWorker']>>;
 const brief = { request:'A warm courtyard house for a family.', summary:'Courtyard house', goals:[],constraints:[],questions:[] };

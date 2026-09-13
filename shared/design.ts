@@ -61,12 +61,19 @@ export const ChangeSchema = z.object({
   referenceArtifactId: artifactIdSchema.nullable().optional(),
 });
 export type Change = z.infer<typeof ChangeSchema>;
+export type ChangeRecord = {
+  id: string; instruction: string; agent: AgentId; elementId: string | null; baseRevision: number;
+  referenceArtifactId: string | null; status: 'pending' | 'in_progress' | 'applied' | 'failed' | 'cancelled';
+  createdAt: string; startedAt: string | null; appliedAt: string | null; appliedRevision: number | null;
+  reviewedAt: string | null; reviewedRevision: number | null; reviewSummary: string | null;
+  reviewFindings: string[]; reviewArtifactId: string | null; failureDetail: string | null;
+};
 export type TaskStatus = 'queued' | 'blocked' | 'in_progress' | 'review' | 'completed' | 'cancelled' | 'failed';
 export type Task = { id: string; agent: AgentId; title: string; status: TaskStatus; detail: string; runId: string; kind?: string; objective?: string; dependencies?: string[]; deliverables?: string[]; baseRevision?: number | null; artifactId?: string | null; artifactRevision?: number | null };
 export type StudioEvent = { id: number; projectId: string; type: string; agent: AgentId | null; taskId: string | null; revision: number; message: string; createdAt: string };
 export type Artifact = { id: string; name: string; kind: string; revision: number; createdAt: string; size: number };
 export type Project = { id: string; name: string; brief: Brief; revision: number; status: string; createdAt: string; updatedAt: string; selectedConceptId?: string | null };
-export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[]; images?: ImageStudy[]; runs?: StudioRun[] };
+export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[]; images?: ImageStudy[]; runs?: StudioRun[]; changes?: ChangeRecord[]; requirements?: import('./requirements').EffectiveRequirements };
 
 export function recolor(d: Design, elementId: string, newColor: string): Design {
   color.parse(newColor);

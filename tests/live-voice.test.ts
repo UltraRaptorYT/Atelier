@@ -57,7 +57,7 @@ describe('live voice lifecycle', () => {
   it('waits for session.started and includes the chosen specialist and element', async () => {
     const x = setup(); await x.call.start();
     expect(x.onStatus.mock.calls).toEqual([['connecting']]);
-    expect(x.fetcher).toHaveBeenCalledWith('/api/studio/projects/project-a/voice', expect.objectContaining({ headers: { 'Content-Type': 'application/sdp', 'X-Atelier-Agent': 'designer', 'X-Atelier-Element': 'roof' } }));
+    expect(x.fetcher).toHaveBeenCalledWith('/api/studio/projects/project-a/voice', expect.objectContaining({ headers: { 'Content-Type': 'application/sdp', 'X-Atelier-Agent': 'designer', 'X-Atelier-Element': 'roof', 'X-Atelier-Location': 'designer' } }));
     x.send('{'); x.send({ type: 'session.started' });
     expect(x.onStatus).toHaveBeenLastCalledWith('live');
     x.call.stop(); x.call.stop();
