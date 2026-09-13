@@ -4,10 +4,10 @@ import { artifactIdSchema, type ImageStudy, type StudioRun } from './images';
 export const AgentIdSchema = z.enum(['principal', 'architect', 'designer', 'critic']);
 export type AgentId = z.infer<typeof AgentIdSchema>;
 export const agents = {
-  principal: { name: 'Alex Morgan', role: 'Principal architect', initials: 'AM', color: '#a16c45', description: 'Brief, direction & coordination' },
-  architect: { name: 'Kai Chen', role: 'Architect', initials: 'KC', color: '#617c84', description: 'Space, structure & form' },
-  designer: { name: 'Sofia Reyes', role: 'Interior designer', initials: 'SR', color: '#9e775b', description: 'Materials, light & atmosphere' },
-  critic: { name: 'Noah Ellis', role: 'Design critic', initials: 'NE', color: '#71816b', description: 'Requirements & design review' },
+  principal: { name: 'Alex Morgan', role: 'Principal architect', initials: 'AM', color: '#c45418', description: 'Brief, direction & coordination' },
+  architect: { name: 'Kai Chen', role: 'Architect', initials: 'KC', color: '#2563eb', description: 'Space, structure & form' },
+  designer: { name: 'Sofia Reyes', role: 'Interior designer', initials: 'SR', color: '#9333c7', description: 'Materials, light & atmosphere' },
+  critic: { name: 'Noah Ellis', role: 'Design critic', initials: 'NE', color: '#15803d', description: 'Requirements & design review' },
 } as const;
 const id = z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/);
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
