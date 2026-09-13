@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { artifactIdSchema, type ImageStudy, type StudioRun } from './images';
 
 export const AgentIdSchema = z.enum(['principal', 'architect', 'designer', 'critic']);
 export type AgentId = z.infer<typeof AgentIdSchema>;
@@ -53,14 +54,15 @@ export type Brief = z.infer<typeof BriefSchema>;
 export const ChangeSchema = z.object({
   instruction: z.string().min(2).max(4000), agent: AgentIdSchema,
   elementId: id.nullable(), baseRevision: z.number().int().min(0), operationId: z.string().uuid(),
+  referenceArtifactId: artifactIdSchema.nullable().optional(),
 });
 export type Change = z.infer<typeof ChangeSchema>;
 export type TaskStatus = 'queued' | 'blocked' | 'in_progress' | 'review' | 'completed' | 'cancelled' | 'failed';
 export type Task = { id: string; agent: AgentId; title: string; status: TaskStatus; detail: string; runId: string };
 export type StudioEvent = { id: number; projectId: string; type: string; agent: AgentId | null; taskId: string | null; revision: number; message: string; createdAt: string };
 export type Artifact = { id: string; name: string; kind: string; revision: number; createdAt: string; size: number };
-export type Project = { id: string; name: string; brief: Brief; revision: number; status: string; createdAt: string; updatedAt: string };
-export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[] };
+export type Project = { id: string; name: string; brief: Brief; revision: number; status: string; createdAt: string; updatedAt: string; selectedConceptId?: string | null };
+export type Snapshot = { project: Project; design: Design | null; tasks: Task[]; events: StudioEvent[]; artifacts: Artifact[]; images?: ImageStudy[]; runs?: StudioRun[] };
 
 export function recolor(d: Design, elementId: string, newColor: string): Design {
   color.parse(newColor);

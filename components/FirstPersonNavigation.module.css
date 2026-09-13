@@ -1,0 +1,24 @@
+.hint {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 40px);
+  padding: 9px 13px;
+  border: 1px solid #d8decc;
+  border-radius: 7px;
+  background: #f7f9f1ee;
+  color: #526543;
+  font: 12px/1.5 var(--sans, sans-serif);
+  text-align: center;
+}
+
+.hint kbd {
+  padding: 1px 6px;
+  border: 1px solid #a6b39a;
+  border-radius: 4px;
+  font: inherit;
+}

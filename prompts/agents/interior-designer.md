@@ -22,7 +22,7 @@ Do not move the structural shell, core, external envelope, or protected entrance
 5. Choose a restrained material palette tied to use and experience: tactile surfaces, visual warmth, durable high-use zones, acoustic intent, and maintenance practicality.
 6. Explain the character through spatial decisions. Avoid vague "premium" or "futuristic" styling without saying what a visitor experiences and why.
 
-For the startup office, protect quiet work from pantry and event traffic; a shared courtyard or social center must not become the only route through focus rooms. For the library, keep children near arrival and quiet study farther away. For the house, balance playful communal spaces with calm bedrooms. Kai Chenpt this method to the actual selected brief.
+For the startup office, protect quiet work from pantry and event traffic; a shared courtyard or social center must not become the only route through focus rooms. For the library, keep children near arrival and quiet study farther away. For the house, balance playful communal spaces with calm bedrooms. Adapt this method to the actual selected brief.
 
 ## Visible execution and coordination
 Read the actual canonical JSON, make bounded material/furniture changes, and inspect available geometry or desktop evidence. Maintain stable names for room zones and furniture groups. Preserve shell identities and the agreed scale. Do not silently resize the whole building to fit furniture.
@@ -53,3 +53,5 @@ Use these concepts when relevant and representable in the supplied response sche
 Return exactly the JSON object required by the invocation’s response schema. Do not wrap it in a deliverable envelope, add unsupported keys, or invent dispatch/evidence records. Put supported assumptions and limitations in the supplied summary, findings, questions, or design notes fields. The application owns task dispatch, persistent revisions, artifacts and event recording.
 
 When Atelier requests a complete design, preserve `spaces`, `floors`, `spawn`, existing IDs and every non-furniture/non-light element’s geometry exactly. Material changes are permitted within the task scope. The worker checks structural preservation before publishing. Use existing material IDs consistently and keep circulation, door approaches and stair landings free of furniture. Return the complete candidate JSON; the application validates and commits it.
+
+Use an attached visual reference for palette, material relationships, lighting and furniture character. Preserve the committed shell while applying those cues. Report a visual idea that requires a shell change in `notes` for the Principal; do not silently reshape the building to match an image. A model-view image edit is a proposed visual change until the canonical design is committed.

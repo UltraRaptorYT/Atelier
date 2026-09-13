@@ -1,8 +1,9 @@
 import type { AgentId, Design, Project, Snapshot, StudioEvent, Task, Artifact } from '../../shared/design';
 import { DesignSchema } from '../../shared/design';
+import type { ImageStudy, StudioRun } from '../../shared/images';
 import type { Bindings, ProjectRow } from './types';
 import { HttpError } from './security';
-export function projectFromRow(row: ProjectRow): Project { return { id: row.id, name: row.name, brief: JSON.parse(row.brief), revision: row.revision, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at }; }
+export function projectFromRow(row: ProjectRow): Project { return { id: row.id, name: row.name, brief: JSON.parse(row.brief), revision: row.revision, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at, selectedConceptId: row.concept_artifact_id ?? null }; }
 export async function designFromRow(env: Bindings, row: ProjectRow): Promise<Design | null> {
   if (!row.design_key) return null;
   const object = await env.FILES.get(row.design_key); if (!object) throw new HttpError(503, 'The saved design is temporarily unavailable.');
@@ -12,13 +13,15 @@ export async function eventsAfter(env: Bindings, projectId: string, after = 0): 
   const result = await env.DB.prepare('SELECT id, project_id as projectId, type, agent, task_id as taskId, revision, message, created_at as createdAt FROM events WHERE project_id = ? AND id > ? ORDER BY id LIMIT 200').bind(projectId, after).all<StudioEvent>(); return result.results;
 }
 export async function snapshot(env: Bindings, row: ProjectRow): Promise<Snapshot> {
-  const [design, tasks, events, artifacts] = await Promise.all([
+  const [design, tasks, events, artifacts, images, runs] = await Promise.all([
     designFromRow(env, row),
     env.DB.prepare('SELECT id, agent, title, status, detail, run_id as runId FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 100').bind(row.id).all<Task>(),
     env.DB.prepare('SELECT id, project_id as projectId, type, agent, task_id as taskId, revision, message, created_at as createdAt FROM (SELECT * FROM events WHERE project_id = ? ORDER BY id DESC LIMIT 200) ORDER BY id').bind(row.id).all<StudioEvent>(),
     env.DB.prepare('SELECT id, name, kind, revision, size, created_at as createdAt FROM artifacts WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<Artifact>(),
+    env.DB.prepare('SELECT id, name, prompt, model, revision, source_artifact_id as sourceArtifactId, created_at as createdAt, metadata_artifact_id as metadataArtifactId FROM image_studies WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<ImageStudy>(),
+    env.DB.prepare('SELECT id, kind, status FROM runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 100').bind(row.id).all<StudioRun>(),
   ]);
-  return { project: projectFromRow(row), design, tasks: tasks.results, events: events.results, artifacts: artifacts.results };
+  return { project: projectFromRow(row), design, tasks: tasks.results, events: events.results, artifacts: artifacts.results, images: images.results, runs: runs.results };
 }
 export async function emit(env: Bindings, projectId: string, type: string, message: string, agent: AgentId | null = null, taskId: string | null = null, operationId: string | null = null) {
   await env.DB.prepare('INSERT OR IGNORE INTO events(project_id,type,agent,task_id,revision,message,created_at,operation_id) SELECT id,?,?,?,?,?,?,? FROM projects WHERE id = ?')

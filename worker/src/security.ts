@@ -34,14 +34,19 @@ export async function decryptCredential(env: Pick<Bindings, 'KEY_ENCRYPTION_KEYS
 }
 export async function credential(env: Bindings, owner: string) {
   const row = await env.DB.prepare('SELECT ciphertext FROM credentials WHERE owner_id = ?').bind(owner).first<{ ciphertext: string }>();
-  if (!row) throw new HttpError(409, 'Connect your OpenAI key in Settings first.');
-  return decryptCredential(env, owner, row.ciphertext);
+  if (row) return decryptCredential(env, owner, row.ciphertext);
+  if (env.OPENAI_API_KEY?.trim()) return env.OPENAI_API_KEY.trim();
+  throw new HttpError(409, 'Add OPENAI_API_KEY to the Worker environment or connect your key in Settings.');
 }
 export async function bodyJSON(request: Request, maxBytes = 64000): Promise<unknown> {
+  const text = await bodyText(request, maxBytes);
+  try { return JSON.parse(text); } catch { throw new HttpError(400, 'Invalid JSON.'); }
+}
+export async function bodyText(request: Request, maxBytes = 64000): Promise<string> {
   if (Number(request.headers.get('Content-Length') || 0) > maxBytes) throw new HttpError(413, 'Request too large.');
   const reader = request.body?.getReader(); if (!reader) throw new HttpError(400, 'Request body is required.');
   const chunks: Uint8Array[] = []; let length = 0;
   while (true) { const { done, value } = await reader.read(); if (done) break; length += value.length; if (length > maxBytes) { await reader.cancel(); throw new HttpError(413, 'Request too large.'); } chunks.push(value); }
   const result = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
-  try { return JSON.parse(new TextDecoder().decode(result)); } catch { throw new HttpError(400, 'Invalid JSON.'); }
+  return new TextDecoder().decode(result);
 }

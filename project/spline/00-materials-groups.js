@@ -1,0 +1,34 @@
+unselect();
+const mats = [{"id":"plaster","name":"Warm ivory mineral plaster","color":"#EAE6DA","roughness":0.8,"metalness":0},{"id":"concrete","name":"Honed warm limestone","color":"#C6C3B3","roughness":0.72,"metalness":0},{"id":"yellow","name":"Ochre yellow enamel","color":"#EDB829","roughness":0.36,"metalness":0},{"id":"timber","name":"Pale oak and tropical timber","color":"#BF9466","roughness":0.5,"metalness":0},{"id":"timber_dark","name":"End grain / warm cedar","color":"#866248","roughness":0.62,"metalness":0},{"id":"roof","name":"Graphite standing seam aluminium","color":"#343C3A","roughness":0.37,"metalness":0.5},{"id":"frame","name":"Bronze black window frames","color":"#333D39","roughness":0.34,"metalness":0.65},{"id":"glass","name":"Clear low tint glazing","color":"#D4E5DD","roughness":0.08,"metalness":0},{"id":"linen","name":"Natural linen upholstery","color":"#E3DCCB","roughness":0.95,"metalness":0},{"id":"sage","name":"Soft sage upholstery","color":"#8F9C83","roughness":0.92,"metalness":0},{"id":"clay","name":"Terracotta accent","color":"#A85B41","roughness":0.75,"metalness":0},{"id":"ceramic","name":"Off white ceramic","color":"#F2EEE4","roughness":0.22,"metalness":0},{"id":"water","name":"Reflective water","color":"#6EAAA1","roughness":0.08,"metalness":0},{"id":"lawn","name":"Garden groundcover","color":"#73885C","roughness":0.95,"metalness":0},{"id":"leaf","name":"Tropical foliage","color":"#486846","roughness":0.82,"metalness":0},{"id":"leaf_light","name":"Young foliage","color":"#759353","roughness":0.85,"metalness":0},{"id":"soil","name":"Planting soil","color":"#574C3B","roughness":0.95,"metalness":0},{"id":"gravel","name":"Pale gravel","color":"#BDBAAF","roughness":0.92,"metalness":0},{"id":"asphalt","name":"Street","color":"#626866","roughness":0.98,"metalness":0},{"id":"ink","name":"Drawing ink","color":"#283B36","roughness":0.8,"metalness":0},{"id":"light","name":"Warm diffused lighting","color":"#FFE5B0","roughness":0.3,"metalness":0}];
+for (const m of mats) {
+  createMaterial('PH26 '+m.id,{layers:[{type:'color',color:m.color},{type:'light',category:'physical',roughness:m.roughness,metalness:m.metalness}]});
+}
+updateMaterial('PH26 glass',{layers:[{type:'color',color:'#c4dcd1',alpha:0.2},{type:'transmission',alpha:1,roughness:0.04,ior:1.45,thickness:0.6}]});
+updateMaterial('PH26 light',{layers:[{type:'light',category:'phong',emissive:'#ffe1a3'}]});
+add('Empty');
+rename("PH26 Ground floor");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Upper floor");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Folded roof");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Privacy screens");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Ground interiors");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Upper interiors");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Site and hardscape");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Tropical garden");
+position({x:0,y:0,z:0});
+add('Empty');
+rename("PH26 Lighting");
+position({x:0,y:0,z:0});

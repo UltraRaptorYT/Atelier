@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-09-13T03:40:11.674387+00:00",
+  "source": "Measured Blender mesh vertices and polygon projections; canonical room bounds and site exclusions.",
+  "metrics": {
+    "site_m2": 600,
+    "ground_enclosed_m2": 164.4,
+    "upper_enclosed_m2": 155.6,
+    "gfa_m2": 320.0,
+    "covered_projection_m2": 180.0,
+    "planted_garden_lower_bound_m2": 319.56,
+    "bedrooms": 3,
+    "storeys": 2,
+    "car_spaces": 1,
+    "bedroom_clear_rectangles_m2": {
+      "Guest bedroom": 18.0,
+      "Primary bedroom": 28.0,
+      "Child bedroom": 20.0
+    },
+    "roof_world_bounds_m": {
+      "x": [
+        -7.5,
+        7.5
+      ],
+      "y": [
+        -8.0,
+        4.0
+      ],
+      "z": [
+        6.607120990753174,
+        7.884571552276611
+      ]
+    },
+    "stairs": {
+      "rises": 18,
+      "rise_m": 0.18,
+      "tread_m": 0.28,
+      "clear_width_m": 1.2,
+      "top_z_m": 3.42,
+      "upper_ffl_m": 3.42,
+      "void_m2": 6.3999999999999995
+    }
+  },
+  "checks": {
+    "canonical_elements_present": true,
+    "missing_element_ids": [],
+    "three_bedrooms": true,
+    "gfa_at_or_below_340": true,
+    "coverage_at_or_below_180": true,
+    "garden_at_least_240": true,
+    "stair_meets_upper_floor": true,
+    "private_ceilings_close_partition_tops": true,
+    "south_setback_m": 7.0,
+    "north_setback_m": 11.0,
+    "west_setback_m": 2.5,
+    "east_setback_m": 2.5
+  },
+  "limitations": [
+    "GFA is concept enclosed floor-plate arithmetic, excluding the upper stair void; not a statutory classification.",
+    "Planted garden is a conservative remainder with boundary and paving exclusions; overlaps are deliberately double-subtracted.",
+    "Guest and shower are on the entry floor. Door maneuvering, gradients, headroom and accessible fixture clearances need dedicated review.",
+    "Solid side walls, high-level side glazing and east timber fins express privacy intent; no neighbor sightline simulation.",
+    "Room areas are clear rectangular planning bounds, before furniture. Living/dining is 45.58 m2 rather than the 50 m2 working allocation.",
+    "No structural, drainage, thermal, ventilation, daylight or statutory performance is established."
+  ]
+}

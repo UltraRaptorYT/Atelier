@@ -2,11 +2,12 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { ContactShadows, Html, OrbitControls, PerformanceMonitor } from '@react-three/drei';
-import { Physics, RigidBody, CapsuleCollider, type RapierRigidBody } from '@react-three/rapier';
-import { Vector3, Group, Euler, PCFShadowMap } from 'three';
+import { Physics, RigidBody } from '@react-three/rapier';
+import { Vector3, Group, PCFShadowMap } from 'three';
 import { agents, type AgentId, type Design, type Task } from '@/shared/design';
 import { geometryParts } from '@/shared/geometry';
 import ClickNavigation from './ClickNavigation';
+import FirstPersonNavigation from './FirstPersonNavigation';
 
 export type RoomId = 'reception' | AgentId | 'presentation';
 export const rooms: { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] }[] = [
@@ -80,87 +81,10 @@ function Building({ design, selected, onSelect, cutaway, clickToWalk }: { design
     return collision ? <RigidBody key={e.id} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
   })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision surface /></group>;
 }
-const PLAYER_EYE_HEIGHT = 1.7;
-const PLAYER_CAPSULE_HALF_HEIGHT = .45;
-const PLAYER_CAPSULE_RADIUS = .24;
-// Rapier positions the body at the capsule centre, not at the feet.
-const PLAYER_CAMERA_OFFSET = PLAYER_EYE_HEIGHT - PLAYER_CAPSULE_HALF_HEIGHT - PLAYER_CAPSULE_RADIUS;
-
-function Player({ target, onRoom, office, revision, design }: { target: [number, number, number]; onRoom: Props['onRoom']; office: boolean; revision: number; design: Design | null }) {
-  const body = useRef<RapierRigidBody>(null);
-  const { camera } = useThree();
-  const keys = useRef(new Set<string>());
-  const spawn = { x: target[0], y: target[1] - PLAYER_CAMERA_OFFSET, z: target[2] };
-  useEffect(() => {
-    body.current?.setTranslation(spawn, true);
-    body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
-    camera.position.set(...target); camera.lookAt(target[0], target[1], target[2] - 5);
-  }, [target[0], target[1], target[2], camera]);
-  useEffect(() => {
-    if (office || !body.current || !design) return;
-    const p = body.current.translation();
-    const supported = design.elements.some(e => {
-      if (!['slab','stair'].includes(e.kind)) return false;
-      const dx=p.x-e.position[0], dz=p.z-e.position[2], c=Math.cos(e.rotation), s=Math.sin(e.rotation);
-      return Math.abs(dx*c-dz*s)<=e.size[0]/2 && Math.abs(dx*s+dz*c)<=e.size[2]/2 && p.y>=e.position[1]-e.size[1]/2 && p.y-e.position[1]-e.size[1]/2<2;
-    });
-    if (!supported) { body.current.setTranslation(spawn,true); body.current.setLinvel({x:0,y:0,z:0},true); }
-  }, [revision,design,office]);
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
-      if (['KeyW','KeyA','KeyS','KeyD','KeyE'].includes(e.code)) e.preventDefault();
-      keys.current.add(e.code);
-      if (e.code === 'KeyE' && office) {
-        const pos = camera.position;
-        const r = [...rooms].sort((a, b) => pos.distanceTo(new Vector3(...a.camera)) - pos.distanceTo(new Vector3(...b.camera)))[0];
-        document.exitPointerLock(); onRoom(r.id);
-      }
-    };
-    const up = (e: KeyboardEvent) => keys.current.delete(e.code);
-    const clear = () => keys.current.clear();
-    window.addEventListener('keydown', down); window.addEventListener('keyup', up); window.addEventListener('blur', clear); document.addEventListener('pointerlockchange', clear);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clear); document.removeEventListener('pointerlockchange', clear); };
-  }, [camera, onRoom, office]);
-  useFrame(() => {
-    if (!body.current) return;
-    const forward = new Vector3(); camera.getWorldDirection(forward); forward.y = 0; forward.normalize();
-    const right = new Vector3().crossVectors(forward, new Vector3(0, 1, 0));
-    const move = new Vector3();
-    if (keys.current.has('KeyW')) move.add(forward); if (keys.current.has('KeyS')) move.sub(forward);
-    if (keys.current.has('KeyD')) move.add(right); if (keys.current.has('KeyA')) move.sub(right);
-    move.normalize().multiplyScalar(3.5);
-    body.current.setLinvel({ x: move.x, y: body.current.linvel().y, z: move.z }, true);
-    let p = body.current.translation();
-    if (p.y < -3) {
-      body.current.setTranslation(spawn, true);
-      body.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      p = spawn;
-    }
-    camera.position.set(p.x, p.y + PLAYER_CAMERA_OFFSET, p.z);
-  });
-  return <RigidBody ref={body} colliders={false} enabledRotations={[false, false, false]} position={[spawn.x, spawn.y, spawn.z]} friction={0}><CapsuleCollider args={[PLAYER_CAPSULE_HALF_HEIGHT, PLAYER_CAPSULE_RADIUS]} /></RigidBody>;
-}
 function CameraRig({ walking, mode, captureRef }: Pick<Props, 'walking' | 'mode' | 'captureRef'>) {
   const { camera, gl, scene } = useThree();
   useEffect(() => { if (!walking) { camera.position.set(...(mode === 'office' ? [24, 26, 30] : [18, 15, 20]) as [number, number, number]); camera.lookAt(0, 0, 0); } }, [walking, mode, camera]);
   useEffect(() => { captureRef.current = () => { gl.render(scene, camera); return gl.domElement.toDataURL('image/png'); }; return () => { captureRef.current = null; }; }, [gl, scene, camera, captureRef]);
-  return null;
-}
-function MouseLook({ onUnlock }: { onUnlock: () => void }) {
-  const { camera, gl } = useThree();
-  useEffect(() => {
-    let dragging = false, wasLocked = false;
-    const down = () => { dragging = true; }, up = () => { dragging = false; };
-    const move = (event: MouseEvent) => {
-      if (document.pointerLockElement !== gl.domElement && !dragging) return;
-      const euler = new Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-      euler.y -= event.movementX*.002; euler.x = Math.max(-1.45, Math.min(1.45, euler.x-event.movementY*.002)); camera.quaternion.setFromEuler(euler);
-    };
-    const lock = () => { if (!document.pointerLockElement && wasLocked) onUnlock(); wasLocked = document.pointerLockElement === gl.domElement; };
-    gl.domElement.addEventListener('mousedown',down); document.addEventListener('mouseup',up); document.addEventListener('mousemove',move); document.addEventListener('pointerlockchange',lock);
-    return () => { gl.domElement.removeEventListener('mousedown',down); document.removeEventListener('mouseup',up); document.removeEventListener('mousemove',move); document.removeEventListener('pointerlockchange',lock); };
-  }, [camera,gl,onUnlock]);
   return null;
 }
 export default function World(props: Props) {
@@ -174,11 +98,10 @@ export default function World(props: Props) {
     <PerformanceMonitor onDecline={() => setQuality(1)} />
     <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
       {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
-      {props.walking && <Player target={target} revision={props.revision} design={props.design} onRoom={props.onRoom} office={props.mode === 'office'} />}
+      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={props.revision} paused={props.paused} onRoom={props.onRoom} onExit={props.onUnlock} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
     {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={65} maxPolarAngle={Math.PI / 2.1} target={[0, 0, 0]} />}
-    {props.walking && <MouseLook onUnlock={props.onUnlock} />}
     <CameraRig walking={props.walking} mode={props.mode} captureRef={props.captureRef} />
   </Canvas>;
 }

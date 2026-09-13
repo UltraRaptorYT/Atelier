@@ -1,61 +1,100 @@
 import { DurableObject } from 'cloudflare:workers';
-import { DesignSchema, ChangeSchema, type AgentId, type Design } from '../../shared/design';
+import { DesignSchema, type AgentId, type Design } from '../../shared/design';
 import type { Bindings, ProjectRow, RunParams } from './types';
 import { HttpError, credential, ownedProject } from './security';
 import { emit } from './store';
-import { queueChange, dispatchPending } from './steering';
+import { dispatchPending } from './steering';
+import { executeVoiceTool, hangupVoice, LiveResponseTools } from './voice';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
+  private closingVoices = new Set<string>();
   async scheduleChanges(projectId: string, owner: string) {
     await this.ctx.storage.put('pending-project', { projectId,owner });
     await this.ctx.storage.setAlarm(Date.now()+1000);
   }
-  async attachVoice(projectId: string, owner: string, callId: string, agent: AgentId) {
+  async attachVoice(projectId: string, owner: string, callId: string, agent: AgentId, elementId: string | null = null) {
     const key = await credential(this.env, owner);
-    const response = await fetch(`https://api.openai.com/v1/realtime?call_id=${encodeURIComponent(callId)}`, { headers: { Upgrade: 'websocket', Authorization: `Bearer ${key}` } });
+    const response = await fetch(`https://api.openai.com/v1/live/sessions/${encodeURIComponent(callId)}/attach`, {
+      headers: { Upgrade: 'websocket', Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000),
+    });
     const socket = response.webSocket;
     if (!socket) throw new HttpError(502, 'Could not attach server controls to the voice session.');
     socket.accept(); this.voices.set(callId, socket);
+    const send = (event: unknown) => { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(event)); };
+    const router = new LiveResponseTools(call => executeVoiceTool(this.env, projectId, owner, callId, agent, elementId, call), send);
+    let pending: { role: 'user' | 'assistant'; text: string; id: string } | null = null;
+    let transcriptTimer: ReturnType<typeof setTimeout> | undefined;
+    const flushTranscript = async () => {
+      clearTimeout(transcriptTimer);
+      const chunk = pending; pending = null;
+      if (chunk?.text.trim()) await emit(this.env, projectId, chunk.role === 'user' ? 'user_message' : 'agent_message', chunk.text, agent, null, `voice-${callId}-${chunk.id}`);
+    };
+    let processing = Promise.resolve();
     socket.addEventListener('message', event => {
-      this.ctx.waitUntil((async () => {
-        const data = JSON.parse(String(event.data));
-        if (data.type === 'conversation.item.input_audio_transcription.completed') await emit(this.env, projectId, 'user_message', String(data.transcript).slice(0,4000), agent, null, `voice-${data.item_id}`);
-        if (data.type !== 'response.function_call_arguments.done') return;
-        const persisted = await this.env.DB.prepare('SELECT id FROM voice_sessions WHERE id = ? AND owner_id = ?').bind(callId, owner).first(); if (!persisted) return;
-        const project = await ownedProject(this.env, projectId, owner);
-        let result: unknown;
-        try {
-          if (String(this.env.GENERATION_ENABLED) !== 'true') throw new Error('Generation is paused.');
-          const args = JSON.parse(data.arguments);
-          const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${callId}-${data.call_id}`));
-          const bytes = new Uint8Array(digest).slice(0,16); bytes[6] = (bytes[6]&15)|64; bytes[8] = (bytes[8]&63)|128;
-          const hex = Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('');
-          const operationId = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
-          if (data.name === 'request_change') result = await queueChange(this.env, projectId, owner, ChangeSchema.parse({ instruction: args.instruction, elementId: args.elementId || null, agent, baseRevision: project.revision, operationId }));
-          else if (data.name === 'save_brief') {
-            const active = await this.env.DB.prepare("SELECT id FROM runs WHERE project_id = ? AND status IN ('queued','in_progress')").bind(projectId).first();
-            if (active) throw new Error('Use a change request while a run is active.');
-            if (typeof args.brief !== 'string' || args.brief.length < 10 || args.brief.length > 8000) throw new Error('Brief must be 10–8000 characters.');
-            const brief = { request: args.brief, summary: args.brief, goals: [], constraints: [], questions: [] };
-            await this.env.DB.prepare('UPDATE projects SET brief = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(brief),new Date().toISOString(),projectId).run();
-            await emit(this.env, projectId, 'clarification_received', 'Your spoken brief has been saved. Start team briefing to begin design work.', agent, null, operationId);
-            result = { saved: true, next: 'Use Start team briefing to start generation.' };
-          } else result = { error: 'Unknown tool.' };
-        } catch { result = { error: 'This action could not be applied. Use the project panel to review and retry.' }; }
-        if (socket.readyState === WebSocket.OPEN) { socket.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: data.call_id, output: JSON.stringify(result) } })); socket.send(JSON.stringify({ type: 'response.create' })); }
-      })().catch(() => {}));
+      // Serialize events: finish all function outputs before a single response continuation.
+      processing = processing.then(async () => {
+        const data = JSON.parse(String(event.data)) as Record<string, unknown>;
+        if (data.type === 'session.input_transcript.delta' || data.type === 'session.output_transcript.delta') {
+          if (typeof data.delta !== 'string' || typeof data.event_id !== 'string') return;
+          const role = data.type === 'session.input_transcript.delta' ? 'user' : 'assistant';
+          if (pending && (pending.role !== role || pending.text.length + data.delta.length > 3500)) await flushTranscript();
+          if (!pending) pending = { role, text: '', id: data.event_id };
+          pending.text += data.delta;
+          clearTimeout(transcriptTimer);
+          transcriptTimer = setTimeout(() => this.ctx.waitUntil(flushTranscript()), 1500);
+        }
+        if (data.type === 'session.closed') { await flushTranscript(); await this.closeVoice(callId); return; }
+        if (data.type === 'error') throw new Error('Live provider error');
+        await router.handle(data);
+      }).catch(async () => {
+        await emit(this.env, projectId, 'error', 'Live voice lost project controls. Reconnect to continue speaking.', agent);
+        await flushTranscript(); await this.closeVoice(callId);
+      });
+      this.ctx.waitUntil(processing);
     });
-    socket.addEventListener('close', () => this.voices.delete(callId));
+    socket.addEventListener('close', () => {
+      this.voices.delete(callId);
+      this.ctx.waitUntil(processing.then(flushTranscript).then(() => this.closeVoice(callId)));
+    });
+    socket.addEventListener('error', () => this.ctx.waitUntil(this.closeVoice(callId)));
     await this.ctx.storage.put(`voice-${callId}`, { owner, created: Date.now() });
-    await this.ctx.storage.setAlarm(Date.now()+60000);
+    const alarm = await this.ctx.storage.getAlarm();
+    if (!alarm || alarm > Date.now() + 60000) await this.ctx.storage.setAlarm(Date.now() + 60000);
   }
-  async closeVoice(callId: string) {
-    const session = await this.env.DB.prepare('SELECT owner_id FROM voice_sessions WHERE id = ?').bind(callId).first<{owner_id:string}>();
-    if (session) {
-      try { const key = await credential(this.env, session.owner_id); const response = await fetch(`https://api.openai.com/v1/realtime/calls/${encodeURIComponent(callId)}/hangup`, { method: 'POST', headers: { Authorization: `Bearer ${key}` } }); await response.body?.cancel(); } catch { /* Browser closure also stops media. */ }
-      await this.env.DB.prepare('DELETE FROM voice_sessions WHERE id = ?').bind(callId).run();
+  async closeVoice(callId: string, owner?: string) {
+    // Startup rollback can happen before D1 insertion or sideband attachment.
+    // Keep enough trusted context to retry hangup even in that partial state.
+    if (owner) {
+      await this.ctx.storage.put(`voice-${callId}`, { owner, created: 0 });
+      const alarm = await this.ctx.storage.getAlarm();
+      if (!alarm || alarm > Date.now() + 1000) await this.ctx.storage.setAlarm(Date.now() + 1000);
     }
-    this.voices.get(callId)?.close(); this.voices.delete(callId); await this.ctx.storage.delete(`voice-${callId}`);
+    if (this.closingVoices.has(callId)) return;
+    this.closingVoices.add(callId);
+    try { await this.finishVoiceClosure(callId); } finally { this.closingVoices.delete(callId); }
+  }
+  private async finishVoiceClosure(callId: string) {
+    const session = await this.env.DB.prepare('SELECT owner_id FROM voice_sessions WHERE id = ?').bind(callId).first<{owner_id:string}>();
+    // Remove local authority before closing the socket, whose close callback can re-enter here.
+    await this.env.DB.prepare('DELETE FROM voice_sessions WHERE id = ?').bind(callId).run();
+    const socket = this.voices.get(callId); this.voices.delete(callId);
+    if (socket && socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) socket.close();
+    if (session) {
+      try { await hangupVoice(await credential(this.env, session.owner_id), callId); }
+      catch {
+        // Keep the durable cleanup record until a later alarm can retry provider hangup.
+        await this.ctx.storage.put(`voice-${callId}`, { owner: session.owner_id, created: 0 });
+        await this.ctx.storage.setAlarm(Date.now() + 60000);
+        return;
+      }
+    } else {
+      const pending = await this.ctx.storage.get<{owner:string}>(`voice-${callId}`);
+      if (pending) {
+        try { await hangupVoice(await credential(this.env, pending.owner), callId); }
+        catch { await this.ctx.storage.setAlarm(Date.now() + 60000); return; }
+      }
+    }
+    await this.ctx.storage.delete(`voice-${callId}`);
   }
   async alarm() {
     const pending = await this.ctx.storage.get<{projectId:string;owner:string}>('pending-project');
@@ -65,7 +104,7 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
       if (!remaining) await this.ctx.storage.delete('pending-project');
     }
     const sessions = await this.ctx.storage.list<{owner:string; created:number}>({ prefix: 'voice-' });
-    for (const [id, session] of sessions) if (Date.now()-session.created > 15*60000) await this.closeVoice(id.slice(6));
+    for (const [id, session] of sessions) if (Date.now()-session.created > 15*60000 || !this.voices.has(id.slice(6))) await this.closeVoice(id.slice(6));
     if ((await this.ctx.storage.list({ prefix: 'voice-' })).size || await this.ctx.storage.get('pending-project')) await this.ctx.storage.setAlarm(Date.now()+60000);
   }
   async commit(projectId: string, baseRevision: number, operationId: string, design: Design, runId?: string): Promise<number> {
@@ -89,17 +128,24 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     return revision;
   }
   async begin(params: RunParams) {
-    const existing = await this.env.DB.prepare('SELECT project_id, owner_id FROM runs WHERE id = ?').bind(params.runId).first<{ project_id: string; owner_id: string }>();
-    if (existing) { if (existing.project_id !== params.projectId || existing.owner_id !== params.userId) throw new HttpError(409, 'Operation ID already used.'); return { runId: params.runId }; }
+    const existing = await this.env.DB.prepare('SELECT project_id, owner_id, status, kind, base_revision, instruction, reference_artifact_id FROM runs WHERE id = ?').bind(params.runId).first<{ project_id: string; owner_id: string; status: string; kind: string; base_revision: number; instruction: string | null; reference_artifact_id: string | null }>();
+    if (existing) {
+      if (existing.project_id !== params.projectId || existing.owner_id !== params.userId) throw new HttpError(409, 'Operation ID already used.');
+      if (existing.status === 'failed' || existing.status === 'cancelled') throw new HttpError(409, `This request already ${existing.status === 'failed' ? 'failed' : 'was cancelled'}. Start a new request to try again.`);
+      if (existing.kind !== params.kind || existing.base_revision !== params.baseRevision || existing.instruction !== (params.instruction || null) || (params.kind !== 'generate' && existing.reference_artifact_id !== (params.referenceArtifactId || null))) throw new HttpError(409, 'Operation ID already used for a different request.');
+      return { runId: params.runId };
+    }
     const row = await this.env.DB.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ?').bind(params.projectId, params.userId).first<ProjectRow>();
     if (!row) throw new HttpError(404, 'Project not found.');
     if (row.revision !== params.baseRevision) throw new HttpError(409, 'Refresh the project before starting work on a previous revision.');
+    const selected = params.kind === 'generate' && row.concept_artifact_id ? await this.env.DB.prepare('SELECT id FROM image_studies WHERE id = ? AND project_id = ? AND revision = ?').bind(row.concept_artifact_id, params.projectId, params.baseRevision).first<{id:string}>() : null;
+    const frozen = { ...params, referenceArtifactId: params.kind === 'generate' ? selected?.id || null : params.referenceArtifactId || null };
     try {
-      await this.env.DB.prepare('INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(params.runId, params.projectId, params.userId, params.kind, 'queued', params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, new Date().toISOString()).run();
+      await this.env.DB.prepare('INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,reference_artifact_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(params.runId, params.projectId, params.userId, params.kind, 'queued', params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, frozen.referenceArtifactId, new Date().toISOString()).run();
     } catch { throw new HttpError(409, 'You already have an active run. Stop it before starting another.'); }
-    try { await this.env.JOBS.create({ id: params.runId, params }); }
+    try { await this.env.JOBS.create({ id: params.runId, params: frozen }); }
     catch { await this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ?").bind(params.runId).run(); throw new HttpError(503, 'The job could not be queued. Retry with a new request.'); }
-    await emit(this.env, params.projectId, 'task_created', `${params.kind === 'render' ? 'Presentation render' : 'Design work'} queued.`, params.agent || 'principal');
+    await emit(this.env, params.projectId, 'task_created', `${params.kind === 'image' ? 'Visual concept' : params.kind === 'render' ? 'Presentation render' : 'Design work'} queued.`, params.agent || 'principal');
     return { runId: params.runId };
   }
 }

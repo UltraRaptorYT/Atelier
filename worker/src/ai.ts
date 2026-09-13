@@ -6,9 +6,9 @@ import type { Bindings } from './types';
 import { credential, HttpError } from './security';
 import { emit } from './store';
 import { agentInstructions } from './prompts';
-export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId, prompt: string, schema: z.ZodType<T>, context?: { desktop: Sandbox; projectId: string; taskId: string; design: Design | null }): Promise<T> {
+export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId, prompt: string, schema: z.ZodType<T>, context?: { desktop: Sandbox; projectId: string; taskId: string; design: Design | null }, images: string[] = []): Promise<T> {
   const client = new OpenAI({ apiKey: await credential(env, owner), maxRetries: 0, timeout: 120000 });
-  const input: OpenAI.Responses.ResponseInput = [{ role: 'user', content: prompt }];
+  const input: OpenAI.Responses.ResponseInput = [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images.map(image_url => ({ type: 'input_image' as const, image_url, detail: 'high' as const }))] }];
   const tools: OpenAI.Responses.Tool[] = context ? [
     { type: 'function', name: 'read_design', description: 'Read the current canonical design from your real filesystem.', parameters: { type: 'object', properties: {}, required: [], additionalProperties: false }, strict: true },
     { type: 'function', name: 'execute_python', description: 'Run bounded Python in your isolated Linux workstation. Use /home/user/project for files. No credentials are available. Do not start persistent servers or download executable software.', parameters: { type: 'object', properties: { code: { type: 'string' } }, required: ['code'], additionalProperties: false }, strict: true },
@@ -19,7 +19,7 @@ export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId,
   for (let step = 0; step < 12; step++) {
     const result = await client.responses.create({
       model: env.OPENAI_MODEL, store: false, max_output_tokens: 18000,
-      instructions: `${agentInstructions(agent)}\n\nYou are ${agents[agent].name}, ${agents[agent].role} in this invocation. Return exactly the supplied JSON schema. ${context ? 'Use your actual tools to inspect or validate the work before completing. Do not narrate imagined tool activity.' : 'This invocation supplies JSON context only; do not require workstation access or claim tool execution.'}`,
+      instructions: `${agentInstructions(agent)}\n\nYou are ${agents[agent].name}, ${agents[agent].role} in this invocation. Return exactly the supplied JSON schema. ${context ? 'Use your actual tools to inspect or validate the work before completing. Do not narrate imagined tool activity.' : 'This invocation supplies project context only; do not require workstation access or claim tool execution.'}`,
       input, tools, tool_choice: context && step === 0 ? { type: 'function', name: 'read_design' } : 'auto',
       text: { format: { type: 'json_schema', name: 'agent_result', strict: true, schema: z.toJSONSchema(schema) } },
     });

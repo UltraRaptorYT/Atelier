@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { generateKeyPair, exportSPKI, SignJWT } from 'jose';
 import { exampleDesign } from '../shared/example';
 import { recolor } from '../shared/design';
+import { executeVoiceTool } from '../worker/src/voice';
 let mf: Miniflare, env: any, tokenA: string, tokenB: string;
 let commitWorker: Awaited<ReturnType<Miniflare['getWorker']>>;
 const brief = { request:'A warm courtyard house for a family.', summary:'Courtyard house', goals:[],constraints:[],questions:[] };
@@ -20,13 +21,13 @@ beforeAll(async()=>{
   const {publicKey,privateKey}=await generateKeyPair('RS256');
   const token=(sub:string)=>new SignJWT({azp:'http://127.0.0.1:3000',sid:'session-test'}).setProtectedHeader({alg:'RS256'}).setSubject(sub).setIssuer('https://atelier-test.clerk.accounts.dev').setIssuedAt().setNotBefore('0 seconds').setExpirationTime('1 hour').sign(privateKey);
   tokenA=await token('user-a'); tokenB=await token('user-b');
-  const root=resolve('.atelier/test-worker');
+  const root=resolve('worker/.atelier/test-worker');
   mf=new Miniflare(convertV4MiniflareOptions({ workers: [{ name:'atelier-test', modules: [{type:'ESModule',path:resolve(root,'index.js')},...readdirSync(root).filter(x=>/\.(py|md)$/.test(x)).map(x=>({type:'Text' as const,path:resolve(root,x)}))],
     compatibilityDate:'2026-09-12',compatibilityFlags:['nodejs_compat'],
     d1Databases:['DB'],r2Buckets:['FILES'],
     durableObjects:{PROJECTS:{className:'ProjectCoordinator',useSQLite:true},BUDGET:{className:'ComputeBudget',useSQLite:true}},
     workflows:{JOBS:{name:'atelier-jobs-test',className:'DesignWorkflow'}},
-    bindings:{ENVIRONMENT:'test',APP_ORIGIN:'http://127.0.0.1:3000',GENERATION_ENABLED:'false',RENDER_ENABLED:'false',CLERK_JWT_KEY:await exportSPKI(publicKey),KEY_VERSION:'v1',OPENAI_MODEL:'gpt-5.6-terra',VOICE_MODEL:'gpt-realtime-2.1',E2B_TEMPLATE:'atelier-desktop'} },
+    bindings:{ENVIRONMENT:'test',APP_ORIGIN:'http://127.0.0.1:3000',GENERATION_ENABLED:'false',RENDER_ENABLED:'false',CLERK_JWT_KEY:await exportSPKI(publicKey),KEY_VERSION:'v1',OPENAI_MODEL:'gpt-5.6-terra',VOICE_MODEL:'gpt-live-1',VOICE_ENABLED:'true',OPENAI_API_KEY:'test-environment-key',E2B_TEMPLATE:'atelier-desktop'} },
     // Miniflare's Node RPC proxy drops the Promise header on rejected RPC calls.
     // Catch in a real Worker so assertions see the coordinator's actual error.
     { name:'commit-test-bridge', modules:true, compatibilityDate:'2026-09-12',
@@ -39,7 +40,9 @@ beforeAll(async()=>{
     }] }));
   env=await mf.getBindings('atelier-test');
   commitWorker=await mf.getWorker('commit-test-bridge');
-  await env.DB.exec(readFileSync('worker/migrations/0001_initial.sql','utf8'));
+  for (const migration of readdirSync('worker/migrations').filter(name => name.endsWith('.sql')).sort()) {
+    for (const statement of readFileSync(`worker/migrations/${migration}`, 'utf8').split(';').filter(sql => sql.trim())) await env.DB.prepare(statement).run();
+  }
 });
 afterAll(async()=>{await mf?.dispose();});
 describe('real Worker, D1, R2 and Durable Object integration',()=>{
@@ -99,4 +102,39 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     const response=await call(`/projects/${id}/runs`,tokenA,'POST',{operationId:crypto.randomUUID(),kind:'generate',baseRevision:0});
     expect(response.status).toBe(503); expect((await call(`/projects/${id}`)).status).toBe(200);
   });
+  it('advertises the environment connection without exposing its key or requiring generation', async () => {
+    const response = await call('/capabilities');
+    const raw = await response.text();
+    expect(JSON.parse(raw)).toMatchObject({ keyConnected: true, keySource: 'environment', voice: true, voiceModel: 'gpt-live-1', generation: false });
+    expect(raw).not.toContain('test-environment-key');
+  });
+  it('saves spoken clarifications exactly once and preserves prior brief constraints', async () => {
+    const id = await project(), voiceId = `voice-${id}`;
+    const original = { ...brief, constraints: ['Keep the courtyard'], questions: ['How many floors?'] };
+    await env.DB.prepare('UPDATE projects SET brief = ? WHERE id = ?').bind(JSON.stringify(original), id).run();
+    await env.DB.prepare('INSERT INTO voice_sessions(id,project_id,owner_id,agent,created_at) VALUES(?,?,?,?,?)').bind(voiceId,id,'user-a','principal',Date.now()).run();
+    const input = { call_id: 'spoken-floors', name: 'save_brief', arguments: JSON.stringify({ details: 'Two floors and four occupants.' }) };
+    const apply = () => executeVoiceTool(env,id,'user-a',voiceId,'principal',null,input);
+    expect(await apply()).toMatchObject({ saved: true });
+    expect(await apply()).toMatchObject({ saved: true });
+    const snapshot = await (await call(`/projects/${id}`)).json() as any;
+    expect(snapshot.project.brief.constraints).toEqual(original.constraints);
+    expect(snapshot.project.brief.request).toContain(original.request);
+    expect(snapshot.project.brief.request.match(/Two floors/g)).toHaveLength(1);
+    expect(snapshot.events.filter((event:any) => event.type === 'clarification_received')).toHaveLength(1);
+    // While a workflow is active, voice cannot replace the brief it is using.
+    await env.DB.prepare("INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,created_at) VALUES(?,?,'user-a','generate','in_progress',0,?)").bind(`voice-run-${id}`, id, new Date().toISOString()).run();
+    const blocked = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id: 'while-running' });
+    expect(blocked).toMatchObject({ error: expect.stringMatching(/work started/) });
+    await env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(`voice-run-${id}`).run();
+    await commit(id,0,`voice-design-${id}`,exampleDesign());
+    const afterDesign = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id: 'after-design' });
+    expect(afterDesign).toMatchObject({ error: expect.stringMatching(/design already exists/) });
+    const change = await executeVoiceTool(env,id,'user-a',voiceId,'designer',null,{ call_id: 'paused-change', name:'request_change', arguments:JSON.stringify({instruction:'Make the roof red',elementId:null,baseRevision:1}) });
+    expect(change).toMatchObject({ error: expect.stringMatching(/paused/) });
+    await env.DB.prepare('DELETE FROM voice_sessions WHERE id = ?').bind(voiceId).run();
+    const ended = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id:'after-hangup' });
+    expect(ended).toMatchObject({ error: expect.stringMatching(/ended/) });
+  });
+
 });

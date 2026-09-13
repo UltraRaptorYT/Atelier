@@ -9,7 +9,7 @@
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit && tsc -p worker/tsconfig.json --noEmit",
     "test": "npm run worker:test-build && vitest run",
-    "worker:test-build": "wrangler deploy --dry-run --config worker/wrangler.jsonc --env local --outdir ../.atelier/test-worker",
+    "worker:test-build": "wrangler deploy --dry-run --config worker/wrangler.jsonc --env local --outdir .atelier/test-worker",
     "setup:local": "node scripts/local-setup.mjs && npm run worker:types && npm run db:local",
     "desktop:build": "tsx scripts/build-desktop.ts",
     "worker:dev": "wrangler dev --config worker/wrangler.jsonc --env local",

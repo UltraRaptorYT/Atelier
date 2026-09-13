@@ -1,6 +1,15 @@
 # Local-only secrets. Copy to .dev.vars.local; never commit real values.
 CLERK_SECRET_KEY=
 CLERK_JWT_KEY=
+OPENAI_API_KEY=
+# Used server-side for GPT-Live 1, image generation and design work when no personal key is saved.
+# Model defaults and VOICE_ENABLED live in wrangler.jsonc; these may override them.
+VOICE_MODEL=gpt-live-1
+VOICE_ENABLED=true
+# Images work without E2B. Generation uses Flare; reference edits use Sunburst.
+IMAGE_GENERATION_ENABLED=true
+OPENAI_IMAGE_CONCEPT_MODEL=gpt-image-2.5-flare
+OPENAI_IMAGE_EDIT_MODEL=gpt-image-2.5-sunburst
 E2B_API_KEY=
 # Base64-encoded 32 random bytes. Store historical keys until all credentials are rotated.
 KEY_ENCRYPTION_KEYS={"v1":"REPLACE_WITH_RANDOM_BASE64_32_BYTES"}

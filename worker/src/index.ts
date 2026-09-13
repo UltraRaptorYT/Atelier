@@ -1,10 +1,13 @@
 import { z, ZodError } from 'zod';
-import { agents, BriefSchema, ChangeSchema, AgentIdSchema } from '../../shared/design';
+import { BriefSchema, ChangeSchema, AgentIdSchema } from '../../shared/design';
 import { credential, encryptCredential, userId, ownedProject, bodyJSON, HttpError } from './security';
-import { designFromRow, eventsAfter, projectFromRow, snapshot, emit } from './store';
+import { eventsAfter, projectFromRow, snapshot, emit } from './store';
 import { openDesktopStream } from './desktop';
 import { queueChange } from './steering';
-import type { Bindings, ProjectRow } from './types';
+import { startVoice } from './voice';
+import { CaptureRequestSchema, ConceptRequestSchema, ImageRequestSchema } from '../../shared/images';
+import { loadImageReference, saveCapture, selectConcept } from './images';
+import type { Bindings, ProjectRow, RunParams } from './types';
 export { ProjectCoordinator } from './coordinator';
 export { ComputeBudget } from './budget';
 export { DesignWorkflow } from './workflow';
@@ -14,13 +17,35 @@ function enabled(env: Bindings, render = false) {
   if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Live generation is paused until the deployment checks pass.');
   if (render && String(env.RENDER_ENABLED) !== 'true') throw new HttpError(503, 'Public rendering is disabled until the Blender benchmark passes.');
 }
+async function beginRun(env: Bindings, params: RunParams) {
+  const previous = await env.DB.prepare('SELECT project_id,owner_id,status FROM runs WHERE id = ?').bind(params.runId).first<{project_id:string;owner_id:string;status:string}>();
+  if (previous) {
+    if (previous.project_id !== params.projectId || previous.owner_id !== params.userId) throw new HttpError(409, 'Operation ID already used.');
+    if (previous.status === 'failed' || previous.status === 'cancelled') throw new HttpError(409, `This request ${previous.status === 'failed' ? 'failed' : 'was cancelled'}. Start a new request to try again.`);
+  }
+  try { return await env.PROJECTS.getByName(params.projectId).begin(params); }
+  catch (error) {
+    if (error instanceof HttpError) throw error;
+    // Durable Object RPC does not retain a custom Error prototype or status.
+    // Re-read authoritative state instead of exposing an arbitrary RPC message.
+    const run = await env.DB.prepare('SELECT status FROM runs WHERE id = ? AND project_id = ?').bind(params.runId, params.projectId).first<{status:string}>();
+    if (run?.status === 'failed') throw new HttpError(503, 'The job could not be queued. Start a new request to try again.');
+    if (run?.status === 'cancelled') throw new HttpError(409, 'This request was cancelled. Start a new request to try again.');
+    if (run) throw new HttpError(409, 'This operation is already saved. Refresh Activity before starting another request.');
+    const active = await env.DB.prepare("SELECT id FROM runs WHERE owner_id = ? AND status IN ('queued','in_progress')").bind(params.userId).first();
+    if (active) throw new HttpError(409, 'You already have an active run. Stop it or wait for it to finish before starting another.');
+    const project = await ownedProject(env, params.projectId, params.userId);
+    if (project.revision !== params.baseRevision) throw new HttpError(409, 'The design changed. Refresh before starting work from this revision.');
+    throw new HttpError(502, 'The job could not be queued. Refresh Activity before trying again.');
+  }
+}
 async function route(request: Request, env: Bindings): Promise<Response> {
   const path = new URL(request.url).pathname.split('/').filter(Boolean).map(decodeURIComponent), method = request.method;
-  if (path[0] === 'health') return Response.json({ service: 'atelier', status: 'ok', generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true' });
+  if (path[0] === 'health') return Response.json({ service: 'atelier', status: 'ok', generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', imageGeneration: String(env.IMAGE_GENERATION_ENABLED) === 'true' });
   const owner = await userId(request, env);
   if (path[0] === 'capabilities') {
     const key = await env.DB.prepare('SELECT owner_id FROM credentials WHERE owner_id = ?').bind(owner).first();
-    return Response.json({ configured: true, generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', local: env.ENVIRONMENT === 'local', keyConnected: Boolean(key) });
+    return Response.json({ configured: true, generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', local: env.ENVIRONMENT === 'local', keyConnected: Boolean(key || env.OPENAI_API_KEY?.trim()), keySource: key ? 'saved' : env.OPENAI_API_KEY?.trim() ? 'environment' : 'none', voice: String(env.VOICE_ENABLED) === 'true', voiceModel: env.VOICE_MODEL, images: String(env.IMAGE_GENERATION_ENABLED) === 'true', imageModel: env.OPENAI_IMAGE_CONCEPT_MODEL, imageEditModel: env.OPENAI_IMAGE_EDIT_MODEL });
   }
   if (path[0] === 'credentials') {
     if (method === 'DELETE') { await env.DB.prepare('DELETE FROM credentials WHERE owner_id = ?').bind(owner).run(); return Response.json({ removed: true }); }
@@ -85,22 +110,57 @@ async function route(request: Request, env: Bindings): Promise<Response> {
   if (path[2] === 'artifacts' && method === 'GET') {
     const a = await env.DB.prepare('SELECT object_key,mime,name FROM artifacts WHERE project_id = ? AND id = ?').bind(id, path[3]).first<{ object_key: string; mime: string; name: string }>();
     if (!a) throw new HttpError(404, 'Artifact not found.'); const object = await env.FILES.get(a.object_key); if (!object) throw new HttpError(404, 'Artifact unavailable.');
-    return new Response(object.body, { headers: { 'Content-Type': a.mime, 'Content-Disposition': `attachment; filename="${a.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}"` } });
+    const inline = new URL(request.url).searchParams.get('inline') === '1' && ['image/png', 'image/jpeg', 'image/webp'].includes(a.mime);
+    return new Response(object.body, { headers: { 'Content-Type': a.mime, 'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${a.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}"` } });
+  }
+  if (path[2] === 'captures' && method === 'POST') {
+    const data = CaptureRequestSchema.parse(await bodyJSON(request, 12 * 1024 * 1024));
+    if (!row.design_key) throw new HttpError(409, 'Generate a design before capturing a model view.');
+    if (data.baseRevision !== row.revision) throw new HttpError(409, 'The design changed. Refresh the model before capturing its view.');
+    return Response.json({ artifactId: await saveCapture(env, row, data.operationId, data.dataUrl) }, { status: 201 });
+  }
+  if (path[2] === 'images' && method === 'POST') {
+    const data = ImageRequestSchema.parse(await bodyJSON(request));
+    if (String(env.IMAGE_GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Image generation is disabled for this studio.');
+    await credential(env, owner);
+    if (data.baseRevision !== row.revision) throw new HttpError(409, 'The design changed. Refresh before generating a concept for this revision.');
+    if (data.sourceArtifactId) await loadImageReference(env, id, data.sourceArtifactId, row.revision);
+    return Response.json(await beginRun(env, { projectId: id, userId: owner, runId: data.operationId, kind: 'image', baseRevision: data.baseRevision, instruction: data.instruction, agent: 'designer', referenceArtifactId: data.sourceArtifactId }), { status: 202 });
+  }
+  if (path[2] === 'concept' && method === 'PUT') {
+    const data = ConceptRequestSchema.parse(await bodyJSON(request));
+    if (data.baseRevision !== row.revision) throw new HttpError(409, 'The design changed. Choose a concept generated for the current revision.');
+    const study = await env.DB.prepare('SELECT id,prompt,source_artifact_id FROM image_studies WHERE id = ? AND project_id = ? AND revision = ?').bind(data.artifactId, id, row.revision).first<{ id: string; prompt: string; source_artifact_id: string | null }>();
+    if (!study) throw new HttpError(409, 'Choose a generated concept from this project and current design revision.');
+    if (data.apply) {
+      enabled(env); await credential(env, owner);
+      if (!env.E2B_API_KEY) throw new HttpError(503, 'Remote computers are not configured.');
+      if (!row.design_key) throw new HttpError(409, 'Save this direction for the first design before applying it to a model.');
+      const instruction = `Apply the selected visual concept to the canonical design. Saved user direction: ${JSON.stringify(study.prompt)}. Preserve the brief, constraints, unrelated design elements and existing IDs. ${study.source_artifact_id ? 'This concept edits an existing image or model view: preserve unchanged geometry, spatial arrangement, openings and finishes; interpret its camera as a viewpoint, not a geometry change. ' : ''}Translate achievable visual ideas into editable geometry and explain any differences from the concept.`;
+      await queueChange(env, id, owner, { operationId: data.operationId, baseRevision: row.revision, agent: 'architect', elementId: null, referenceArtifactId: data.artifactId, instruction });
+    }
+    await selectConcept(env, row, data.artifactId, data.operationId);
+    return Response.json({ selected: true, queued: data.apply, artifactId: data.artifactId }, { status: data.apply ? 202 : 200 });
   }
   if (path[2] === 'runs') {
     if (method === 'POST') {
       const data = RunSchema.parse(await bodyJSON(request)); enabled(env, data.kind === 'render'); await credential(env, owner);
       if (!env.E2B_API_KEY) throw new HttpError(503, 'Remote computers are not configured.');
       if (data.kind === 'render' && !row.design_key) throw new HttpError(409, 'Generate a design before rendering.');
-      return Response.json(await env.PROJECTS.getByName(id).begin({ projectId: id, userId: owner, runId: data.operationId, kind: data.kind, baseRevision: data.baseRevision }), { status: 202 });
+      return Response.json(await beginRun(env, { projectId: id, userId: owner, runId: data.operationId, kind: data.kind, baseRevision: data.baseRevision }), { status: 202 });
     }
     if (method === 'DELETE' && path[3]) {
-      const run = await env.DB.prepare('SELECT id FROM runs WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first(); if (!run) throw new HttpError(404, 'Run not found.');
-      await env.DB.batch([env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress')").bind(path[3]), env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress')").bind(path[3])]);
-      try { await (await env.JOBS.get(path[3])).terminate(); } catch { /* D1 cancellation is the commit fence. */ }
-      const desktops = await env.DB.prepare('SELECT lease_id FROM desktop_sessions WHERE project_id = ?').bind(id).all<{lease_id:string}>();
-      for (const desktop of desktops.results) await env.BUDGET.getByName('desktop-budget').release(desktop.lease_id);
-      await emit(env, id, 'task_cancelled', 'Work stopped. Completed revisions remain saved.');
+      const run = await env.DB.prepare('SELECT id,kind,status FROM runs WHERE id = ? AND project_id = ? AND owner_id = ?').bind(path[3], id, owner).first<{ id: string; kind: string; status: string }>(); if (!run) throw new HttpError(404, 'Run not found.');
+      const changed = await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE id = ? AND status IN ('queued','in_progress')").bind(run.id).run();
+      if (!changed.meta.changes) return Response.json({ cancelled: run.status === 'cancelled' });
+      await env.DB.batch([env.DB.prepare("UPDATE tasks SET status = 'cancelled' WHERE run_id = ? AND status IN ('queued','in_progress')").bind(run.id), env.DB.prepare("UPDATE changes SET status = 'cancelled' WHERE id = ? AND status IN ('pending','in_progress')").bind(run.id)]);
+      try { await (await env.JOBS.get(run.id)).terminate(); } catch { /* D1 cancellation is the commit fence. */ }
+      if (run.kind !== 'image') {
+        const prefix = `${run.id}-`;
+        const desktops = await env.DB.prepare('SELECT lease_id FROM desktop_sessions WHERE project_id = ? AND substr(lease_id,1,?) = ?').bind(id, prefix.length, prefix).all<{lease_id:string}>();
+        for (const desktop of desktops.results) await env.BUDGET.getByName('desktop-budget').release(desktop.lease_id);
+      }
+      await emit(env, id, 'task_cancelled', run.kind === 'image' ? 'Image work stopped. Saved studies remain available; an image request already sent to OpenAI may still incur usage.' : 'Work stopped. Completed revisions remain saved.');
       return Response.json({ cancelled: true });
     }
   }
@@ -121,21 +181,8 @@ async function route(request: Request, env: Bindings): Promise<Response> {
       return Response.json({ ended: true });
     }
     if (method === 'POST') {
-      enabled(env); const agent = AgentIdSchema.parse(request.headers.get('X-Atelier-Agent') || 'principal');
-      const key = await credential(env, owner); const design = await designFromRow(env, row);
-      const sdp = await request.text(); if (sdp.length > 64000) throw new HttpError(413, 'Voice offer is too large.');
-      const fd = new FormData(); fd.set('sdp', sdp);
-      fd.set('session', JSON.stringify({ type: 'realtime', model: env.VOICE_MODEL,
-        instructions: `You are ${agents[agent].name}, the ${agents[agent].role} at Atelier. Discuss the project concisely. Brief: ${row.brief}. Current design summary: ${JSON.stringify(design ? { title: design.title, spaces: design.spaces, revision: row.revision } : null)}. Use request_change for design instructions; acknowledge queued work without claiming it is already done. Use save_brief for initial requirements and clarification answers. Tool execution belongs exclusively to the server.`,
-        audio: { input: { transcription: { model: 'gpt-4o-mini-transcribe' }, turn_detection: { type: 'server_vad', interrupt_response: true, create_response: true } }, output: { voice: 'marin' } },
-        tools: [{ type: 'function', name: 'request_change', description: 'Save a design change for the addressed specialist.', parameters: { type: 'object', properties: { instruction: { type: 'string' }, elementId: { type: ['string','null'] } }, required: ['instruction', 'elementId'], additionalProperties: false } }, { type: 'function', name: 'save_brief', description: 'Save the initial project brief or clarification answers before generation.', parameters: { type: 'object', properties: { brief: { type: 'string' } }, required: ['brief'], additionalProperties: false } }],
-      }));
-      const upstream = await fetch('https://api.openai.com/v1/realtime/calls', { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: fd, signal: AbortSignal.timeout(25000) });
-      if (!upstream.ok) { await upstream.body?.cancel(); throw new HttpError(502, 'OpenAI could not start voice. Check that your key has realtime access.'); }
-      const callId = upstream.headers.get('Location')?.split('/').pop(); if (!callId) throw new HttpError(502, 'Voice session ID was not returned.');
-      await env.DB.prepare('INSERT INTO voice_sessions(id,project_id,owner_id,agent,created_at) VALUES(?,?,?,?,?)').bind(callId, id, owner, agent, Date.now()).run();
-      await env.PROJECTS.getByName(id).attachVoice(id, owner, callId, agent);
-      return new Response(upstream.body, { headers: { 'Content-Type': 'application/sdp', 'X-Voice-Session': callId } });
+      const agent = AgentIdSchema.parse(request.headers.get('X-Atelier-Agent') || 'principal');
+      return startVoice(request, env, row, owner, agent);
     }
   }
   throw new HttpError(404, 'Not found.');

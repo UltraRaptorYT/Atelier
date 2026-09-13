@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BriefSchema, DesignSchema, recolor, reviewDesign, type AgentId, type Design } from '../../shared/design';
 import type { Bindings, RunParams } from './types';
 import { modelJSON } from './ai';
+import { generateStudy, loadImageReference, visualReferenceInstructions } from './images';
 import { artifact, designFromRow, emit } from './store';
 import { createDesktop, idleDesktop, syncDesktop, checkpointDesktop } from './desktop';
 import { ownedProject, HttpError } from './security';
@@ -13,11 +14,11 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
     const p = event.payload;
     const checkCancelled = async () => {
       const run = await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{ status: string }>();
-      if (!run || run.status === 'cancelled') throw new Error('Run cancelled.');
+      if (!run || !['queued', 'in_progress'].includes(run.status)) throw new Error('Run cancelled.');
     };
     const task = async (agent: AgentId, title: string, detail: string, status = 'in_progress') => {
       const id = `${p.runId}-${agent}`;
-      await this.env.DB.prepare('INSERT INTO tasks(id,project_id,run_id,agent,title,status,detail) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,detail=excluded.detail').bind(id, p.projectId, p.runId, agent, title, status, detail).run();
+      await this.env.DB.prepare('INSERT INTO tasks(id,project_id,run_id,agent,title,status,detail) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,status=excluded.status,detail=excluded.detail').bind(id, p.projectId, p.runId, agent, title, status, detail).run();
       await emit(this.env, p.projectId, status === 'completed' ? 'task_completed' : 'task_started', detail, agent, id);
       return id;
     };
@@ -36,7 +37,13 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
     const connect = async (id: string) => { const { Sandbox } = await import('@e2b/desktop'); return Sandbox.connect(id, { apiKey: this.env.E2B_API_KEY }); };
     try {
       await step.do('start', async () => { await checkCancelled(); await this.env.DB.prepare("UPDATE runs SET status = 'in_progress' WHERE id = ? AND status = 'queued'").bind(p.runId).run(); });
-      if (p.kind === 'render') {
+      if (p.kind === 'image') {
+        await step.do('image-study', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, async () => {
+          await checkCancelled();
+          const row = await ownedProject(this.env, p.projectId, p.userId);
+          return generateStudy(this.env, p, 'study', BriefSchema.parse(JSON.parse(row.brief)));
+        });
+      } else if (p.kind === 'render') {
         const sandboxId = await desktopFor('designer', 'render');
         await step.do('blender-render', { retries: { limit: 0, delay: '1 second' }, timeout: '15 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); const design = await designFromRow(this.env, row); if (!design) throw new Error('Generate a design first.');
@@ -71,10 +78,29 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await step.do('needs-clarification', async () => { await this.env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(p.runId).run(); await task('principal', 'Clarify brief', brief.questions.join(' '), 'blocked'); });
           return { needsClarification: true };
         }
+        // A workflow checkpoint freezes one reference for all specialist stages.
+        const referenceId = await step.do('visual-reference', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, async () => {
+          await checkCancelled();
+          if (p.referenceArtifactId) {
+            await loadImageReference(this.env, p.projectId, p.referenceArtifactId, p.baseRevision);
+            return p.referenceArtifactId;
+          }
+          const row = await ownedProject(this.env, p.projectId, p.userId);
+          if (p.kind !== 'generate' || row.design_key || String(this.env.IMAGE_GENERATION_ENABLED) !== 'true') return null;
+          const id = await generateStudy(this.env, p, 'initial-concept', brief);
+          await this.env.DB.batch([
+            this.env.DB.prepare("UPDATE projects SET concept_artifact_id = ? WHERE id = ? AND revision = ? AND concept_artifact_id IS NULL AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = 'in_progress')").bind(id, p.projectId, p.baseRevision, p.runId),
+            this.env.DB.prepare("INSERT OR IGNORE INTO decisions(id,project_id,run_id,topic,decision,created_at) SELECT ?,project_id,id,'Initial visual direction',?,? FROM runs WHERE id = ? AND status = 'in_progress'").bind(`${p.runId}-concept`, `Use ${id} as a visual reference; the brief and editable geometry remain authoritative.`, new Date().toISOString(), p.runId),
+          ]);
+          return id;
+        });
+        const referenceImages = async () => referenceId ? [(await loadImageReference(this.env, p.projectId, referenceId)).dataUrl] : [];
+        const visualContext = referenceId ? `Visual reference artifact: ${referenceId}. ${visualReferenceInstructions}` : '';
         let local: { color: string; elementId: string } | null = null;
         if (p.kind === 'change') {
           const route = await step.do('route-change', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
             const row = await ownedProject(this.env, p.projectId, p.userId), current = await designFromRow(this.env, row);
+            if (referenceId) return { scope: 'global' as const, color: null, elementId: null, explanation: 'Apply the chosen visual reference through architecture, materials and a model review.' };
             return modelJSON(this.env, p.userId, 'principal', `Classify this change: ${p.instruction}. Selected element: ${p.elementId}. Current elements: ${JSON.stringify(current?.elements.map(e => ({ id: e.id, name: e.name })))}. Local means a color-only edit to ONE identified existing element. Return hex color and ID for local edits. All other changes are global.`, RouteSchema);
           });
           if (route.scope === 'local' && route.color && /^#[0-9a-fA-F]{6}$/.test(route.color) && route.elementId) local = { color: route.color, elementId: route.elementId };
@@ -90,7 +116,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           const taskId = await task(owner, 'Develop the design', local ? 'Applying the requested finish to the selected element.' : 'Developing spatial organization and an editable building model.');
           let design: Design;
           if (local && current) design = recolor(current, local.elementId, local.color);
-          else design = await modelJSON(this.env, p.userId, 'architect', `Create the complete canonical design for this brief: ${JSON.stringify(brief)}. ${p.instruction ? `CHANGE REQUEST: ${p.instruction}. Preserve all unrelated elements and existing IDs.` : ''} Current design: ${JSON.stringify(current)}. Make all spaces accessible. Floors use split slabs for stair voids. Use assetId null for procedural elements. Keep output under 16000 tokens.`, DesignSchema, { desktop, projectId: p.projectId, taskId, design: current });
+          else design = await modelJSON(this.env, p.userId, 'architect', `Create the complete canonical design for this brief: ${JSON.stringify(brief)}. ${p.instruction ? `CHANGE REQUEST: ${p.instruction}. Preserve all unrelated elements and existing IDs.` : ''} Current design: ${JSON.stringify(current)}. Make all spaces accessible. Floors use split slabs for stair voids. Use assetId null for procedural elements. Keep output under 16000 tokens. ${visualContext}`, DesignSchema, { desktop, projectId: p.projectId, taskId, design: current }, await referenceImages());
           await syncDesktop(desktop, design);
           await desktop.commands.run('python3 -m json.tool /home/user/project/design.json /home/user/project/validated-design.json', { timeoutMs: 10000 });
           await checkCancelled();
@@ -106,7 +132,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
             await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId), current = await designFromRow(this.env, row); if (!current) throw new Error('Design missing');
             const desktop = await connect(designerId); await syncDesktop(desktop, current);
             const taskId = await task('designer', 'Develop interiors', 'Selecting materials, arranging furniture, and shaping the light.');
-            const next = await modelJSON(this.env, p.userId, 'designer', `Brief: ${JSON.stringify(brief)}. Current design: ${JSON.stringify(current)}. ${p.instruction || ''} Add thoughtful furniture, materials and lights. Preserve all structural elements, spaces, floors and spawn exactly. Return the complete design.`, DesignSchema, { desktop, projectId: p.projectId, taskId, design: current });
+            const next = await modelJSON(this.env, p.userId, 'designer', `Brief: ${JSON.stringify(brief)}. Current design: ${JSON.stringify(current)}. ${p.instruction || ''} Add thoughtful furniture, materials and lights. Preserve all structural elements, spaces, floors and spawn exactly. Return the complete design. ${visualContext} Interpret material, furniture and lighting cues while preserving the committed shell. Record structural differences for the principal instead of changing them.`, DesignSchema, { desktop, projectId: p.projectId, taskId, design: current }, await referenceImages());
             const structure = (d: Design) => JSON.stringify({ spaces: d.spaces, floors: d.floors, spawn: d.spawn, elements: d.elements.filter(e => !['furniture','light'].includes(e.kind)).map(e => ({ ...e, materialId: '' })) });
             if (structure(current) !== structure(next)) throw new Error('Interior proposal changed structural geometry; it was not published.');
             await syncDesktop(desktop, next); await checkCancelled();
@@ -121,7 +147,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId), current = await designFromRow(this.env, row); if (!current) throw new Error('Design missing');
           const desktop = await connect(criticId); await syncDesktop(desktop, current);
           const taskId = await task('critic', 'Review the design', 'Checking the actual model against the brief and circulation requirements.');
-          const result = await modelJSON(this.env, p.userId, 'critic', `Brief: ${JSON.stringify(brief)}. Design: ${JSON.stringify(current)}. Deterministic findings: ${JSON.stringify(reviewDesign(current))}. Review specific requirements and explain limitations.`, ReviewSchema, { desktop, projectId: p.projectId, taskId, design: current });
+          const result = await modelJSON(this.env, p.userId, 'critic', `Brief: ${JSON.stringify(brief)}. Design: ${JSON.stringify(current)}. Deterministic findings: ${JSON.stringify(reviewDesign(current))}. Accepted change for this round: ${p.instruction || "none"}. Review specific requirements and explain limitations. ${visualContext}`, ReviewSchema, { desktop, projectId: p.projectId, taskId, design: current }, await referenceImages());
           const findings = [...new Set([...reviewDesign(current), ...result.findings])];
           await artifact(this.env, p.projectId, p.runId, 'review.json', 'review', row.revision, JSON.stringify({ ...result, findings, revision: row.revision }, null, 2), 'application/json');
           await this.env.DB.prepare('UPDATE projects SET status = ? WHERE id = ?').bind(findings.length ? 'review' : 'ready', p.projectId).run();
@@ -132,18 +158,19 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
         void committedRevision;
       }
       await step.do('complete', async () => {
-        await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ? AND status != 'cancelled'").bind(p.runId), this.env.DB.prepare("UPDATE changes SET status = 'applied' WHERE id = ?").bind(p.runId)]);
-        await emit(this.env, p.projectId, 'task_completed', 'This round of work is complete.', 'principal', null, `complete-${p.runId}`);
+        await checkCancelled();
+        const completed = await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ? AND status = 'in_progress'").bind(p.runId), this.env.DB.prepare("UPDATE changes SET status = 'applied' WHERE id = ? AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = 'completed')").bind(p.runId, p.runId)]);
+        if (completed[0].meta.changes) await emit(this.env, p.projectId, 'task_completed', p.kind === 'image' ? 'Your visual study is ready in Files. Choose it as a direction or refine it.' : 'This round of work is complete.', 'principal', null, `complete-${p.runId}`);
       });
     } catch (e) {
       await step.do('record-failure', async () => {
         const cancelled = (await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{status:string}>())?.status === 'cancelled';
-        await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND status != 'cancelled'").bind(p.runId), this.env.DB.prepare("UPDATE tasks SET status = ? WHERE run_id = ? AND status IN ('in_progress','queued')").bind(cancelled ? 'cancelled' : 'failed', p.runId), this.env.DB.prepare("UPDATE changes SET status = 'failed' WHERE id = ?").bind(p.runId)]);
+        await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND status != 'cancelled'").bind(p.runId), this.env.DB.prepare("UPDATE tasks SET status = ? WHERE run_id = ? AND status IN ('in_progress','queued')").bind(cancelled ? 'cancelled' : 'failed', p.runId), this.env.DB.prepare("UPDATE changes SET status = ? WHERE id = ?").bind(cancelled ? 'cancelled' : 'failed', p.runId)]);
         const message = e instanceof HttpError ? e.message : cancelled ? 'Work cancelled. Saved revisions are preserved.' : 'The run stopped before completion. Saved revisions are preserved; check credentials and computer availability, then retry.';
         await emit(this.env, p.projectId, 'error', message, 'principal');
       });
     } finally {
-      await step.do('idle-workstations', async () => { for (const agent of ['architect', 'designer', 'critic'] as AgentId[]) await idleDesktop(this.env, p.projectId, agent); });
+      if (p.kind !== 'image') await step.do('idle-workstations', async () => { for (const agent of ['architect', 'designer', 'critic'] as AgentId[]) await idleDesktop(this.env, p.projectId, agent); });
     }
     await step.do('drain-steering', () => this.env.PROJECTS.getByName(p.projectId).scheduleChanges(p.projectId,p.userId));
     return { runId: p.runId };
