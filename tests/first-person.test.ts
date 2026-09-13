@@ -1,7 +1,9 @@
 import { createRequire } from 'node:module';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { RapierContext } from '@react-three/rapier';
-import { BODY_HEIGHT_FROM_FEET, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_HEIGHT, EYE_OFFSET, MAX_TIMESTEP, WALK_SPEED, createWalkController, stepWalk, type WalkDirection } from '../shared/first-person';
+import { BODY_HEIGHT_FROM_FEET, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_HEIGHT, EYE_OFFSET, MAX_TIMESTEP, WALK_SPEED, clearWalkPosition, createWalkController, stepWalk, type WalkDirection } from '../shared/first-person';
+import { exampleDesign } from '../shared/example';
+import { geometryParts } from '../shared/geometry';
 
 // Test the WASM version used by the renderer, not a different hoisted Rapier.
 const RAPIER: RapierContext['rapier'] = createRequire(createRequire(import.meta.url).resolve('@react-three/rapier'))('@dimforge/rapier3d-compat');
@@ -25,7 +27,8 @@ function fixture(position = { x: 0, y: BODY_HEIGHT_FROM_FEET, z: 0 }) {
     return body.translation();
   };
   const run = (frames: number, direction: WalkDirection = { x: 0, z: 0 }) => { let p = body.translation(); for (let i = 0; i < frames; i++) p = step(direction); return p; };
-  return { world, body, collider, controller, addBox, step, run, velocity: () => velocity };
+  const clear = (nominal = body.translation()) => clearWalkPosition(world, RAPIER, body, collider, nominal);
+  return { world, body, collider, controller, addBox, step, run, clear, velocity: () => velocity };
 }
 
 describe('first-person character physics', () => {
@@ -107,5 +110,75 @@ describe('first-person character physics', () => {
     expect(fallen.x).toBeGreaterThan(3);
     expect(fallen.y).toBeLessThan(-2);
     expect(player.velocity()).toBeLessThan(0);
+  });
+});
+
+describe('first-person spawn and recovery clearance', () => {
+  it.each([0, -.35, 3])('resolves a supported body center and 1.7m eyes above floor %sm', floorY => {
+    const player = fixture({ x: 0, y: floorY + BODY_HEIGHT_FROM_FEET + .1, z: 0 });
+    player.addBox(0, floorY - .1, 0, 12, .2, 12);
+    if (floorY > 0) player.addBox(0, -.1, 0, 12, .2, 12);
+    player.world.step();
+    const point = player.clear();
+    expect(point).not.toBeNull();
+    expect(point!.y + EYE_OFFSET).toBeCloseTo(floorY + EYE_HEIGHT, 5);
+    expect(point!.x).toBe(0); expect(point!.z).toBe(0);
+    if (floorY === 0) expect(player.clear({ x: 0, y: BODY_HEIGHT_FROM_FEET - .18, z: 0 })).not.toBeNull();
+  });
+
+  it.each([
+    { name: 'furniture', x: 0, y: .4, width: 1, height: .8 },
+    { name: 'a nearby wall missed by the floor ray', x: .35, y: 1.5, width: .25, height: 3 },
+    { name: 'a low ceiling', x: 0, y: 1.85, width: 3, height: .2 },
+  ])('rejects standing inside $name', obstruction => {
+    const player = fixture();
+    player.addBox(0, -.1, 0, 12, .2, 12);
+    player.addBox(obstruction.x, obstruction.y, 0, obstruction.width, obstruction.height, 3);
+    player.world.step();
+    expect(player.clear()).toBeNull();
+  });
+
+  it('rejects missing floors, excessive steps or drops, and invalid coordinates', () => {
+    const player = fixture();
+    player.world.step();
+    expect(player.clear()).toBeNull();
+    player.addBox(0, -.1, 0, 12, .2, 12);
+    player.world.step();
+    expect(player.clear({ x: 0, y: BODY_HEIGHT_FROM_FEET + .46, z: 0 })).toBeNull();
+    expect(player.clear({ x: 0, y: BODY_HEIGHT_FROM_FEET - .23, z: 0 })).toBeNull();
+    for (const x of [NaN, Infinity, 1e100]) expect(player.clear({ x, y: BODY_HEIGHT_FROM_FEET, z: 0 })).toBeNull();
+  });
+
+  it('ignores sensor floors, sensor walls, and all of the player’s attached colliders', () => {
+    const player = fixture();
+    player.addBox(0, -.1, 0, 12, .2, 12);
+    player.addBox(0, .4, 0, 3, .2, 3, 0, true);
+    player.addBox(.35, 1.5, 0, .25, 3, 3, 0, true);
+    player.world.createCollider(RAPIER.ColliderDesc.ball(.1).setTranslation(.1, 0, 0), player.body);
+    player.world.step();
+    const point = player.clear();
+    expect(point).not.toBeNull();
+    expect(point!.y + EYE_OFFSET).toBeCloseTo(EYE_HEIGHT, 5);
+  });
+
+  it('rejects a steep surface rather than treating a wall-like normal as a floor', () => {
+    const player = fixture(), angle = Math.PI * 70 / 180;
+    player.world.createCollider(RAPIER.ColliderDesc.cuboid(5, .1, 5).setTranslation(0, -.1, 0).setRotation({ x: 0, y: 0, z: Math.sin(angle / 2), w: Math.cos(angle / 2) }));
+    player.world.step();
+    expect(player.clear()).toBeNull();
+  });
+
+  it('accepts the sample design spawn and rejects its sofa using actual rendered box geometry', () => {
+    const design = exampleDesign(), player = fixture({ x: design.spawn[0], y: design.spawn[1] - EYE_OFFSET, z: design.spawn[2] });
+    for (const element of design.elements) {
+      if (['light', 'window', 'door'].includes(element.kind)) continue;
+      const c = Math.cos(element.rotation), s = Math.sin(element.rotation);
+      for (const part of geometryParts(element)) player.addBox(element.position[0] + part.position[0] * c + part.position[2] * s, element.position[1] + part.position[1], element.position[2] - part.position[0] * s + part.position[2] * c, ...part.size, element.rotation);
+    }
+    player.addBox(0, -.4, 0, 80, .1, 80);
+    player.world.step();
+    expect(player.clear()?.y).toBeCloseTo(BODY_HEIGHT_FROM_FEET, 5);
+    expect(player.clear({ x: -3.8, y: BODY_HEIGHT_FROM_FEET, z: 0 })).toBeNull();
+    expect(player.clear({ x: 20, y: BODY_HEIGHT_FROM_FEET, z: 20 })?.y).toBeCloseTo(BODY_HEIGHT_FROM_FEET - .35, 5);
   });
 });

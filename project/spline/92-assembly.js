@@ -1,0 +1,13 @@
+select('PH26 Unplaced canopies');
+remove();
+select('PH26 Unplaced trunks');
+remove();
+select('PH26 | ph_0400 | East terrace cedar privacy fin');
+createMaterial('PH26 cedar screens',{layers:[{type:'color',color:'#ac8d66'},{type:'texture',alpha:0.1},{type:'light',category:'physical',roughness:0.76,metalness:0}]});
+select(o => o.name.includes('privacy fin') || o.name.includes('Child room timber screen'));
+applyMaterial('PH26 cedar screens');
+select(o => ['PH26 Ground floor','PH26 Upper floor','PH26 Folded roof','PH26 Privacy screens','PH26 Ground interiors','PH26 Upper interiors','PH26 Lighting'].includes(o.name));
+group();
+rename('PH26 House');
+select('PH26 House');
+lookFrom({azimuth:30,elevation:18,target:'selection'});

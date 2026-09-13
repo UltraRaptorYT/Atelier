@@ -98,7 +98,7 @@ export default function World(props: Props) {
     <PerformanceMonitor onDecline={() => setQuality(1)} />
     <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
       {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
-      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={props.revision} paused={props.paused} onRoom={props.onRoom} onExit={props.onUnlock} office={props.mode === 'office'} />}
+      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} onRoom={props.onRoom} onExit={props.onUnlock} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
     {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={65} maxPolarAngle={Math.PI / 2.1} target={[0, 0, 0]} />}

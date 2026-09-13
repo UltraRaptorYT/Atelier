@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CapsuleCollider, RigidBody, useBeforePhysicsStep, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { Euler, Vector3 } from 'three';
-import { BODY_HEIGHT_FROM_FEET, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, MAX_STEP_HEIGHT, createWalkController, stepWalk, type WalkController } from '@/shared/first-person';
+import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, clearWalkPosition, createWalkController, stepWalk, type WalkController } from '@/shared/first-person';
 import type { RoomId } from './World';
 import styles from './FirstPersonNavigation.module.css';
 
@@ -15,7 +15,7 @@ type Props = {
   target: [number, number, number];
   rooms: Room[];
   office: boolean;
-  revision: number;
+  revision: string;
   paused: boolean;
   onRoom: (id: RoomId) => void;
   onExit: () => void;
@@ -138,15 +138,7 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
   // after a design revision. Search only near the design's supplied spawn.
   function clearPosition(nominal: Point): Point | null {
     if (!body.current || !collider.current) return null;
-    const origin = { ...nominal, y: nominal.y + .25 };
-    const floor = world.castRayAndGetNormal(new rapier.Ray(origin, { x: 0, y: -1, z: 0 }), BODY_HEIGHT_FROM_FEET + .7, true, undefined, undefined, collider.current, body.current, c => !c.isSensor());
-    if (!floor || floor.normal.y < .5) return null;
-    const floorY = origin.y - floor.timeOfImpact;
-    if (floorY > nominal.y - BODY_HEIGHT_FROM_FEET + MAX_STEP_HEIGHT || floorY < nominal.y - BODY_HEIGHT_FROM_FEET - .45) return null;
-    const position = { x: nominal.x, y: floorY + BODY_HEIGHT_FROM_FEET, z: nominal.z };
-    let obstructed = false;
-    world.intersectionsWithShape(position, body.current.rotation(), collider.current.shape, () => { obstructed = true; return false; }, undefined, undefined, collider.current, body.current, c => !c.isSensor());
-    return obstructed ? null : position;
+    return clearWalkPosition(world, rapier, body.current, collider.current, nominal);
   }
 
   function recover() {

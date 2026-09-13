@@ -47,7 +47,7 @@ for (const q of data) {
     const len=Math.sqrt(dx*dx+dy*dy+dz*dz);
     mesh('Cylinder',{radius:q.rad,height:len,cornerRadius:0});
     position({x:(q.a[0]+q.b[0])/2,y:(q.a[1]+q.b[1])/2,z:(q.a[2]+q.b[2])/2});
-    rotation({x:Math.acos(dy/len)*180/Math.PI,y:Math.atan2(dx,dz)*180/Math.PI,z:0});
+    rotation({x:Math.atan2(dz,dy)*180/Math.PI,y:0,z:-Math.asin(dx/len)*180/Math.PI});
   } else if (q.t === 'tree' || q.t === 'plant' || q.t === 'shrub') {
     tree({kind:q.t==='tree' ? (q.seed%3===0 ? 'palm' : 'oak') : 'bush',height:q.s[1],seed:q.seed,leafiness:0.85,style:'realistic',trunkColor:'#78654c',leafColor:q.t==='tree'?'#526b43':'#6e8253',name:q.n,position:[q.p[0],q.base,q.p[2]]});
   } else {

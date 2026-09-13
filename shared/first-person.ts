@@ -18,7 +18,23 @@ const EXCLUDE_SENSORS = 8;
 
 export type WalkController = ReturnType<RapierContext['world']['createCharacterController']>;
 export type WalkDirection = { x: number; z: number };
-export type WalkStep = { verticalSpeed: number; position: { x: number; y: number; z: number } };
+export type WalkPosition = { x: number; y: number; z: number };
+export type WalkStep = { verticalSpeed: number; position: WalkPosition };
+
+/** Check a nominal body center against current floor support and full standing clearance. */
+export function clearWalkPosition(world: RapierContext['world'], rapier: Pick<RapierContext['rapier'], 'Ray'>, body: RapierRigidBody, collider: RapierCollider, nominal: WalkPosition): WalkPosition | null {
+  if (![nominal.x, nominal.y, nominal.z].every(n => Number.isFinite(n) && Math.abs(n) <= 10000)) return null;
+  const origin = { ...nominal, y: nominal.y + .25 };
+  const floor = world.castRayAndGetNormal(new rapier.Ray(origin, { x: 0, y: -1, z: 0 }), BODY_HEIGHT_FROM_FEET + .7, true, EXCLUDE_SENSORS, undefined, collider, body);
+  if (!floor || floor.normal.y < .5) return null;
+  const floorY = origin.y - floor.timeOfImpact, nominalFeet = nominal.y - BODY_HEIGHT_FROM_FEET;
+  if (floorY > nominalFeet + MAX_STEP_HEIGHT || floorY < nominalFeet - .45) return null;
+  const position = { x: nominal.x, y: floorY + BODY_HEIGHT_FROM_FEET, z: nominal.z };
+  // Query arguments exclude the entire player body as well as sensors; no
+  // filter callbacks need to reenter WASM while its collider set is borrowed.
+  const obstruction = world.intersectionWithShape(position, body.rotation(), collider.shape, EXCLUDE_SENSORS, undefined, collider, body);
+  return obstruction ? null : position;
+}
 
 /** The caller owns disposal with world.removeCharacterController(controller). */
 export function createWalkController(world: RapierContext['world']): WalkController {
