@@ -60,7 +60,7 @@ function Maquette({design}:{design:Design}) {
 }
 function Office({ onRoom, room, tasks, design, previews }: Pick<Props, 'onRoom' | 'room' | 'tasks' | 'design' | 'previews'>) {
   return <group>
-    <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision />
+    <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision surface />
     <Box p={[0, -.38, 0]} s={[24.4, .1, 17.4]} color="#9a927e" />
     {Array.from({ length: 30 }, (_, i) => <Box key={i} p={[-11.7 + i * .8, .002, 0]} s={[.014, .01, 17]} color="#b7a58a" />)}
     <Box p={[0, 1.5, -8.5]} s={[24, 3, .2]} color="#d9d6c9" collision />
