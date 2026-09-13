@@ -6,6 +6,7 @@ import { DesignWorkflow } from '../worker/src/workflow';
 import { modelJSON } from '../worker/src/ai';
 import { generateStudy } from '../worker/src/images';
 import { runTeam } from '../worker/src/team';
+import { dispatchClarification } from '../worker/src/clarifications';
 import { BriefSchema, type Brief } from '../shared/design';
 import type { Bindings, RunParams } from '../worker/src/types';
 
@@ -59,6 +60,11 @@ async function blockedProject() {
   expect(await deliver(params)).toEqual({ needsClarification: true });
   return { projectId, params };
 }
+function answerMessage(saved: any, answers: string[], operationId = crypto.randomUUID()) {
+  return { operationId, instruction: answers.join(' '), agent: 'principal', elementId: null, baseRevision: saved.project.revision,
+    intent: 'answer_clarification', clarificationId: saved.clarification.id, clarificationVersion: saved.clarification.version,
+    answers: saved.clarification.questions.filter((question: any) => question.answer === null).slice(0, answers.length).map((question: any, index: number) => ({ questionId: question.id, answer: answers[index] })) };
+}
 
 beforeAll(async () => {
   const root = resolve('worker/.atelier/test-worker');
@@ -88,12 +94,16 @@ beforeEach(async () => {
   vi.resetAllMocks();
   vi.mocked(runTeam).mockResolvedValue(undefined);
   vi.mocked(generateStudy).mockImplementation(async (_env, p, stage) => `${p.runId}-${stage}.png`);
-  await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE status IN ('queued','in_progress')").run();
+  await env.DB.prepare("UPDATE runs SET status = 'cancelled' WHERE status IN ('queued','in_progress','awaiting_input')").run();
+  await env.DB.prepare("UPDATE project_clarifications SET status = 'cancelled' WHERE status IN ('queued','awaiting_input')").run();
   await env.DB.prepare("UPDATE changes SET status = 'cancelled' WHERE status = 'pending'").run();
+  // Each scenario gets its own projects; earlier fixtures must not consume the
+  // account's ten-project limit or leave clarification receipts in later cases.
+  await env.DB.prepare('DELETE FROM projects').run();
 });
 afterAll(async () => { await mf?.dispose(); });
 
-describe('team briefing, clarification and manual continuation', () => {
+describe('team briefing, saved clarification and automatic continuation', () => {
   it('preserves the complete original two-storey request even if the Principal rewrites its request field', async () => {
     const request = readFileSync('docs/draftroom/prompts/projects/03-pikachu-house.md', 'utf8');
     expect(request.length).toBeGreaterThan(2000);
@@ -115,7 +125,10 @@ describe('team briefing, clarification and manual continuation', () => {
     expect((await call(`/projects/${projectId}/runs`, 'POST', { operationId: params.runId, kind: 'generate', baseRevision: 0 })).status).toBe(202);
     const saved = await snapshot(projectId);
     expect(saved.runs).toHaveLength(1);
-    expect(saved.runs[0]).toMatchObject({ id: params.runId, kind: 'generate', status: 'completed' });
+    expect(saved.runs[0]).toMatchObject({ id: params.runId, kind: 'generate', status: 'awaiting_input' });
+    expect(saved.clarification).toMatchObject({ runId: params.runId, status: 'awaiting_input', version: 1, continuationRunId: null });
+    expect(saved.clarification.questions.map((question: any) => question.question)).toEqual(clarification.questions);
+    expect(saved.clarification.questions.every((question: any) => question.answer === null)).toBe(true);
     expect(saved.project.brief).toEqual(clarification);
     expect(saved.events.filter((event: any) => event.type === 'agent_message').map((event: any) => event.agent).sort()).toEqual(['architect', 'critic', 'designer']);
     expect(saved.tasks).toHaveLength(1);
@@ -146,25 +159,133 @@ describe('team briefing, clarification and manual continuation', () => {
     expect(generateStudy).not.toHaveBeenCalled();
     const saved = await snapshot(projectId);
     expect(saved.runs).toHaveLength(2);
-    expect(saved.runs.every((run: any) => run.status === 'completed')).toBe(true);
+    expect(saved.runs.find((run: any) => run.id === first.runId).status).toBe('cancelled');
+    expect(saved.runs.find((run: any) => run.id === next.runId).status).toBe('completed');
+    expect(saved.clarification.status).toBe('superseded');
     expect(saved.project.brief).toEqual(answered);
     expect(saved.events.some((event: any) => event.type === 'clarification_received')).toBe(true);
   });
 
-  it('documents the text-composer gap: an answer creates a change request without resolving the blocked brief', async () => {
+  it('saves clarification answers and automatically starts one linked generation without creating a change', async () => {
     const { projectId, params } = await blockedProject();
-    const operationId = crypto.randomUUID(), instruction = 'Two floors, please.';
-    const response = await call(`/projects/${projectId}/messages`, 'POST', { operationId, instruction, agent: 'principal', elementId: null, baseRevision: 0 });
+    const before = await snapshot(projectId), message = answerMessage(before, ['Two floors.', 'Bedrooms upstairs.', 'No step-free access requirement.']);
+    const response = await call(`/projects/${projectId}/messages`, 'POST', message);
     expect(response.status).toBe(202);
+    const result = await response.json() as {runId:string};
     const saved = await snapshot(projectId);
+    expect(saved.project.brief.request).toContain(original.request);
+    expect(saved.project.brief.request).toContain('Two floors.');
+    expect(saved.project.brief.goals).toEqual(clarification.goals);
+    expect(saved.project.brief.constraints).toEqual(clarification.constraints);
+    expect(saved.project.brief.questions).toEqual([]);
+    expect(await env.DB.prepare('SELECT id FROM changes WHERE project_id = ?').bind(projectId).first()).toBeNull();
+    await expect.poll(async () => (await snapshot(projectId)).runs.find((run: any) => run.id === result.runId), { timeout: 10_000 }).toMatchObject({ kind: 'generate', resumesRunId: params.runId });
+    const replay = await call(`/projects/${projectId}/messages`, 'POST', message);
+    expect(await replay.json()).toEqual(result);
+    const next: RunParams = { projectId, userId: owner, runId: result.runId, kind: 'generate', baseRevision: 0, resumesRunId: params.runId };
+    vi.mocked(modelJSON).mockResolvedValueOnce(saved.project.brief);
+    await deliver(next);
+    expect(runTeam).toHaveBeenCalledExactlyOnceWith(env, next, expect.anything(), saved.project.brief, null, null);
+    const completed = await snapshot(projectId);
+    expect(completed.runs).toHaveLength(2);
+    expect(completed.runs.every((run: any) => run.status === 'completed')).toBe(true);
+    expect(completed.messages).toHaveLength(1);
+    expect(completed.messages[0]).toMatchObject({ intent: 'answer_clarification', agent: 'principal', instruction: message.instruction });
+  });
+
+  it('keeps partial answers across reloads and rejects a different message using the stale question version', async () => {
+    const { projectId } = await blockedProject(), before = await snapshot(projectId);
+    const message = answerMessage(before, ['Two floors.']);
+    const response = await call(`/projects/${projectId}/messages`, 'POST', message);
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result).toMatchObject({ saved: true, queued: false });
+    const replay = await call(`/projects/${projectId}/messages`, 'POST', message);
+    expect(await replay.json()).toEqual(result);
+    const saved = await snapshot(projectId);
+    expect(saved.clarification).toMatchObject({ status: 'awaiting_input', version: 2, continuationRunId: null });
+    expect(saved.clarification.questions[0].answer).toBe('Two floors.');
+    expect(saved.project.brief.questions).toEqual(clarification.questions.slice(1));
+    expect(saved.project.brief.request.match(/Answer: Two floors\./g)).toHaveLength(1);
+    expect(saved.runs).toHaveLength(1);
+    const stale = await call(`/projects/${projectId}/messages`, 'POST', { ...message, operationId: crypto.randomUUID() });
+    expect(stale.status).toBe(409);
+    expect((await snapshot(projectId)).project.brief).toEqual(saved.project.brief);
+  });
+
+  it('preserves a maximum-length brief and its accepted answers through Principal normalization', async () => {
+    const request = `A courtyard home for four people. ${'Preserve the existing architectural requirements. '.repeat(180)}`.slice(0, 8000);
+    expect(request).toHaveLength(8000);
+    const created = await call('/projects', 'POST', { name: 'Long brief', brief: { ...original, request } });
+    expect(created.status).toBe(201);
+    const projectId = (await created.json() as {id:string}).id, first = await start(projectId);
+    principalResponse({ ...clarification, request });
+    await deliver(first);
+    const before = await snapshot(projectId), answers = ['Two floors.', 'All bedrooms upstairs.', 'Step-free ground floor access.'];
+    const response = await call(`/projects/${projectId}/messages`, 'POST', answerMessage(before, answers));
+    expect(response.status).toBe(202);
+    const result = await response.json() as {runId:string};
+    const answered = (await snapshot(projectId)).project.brief;
+    expect(answered.request).toBe(request);
+    expect(answered.clarificationAnswers).toEqual(clarification.questions.map((question, index) => ({ question, answer: answers[index] })));
+    await expect.poll(async () => (await snapshot(projectId)).runs.find((run: any) => run.id === result.runId), { timeout: 10_000 }).toBeDefined();
+    vi.mocked(modelJSON).mockResolvedValueOnce({ ...answered, clarificationAnswers: [{ question: 'Invented by the Principal?', answer: 'Not a client answer.' }] });
+    const next: RunParams = { projectId, userId: owner, runId: result.runId, kind: 'generate', baseRevision: 0, resumesRunId: first.runId };
+    await deliver(next);
+    expect((await snapshot(projectId)).project.brief).toEqual(answered);
+    expect(vi.mocked(runTeam).mock.calls[0][3].clarificationAnswers).toEqual(answered.clarificationAnswers);
+  });
+
+  it.each(['revision', 'brief'] as const)('supersedes an answered continuation if an independent %s update makes its captured context stale', async field => {
+    const { projectId, params } = await blockedProject(), before = await snapshot(projectId);
+    // Hold the owner slot so the alarm cannot admit the continuation before
+    // the independent canonical write below has happened.
+    await start(await createProject());
+    const response = await call(`/projects/${projectId}/messages`, 'POST', answerMessage(before, ['Two floors.', 'Upstairs.', 'Not required.']));
+    expect(response.status).toBe(202);
+    if (field === 'revision') await env.DB.prepare('UPDATE projects SET revision = revision + 1 WHERE id = ?').bind(projectId).run();
+    else await env.DB.prepare('UPDATE projects SET brief = ? WHERE id = ?').bind(JSON.stringify({ ...original, request: 'A separately updated brief that replaces the captured context.' }), projectId).run();
+    const begin = vi.fn();
+    await dispatchClarification(env, projectId, owner, begin);
+    expect(begin).not.toHaveBeenCalled();
+    const saved = await snapshot(projectId);
+    expect(saved.clarification).toMatchObject({ status: 'superseded', runId: params.runId });
+    expect(saved.runs).toHaveLength(1);
+    expect(saved.runs[0].status).toBe('cancelled');
+  });
+
+  it('does not resume a cancelled clarification when a late answer arrives', async () => {
+    const { projectId, params } = await blockedProject(), before = await snapshot(projectId);
+    expect((await call(`/projects/${projectId}/runs/${params.runId}`, 'DELETE')).status).toBe(200);
+    const response = await call(`/projects/${projectId}/messages`, 'POST', answerMessage(before, ['Two floors.', 'Upstairs.', 'Not required.']));
+    expect(response.status).toBe(409);
+    const saved = await snapshot(projectId);
+    expect(saved.clarification.status).toBe('cancelled');
+    expect(saved.runs).toHaveLength(1);
+    expect(saved.runs[0].status).toBe('cancelled');
     expect(saved.project.brief).toEqual(clarification);
-    expect(saved.tasks.find((task: any) => task.runId === params.runId)).toMatchObject({ status: 'blocked' });
-    expect(await env.DB.prepare('SELECT instruction FROM changes WHERE id = ?').bind(operationId).first()).toEqual({ instruction });
-    // The coordinator dispatches queued changes through its alarm after the
-    // message response; refresh the snapshot until that run has been admitted.
-    await expect.poll(async () => (await snapshot(projectId)).runs.find((run: any) => run.id === operationId), { timeout: 10_000 }).toMatchObject({ kind: 'change' });
-    expect(modelJSON).toHaveBeenCalledTimes(4);
-    expect(runTeam).not.toHaveBeenCalled();
+  });
+
+  it('does not let an old answer overwrite a manually replaced brief', async () => {
+    const { projectId } = await blockedProject(), before = await snapshot(projectId);
+    const edited = { ...original, request: 'An entirely new single-storey courtyard home.' };
+    expect((await call(`/projects/${projectId}/brief`, 'PUT', { name: 'Replaced briefing', brief: edited })).status).toBe(200);
+    expect((await call(`/projects/${projectId}/messages`, 'POST', answerMessage(before, ['Two floors.']))).status).toBe(409);
+    expect((await snapshot(projectId)).project.brief).toEqual(edited);
+    expect((await snapshot(projectId)).clarification.status).toBe('superseded');
+  });
+
+  it('frees the owner run slot while waiting and retains an answered continuation behind work on another project', async () => {
+    const { projectId, params } = await blockedProject(), before = await snapshot(projectId);
+    const other = await createProject(), active = await start(other);
+    const response = await call(`/projects/${projectId}/messages`, 'POST', answerMessage(before, ['Two floors.', 'Upstairs.', 'Not required.']));
+    expect(response.status).toBe(202);
+    const result = await response.json() as {runId:string};
+    expect((await snapshot(projectId)).runs).toHaveLength(1);
+    expect((await snapshot(projectId)).clarification.status).toBe('queued');
+    expect((await call(`/projects/${other}/runs/${active.runId}`, 'DELETE')).status).toBe(200);
+    await env.PROJECTS.getByName(projectId).scheduleChanges(projectId, owner);
+    await expect.poll(async () => (await snapshot(projectId)).runs.find((run: any) => run.id === result.runId), { timeout: 10_000 }).toMatchObject({ kind: 'generate', resumesRunId: params.runId });
   });
 
   it('rejects more than three clarification questions at the brief boundary', async () => {

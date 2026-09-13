@@ -59,6 +59,7 @@ beforeAll(async () => {
   await artifact(env, knownHistory.projectId, knownHistory.runId, 'review.json', 'review', 1, '{}', 'application/json');
   await env.DB.prepare("INSERT INTO events(project_id,type,agent,revision,message,created_at,operation_id) VALUES(?,'final_design_ready','principal',1,'Ready',?,?)").bind(knownHistory.projectId, now, `${knownHistory.runId}-review-outcome`).run();
   await migrate('0006_change_tracking.sql');
+  for (const name of readdirSync('worker/migrations').filter(name => name.endsWith('.sql') && name > '0006_change_tracking.sql').sort()) await migrate(name);
 });
 afterAll(async () => { await mf?.dispose(); });
 

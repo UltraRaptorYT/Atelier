@@ -12,6 +12,7 @@ import { runTeam } from './team';
 import { requirementsPrompt } from '../../shared/requirements';
 import { readEffectiveRequirements } from './requirements';
 import { changeStartedStatement, changeFailedStatement } from './changes';
+import { requestClarification } from './clarifications';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
 type ImageStepResult = { ok: true; value: string | null } | { ok: false; status: number; message: string };
 async function imageStepResult(work: () => Promise<string | null>): Promise<ImageStepResult> {
@@ -30,6 +31,7 @@ function imageStepValue(result: ImageStepResult): string | null {
 export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
   async run(event: WorkflowEvent<RunParams>, step: WorkflowStep) {
     const p = event.payload;
+    let waitingForAnswers = false;
     const checkCancelled = async () => {
       const run = await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{ status: string }>();
       if (!run || !['queued', 'in_progress'].includes(run.status)) throw new Error('Run cancelled.');
@@ -89,7 +91,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('designer', 'Render presentation', `Presentation files for revision ${row.revision} are ready.`, 'completed');
         });
       } else {
-        const perspectives = p.kind === 'generate' ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
+        const perspectives = p.kind === 'generate' && !p.resumesRunId ? await step.do('team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => { await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief))); }) : [];
         const brief = await step.do('principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId);
           const original = BriefSchema.parse(JSON.parse(row.brief));
@@ -98,13 +100,15 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           const requirements = await readEffectiveRequirements(this.env, p.projectId, original, p.baseRevision, p.runId);
           const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the effective requirements. If the user explicitly asks you to choose defaults, do so. Summarize the effective requirements in goals and constraints; a superseded original choice is not an unresolved conflict.\n${requirementsPrompt(requirements)}`, BriefSchema);
           parsed.request = original.request;
+          if (original.clarificationAnswers !== undefined) parsed.clarificationAnswers = original.clarificationAnswers;
+          else delete parsed.clarificationAnswers;
           const saved = await this.env.DB.prepare("UPDATE projects SET brief = ?, updated_at = ? WHERE id = ? AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND project_id = projects.id AND status = 'in_progress')").bind(JSON.stringify(parsed), new Date().toISOString(), p.projectId, p.runId).run();
           if (!saved.meta.changes) throw new HttpError(409, 'Work stopped before the updated brief could be saved.');
-          if (parsed.questions.length) await emit(this.env, p.projectId, 'clarification_requested', parsed.questions.join('\n'), 'principal');
           return parsed;
         });
         if (brief.questions.length && p.kind === 'generate') {
-          await step.do('needs-clarification', async () => { await this.env.DB.prepare("UPDATE runs SET status = 'completed' WHERE id = ?").bind(p.runId).run(); await task('principal', 'Clarify brief', brief.questions.join(' '), 'blocked'); });
+          waitingForAnswers = true;
+          await step.do('needs-clarification', () => requestClarification(this.env, p, brief));
           return { needsClarification: true };
         }
         // Images are optional and generated only by explicit image jobs. A
@@ -144,14 +148,16 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
     } catch (e) {
       await step.do('record-failure', async () => {
         const runStatus = (await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{status:string}>())?.status;
-        if (runStatus === 'completed') return;
+        if (runStatus === 'completed' || runStatus === 'awaiting_input') return;
         const cancelled = runStatus === 'cancelled';
         const message = e instanceof HttpError ? e.message : cancelled ? 'Work cancelled. Saved revisions are preserved.' : 'The run stopped before completion. Saved revisions are preserved; check credentials and computer availability, then retry.';
         await this.env.DB.batch([this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND status IN ('queued','in_progress')").bind(p.runId), this.env.DB.prepare("UPDATE tasks SET status = ? WHERE run_id = ? AND status IN ('in_progress','queued','review','blocked') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = ?)").bind(cancelled ? 'cancelled' : 'failed', p.runId, p.runId, cancelled ? 'cancelled' : 'failed'), changeFailedStatement(this.env, p, cancelled ? 'cancelled' : 'failed', message)]);
         await emit(this.env, p.projectId, 'error', message, 'principal');
       });
     } finally {
-      if (p.kind !== 'image') await step.do('idle-workstations', async () => { for (const agent of ['architect', 'designer', 'critic'] as AgentId[]) await idleDesktop(this.env, p.projectId, agent); });
+      // Clarification happens before any workstations open. Once answers can
+      // admit a continuation, parent cleanup must not close its computers.
+      if (p.kind !== 'image' && !waitingForAnswers) await step.do('idle-workstations', async () => { for (const agent of ['architect', 'designer', 'critic'] as AgentId[]) await idleDesktop(this.env, p.projectId, agent); });
     }
     await step.do('drain-steering', () => this.env.PROJECTS.getByName(p.projectId).scheduleChanges(p.projectId,p.userId));
     return { runId: p.runId };

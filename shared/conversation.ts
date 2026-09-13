@@ -20,6 +20,7 @@ export type InteractionResult = {
   operationId: string;
   queued?: boolean;
   runId?: string;
+  saved?: boolean;
 };
 export type Clarification = {
   id: string;

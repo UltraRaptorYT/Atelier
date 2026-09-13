@@ -6,7 +6,9 @@ For the complete user-facing flow from opening the website to exploring a genera
 
 ## From brief to task graph
 
-The user saves a brief and starts the team briefing. The Principal normalizes it into `BriefSchema`, asking at most three high-impact questions when necessary. A clarification ends that run with a blocked Principal task; answering and resuming automatically is not implemented.
+The user saves a brief and starts the team briefing. The Principal normalizes it into `BriefSchema`, asking at most three high-impact questions when necessary. A clarification leaves the run `awaiting_input` with a blocked Principal task and a persistent, versioned question record. Typed and voice answers update that record and the saved brief. Partial answers wait for the remaining questions; completing the required answers saves a continuation request and lets the coordinator dispatch a linked generation run. Replays reuse the same continuation identity, and stale or cancelled answers cannot restart work. The workflow execution that asked the questions has returned; continuation is a new linked run, not an in-memory conversation waiting indefinitely.
+
+The shared conversation handler separates read-only questions, initial brief additions, clarification answers and contextual design changes. Questions do not enter the steering queue, and saving initial requirements does not automatically start generation. Answering an already-started briefing continues its existing user authorization. Continuations respect the current generation configuration and owner-wide active-run limit.
 
 When enabled, an initial concept is generated if no reference is selected. The selected reference is frozen for the run and supplied to every dispatched specialist, including visual-direction and review tasks. Image generation/editing and Blender rendering also have separate requested workflows; their artifacts do not replace the canonical design.
 
@@ -77,7 +79,7 @@ Tasks release their own workstation when done instead of leaving completed machi
 
 ## Setup and verification
 
-Apply all pending migrations, including [0004_task_dependencies.sql](../worker/migrations/0004_task_dependencies.sql) and [0006_change_tracking.sql](../worker/migrations/0006_change_tracking.sql), with the existing migration command (`npm run db:local` for local development). Deployments must apply them before running this Worker version. No new external service is required. Generation and rendering remain disabled in the checked-in [Worker configuration](../worker/wrangler.jsonc).
+Apply all pending migrations, including [0004_task_dependencies.sql](../worker/migrations/0004_task_dependencies.sql), [0006_change_tracking.sql](../worker/migrations/0006_change_tracking.sql) and [0007_conversations.sql](../worker/migrations/0007_conversations.sql), with the existing migration command (`npm run db:local` for local development). The conversation migration adds durable questions, continuation links and operation receipts. Deployments must apply it before running this Worker version. No new external service is required. Generation and rendering remain disabled in the checked-in [Worker configuration](../worker/wrangler.jsonc).
 
 Run `npm run typecheck`, `npm test`, `npm run build` and `npm run worker:check`. Targeted suites include `collaboration.test.ts`, `image-workflow.test.ts`, `backend.test.ts`, `desktop-budget.test.ts`, `artifact-storage.test.ts` and `agent-tools.test.ts` in [tests](../tests/).
 
@@ -87,7 +89,7 @@ Tests exercise overlapping task execution, dependency handoffs, same-base merges
 
 This is a bounded task graph within a design run. At most one queued or in-progress run per user is allowed across projects. Steering received during work remains queued for the next run; tasks are not interrupted and dynamically replaced midway through a model call. Meetings currently occur for conflicting proposals and final-review corrections. A coordination message alone does not rewrite the running graph.
 
-Effective requirements preserve the stored brief and applied amendments across runs, with a frozen record for each team run. Interpreting overlapping natural-language requirements still depends on the model; the application does not extract a semantic ontology or prove complete compliance. Typed messages currently enter the change queue even when they are questions or clarification answers. These routing gaps and automatic clarification resume remain separate work.
+Effective requirements preserve the stored brief and applied amendments across runs, with a frozen record for each team run. Interpreting overlapping natural-language requirements and free-form conversation intent still depends on the model; the application does not extract a semantic ontology or prove complete compliance. Explicit question and clarification controls provide structured intent, and the backend validates project state, question identity/version and operation replay before a mutation. Completing a clarification requests continuation; configuration or another active run can delay dispatch.
 
 Saved canonical models are walkable through **Design → Walk inside**. The final presentation-room exhibit, Spline/imported-model integration and comprehensive geometric review remain unfinished. See the [readiness review](agent-design-review.md) and [walkthrough guide](walkthrough.md).
 
@@ -96,6 +98,7 @@ Saved canonical models are walkable through **Design → Walk inside**. The fina
 - [shared/collaboration.ts](../shared/collaboration.ts): task schemas, dependency validation, field ownership and proposal merging.
 - [worker/src/team.ts](../worker/src/team.ts): scheduling, persisted dependency results, meetings, retries and correction plans.
 - [worker/src/workflow.ts](../worker/src/workflow.ts): briefing, reference selection, change routing and run orchestration.
+- [shared/conversation.ts](../shared/conversation.ts), [worker/src/conversation.ts](../worker/src/conversation.ts) and [worker/src/clarifications.ts](../worker/src/clarifications.ts): shared text/voice interaction contracts, persistent question answers and continuation dispatch.
 - [worker/src/coordinator.ts](../worker/src/coordinator.ts): canonical revision commits and cancellation fences.
 - [shared/requirements.ts](../shared/requirements.ts) and [worker/src/requirements.ts](../worker/src/requirements.ts): ordered scoped amendments and frozen run requirements.
 - [worker/src/changes.ts](../worker/src/changes.ts) and [components/ChangeTracker.tsx](../components/ChangeTracker.tsx): persisted change milestones and their Activity presentation.

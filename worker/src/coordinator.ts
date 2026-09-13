@@ -8,6 +8,7 @@ import { executeVoiceTool, hangupVoice, LiveResponseTools } from './voice';
 import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collaboration';
 import { originalConceptId } from './images';
 import { changeFailedStatement } from './changes';
+import { dispatchClarification } from './clarifications';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private voiceTargets = new Map<string, { agent: AgentId; elementId: string | null; meeting: boolean }>();
@@ -119,9 +120,11 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
   async alarm() {
     const pending = await this.ctx.storage.get<{projectId:string;owner:string}>('pending-project');
     if (pending) {
+      try { await dispatchClarification(this.env,pending.projectId,pending.owner,p => this.begin(p)); } catch { /* The D1 continuation outbox remains available for the next alarm. */ }
       try { await dispatchPending(this.env,pending.projectId,pending.owner,p => this.begin(p)); } catch { /* The next alarm retries dispatch, without discarding the change. */ }
       const remaining = await this.env.DB.prepare("SELECT id FROM changes WHERE project_id = ? AND status = 'pending' LIMIT 1").bind(pending.projectId).first();
-      if (!remaining) await this.ctx.storage.delete('pending-project');
+      const clarification = await this.env.DB.prepare("SELECT id FROM project_clarifications WHERE project_id = ? AND status IN ('awaiting_input','queued') UNION ALL SELECT id FROM runs WHERE project_id = ? AND resumes_run_id IS NOT NULL AND status = 'queued' AND workflow_dispatched = 0 LIMIT 1").bind(pending.projectId,pending.projectId).first();
+      if (!remaining && !clarification) await this.ctx.storage.delete('pending-project');
     }
     const sessions = await this.ctx.storage.list<{owner:string; created:number}>({ prefix: 'voice-' });
     for (const [id, session] of sessions) if (Date.now()-session.created > 15*60000 || !this.voices.has(id.slice(6))) await this.closeVoice(id.slice(6));
@@ -187,28 +190,45 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     return revision;
   }
   async begin(params: RunParams) {
-    const existing = await this.env.DB.prepare('SELECT project_id, owner_id, status, kind, base_revision, instruction, reference_artifact_id FROM runs WHERE id = ?').bind(params.runId).first<{ project_id: string; owner_id: string; status: string; kind: string; base_revision: number; instruction: string | null; reference_artifact_id: string | null }>();
+    const existing = await this.env.DB.prepare('SELECT project_id, owner_id, status, kind, base_revision, instruction, reference_artifact_id, context_artifact_id, resumes_run_id, workflow_dispatched FROM runs WHERE id = ?').bind(params.runId).first<{ project_id: string; owner_id: string; status: string; kind: string; base_revision: number; instruction: string | null; reference_artifact_id: string | null; context_artifact_id:string|null; resumes_run_id:string|null; workflow_dispatched:number }>();
     if (existing) {
       if (existing.project_id !== params.projectId || existing.owner_id !== params.userId) throw new HttpError(409, 'Operation ID already used.');
       if (existing.status === 'failed' || existing.status === 'cancelled') throw new HttpError(409, `This request already ${existing.status === 'failed' ? 'failed' : 'was cancelled'}. Start a new request to try again.`);
       if (existing.kind !== params.kind || existing.base_revision !== params.baseRevision || existing.instruction !== (params.instruction || null) || (params.kind !== 'generate' && existing.reference_artifact_id !== (params.referenceArtifactId || null))) throw new HttpError(409, 'Operation ID already used for a different request.');
+      if (params.resumesRunId && existing.resumes_run_id !== params.resumesRunId) throw new HttpError(409, 'This continuation belongs to another briefing.');
+      if (existing.resumes_run_id && existing.status === 'queued' && !existing.workflow_dispatched) await this.deliverContinuation({ ...params, resumesRunId: existing.resumes_run_id, referenceArtifactId: existing.reference_artifact_id, contextArtifactId: existing.context_artifact_id });
       return { runId: params.runId };
     }
     const row = await this.env.DB.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ?').bind(params.projectId, params.userId).first<ProjectRow>();
     if (!row) throw new HttpError(404, 'Project not found.');
     if (row.revision !== params.baseRevision) throw new HttpError(409, 'Refresh the project before starting work on a previous revision.');
     const selected = params.kind === 'generate' && row.concept_artifact_id ? await this.env.DB.prepare('SELECT id FROM image_studies WHERE id = ? AND project_id = ? AND revision = ?').bind(row.concept_artifact_id, params.projectId, params.baseRevision).first<{id:string}>() : null;
-    const referenceArtifactId = params.referenceArtifactId || (params.kind === 'generate' ? selected?.id || null : null);
-    const contextArtifactId = !referenceArtifactId && (params.kind === 'generate' || params.kind === 'change')
+    const referenceArtifactId = params.resumesRunId ? params.referenceArtifactId || null : params.referenceArtifactId || (params.kind === 'generate' ? selected?.id || null : null);
+    const contextArtifactId = params.resumesRunId ? params.contextArtifactId || null : !referenceArtifactId && (params.kind === 'generate' || params.kind === 'change')
       ? await originalConceptId(this.env, params.projectId, row.concept_artifact_id) : null;
     // Persist the selected background concept at run creation. A later selection
     // cannot retarget an accepted run or its replayed Workflow checkpoints.
     const frozen = { ...params, referenceArtifactId, contextArtifactId };
+    const now = new Date().toISOString();
     try {
-      await this.env.DB.prepare('INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,reference_artifact_id,context_artifact_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(params.runId, params.projectId, params.userId, params.kind, 'queued', params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, frozen.referenceArtifactId, frozen.contextArtifactId, new Date().toISOString()).run();
-    } catch { throw new HttpError(409, 'You already have an active run. Stop it before starting another.'); }
-    try { await this.env.JOBS.create({ id: params.runId, params: frozen }); }
+      const admitted = await this.env.DB.batch([
+        this.env.DB.prepare("INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,reference_artifact_id,context_artifact_id,created_at,resumes_run_id,workflow_dispatched) SELECT ?,id,?,?,'queued',?,?,?,?,?,?,?,?,? FROM projects WHERE id = ? AND owner_id = ? AND revision = ? AND brief = ? AND (? IS NULL OR EXISTS (SELECT 1 FROM project_clarifications c JOIN runs r ON r.id = c.run_id WHERE c.project_id = projects.id AND c.run_id = ? AND c.continuation_run_id = ? AND c.status = 'queued' AND c.brief_json = projects.brief AND c.base_revision = projects.revision AND r.status = 'awaiting_input'))")
+          .bind(params.runId, params.userId, params.kind, params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, frozen.referenceArtifactId, frozen.contextArtifactId, now, params.resumesRunId || null, params.resumesRunId ? 0 : 1, params.projectId, params.userId, params.baseRevision, row.brief, params.resumesRunId || null, params.resumesRunId || null, params.runId),
+        this.env.DB.prepare("UPDATE project_clarifications SET status = CASE WHEN run_id = ? THEN 'continued' ELSE 'superseded' END, detail = CASE WHEN run_id = ? THEN 'The team is continuing with your saved answers.' ELSE 'A newer design request replaced this briefing.' END, updated_at = ? WHERE project_id = ? AND status IN ('awaiting_input','queued') AND ? IN ('generate','change') AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND project_id = ? AND status = 'queued')")
+          .bind(params.resumesRunId || null, params.resumesRunId || null, now, params.projectId, params.kind, params.runId, params.projectId),
+        this.env.DB.prepare("UPDATE runs SET status = CASE WHEN id = ? THEN 'completed' ELSE 'cancelled' END WHERE project_id = ? AND status = 'awaiting_input' AND EXISTS (SELECT 1 FROM project_clarifications WHERE run_id = runs.id AND status IN ('continued','superseded'))")
+          .bind(params.resumesRunId || null, params.projectId),
+        this.env.DB.prepare("UPDATE tasks SET status = CASE WHEN run_id = ? THEN 'completed' ELSE 'cancelled' END, detail = CASE WHEN run_id = ? THEN 'Clarifications answered; continuing in a linked team run.' ELSE detail END WHERE project_id = ? AND status = 'blocked' AND EXISTS (SELECT 1 FROM runs WHERE id = tasks.run_id AND status IN ('completed','cancelled'))")
+          .bind(params.resumesRunId || null, params.resumesRunId || null, params.projectId),
+        this.env.DB.prepare("UPDATE projects SET status = 'draft', updated_at = ? WHERE id = ? AND status = 'awaiting_input' AND EXISTS (SELECT 1 FROM runs WHERE id = ? AND status = 'queued')").bind(now, params.projectId, params.runId),
+      ]);
+      if (!admitted[0].meta.changes) throw new HttpError(409, 'The brief, questions or design changed before this run could start.');
+    } catch (error) { if (error instanceof HttpError) throw error; throw new HttpError(409, 'You already have an active run. Stop it before starting another.'); }
+    try { if (params.resumesRunId) await this.deliverContinuation(frozen); else await this.env.JOBS.create({ id: params.runId, params: frozen }); }
     catch {
+      // A clarification continuation stays in the durable outbox on transient
+      // dispatch failure. Its saved answers and operation ID remain reusable.
+      if (params.resumesRunId) throw new HttpError(503, 'Your answers are saved. The team will retry starting automatically.');
       await this.env.DB.batch([
         this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND project_id = ? AND owner_id = ? AND status = 'queued'").bind(params.runId, params.projectId, params.userId),
         changeFailedStatement(this.env, params, 'failed', 'The job could not be queued. Retry with a new request.'),
@@ -217,5 +237,19 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     }
     await emit(this.env, params.projectId, 'task_created', `${params.kind === 'image' ? 'Visual concept' : params.kind === 'render' ? 'Presentation render' : 'Design work'} queued.`, params.agent || 'principal');
     return { runId: params.runId };
+  }
+  private async deliverContinuation(params: RunParams) {
+    const live = await this.env.DB.prepare("SELECT id FROM runs WHERE id = ? AND project_id = ? AND owner_id = ? AND status = 'queued' AND workflow_dispatched = 0").bind(params.runId, params.projectId, params.userId).first();
+    if (!live) return;
+    try { await this.env.JOBS.create({ id: params.runId, params }); }
+    catch {
+      // A previous create can succeed while its response is lost. Looking up
+      // that exact workflow avoids allocating a second job on replay.
+      try { await (await this.env.JOBS.get(params.runId)).status(); }
+      catch { throw new HttpError(503, 'The continuation could not be dispatched yet.'); }
+    }
+    await this.env.DB.prepare('UPDATE runs SET workflow_dispatched = 1 WHERE id = ? AND project_id = ?').bind(params.runId, params.projectId).run();
+    const run = await this.env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(params.runId).first<{status:string}>();
+    if (run?.status === 'cancelled') { try { await (await this.env.JOBS.get(params.runId)).terminate(); } catch { /* D1 remains the cancellation fence. */ } }
   }
 }

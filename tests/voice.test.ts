@@ -67,11 +67,18 @@ describe('GPT-Live session contract', () => {
     if (session.delegation?.type !== 'responses') throw new Error('Missing Responses delegation');
     const tools = session.delegation.responses.tools;
     expect(tools?.map(tool => tool.type === 'function' ? tool.name : tool.type)).toEqual([
-      'review_team', 'finish_meeting', 'get_project_context', 'save_brief', 'request_change',
+      'review_team', 'finish_meeting', 'get_project_context', 'save_brief', 'answer_clarification', 'request_change',
     ]);
     expect(tools?.find(tool => tool.type === 'function' && tool.name === 'request_change')).toMatchObject({
       type: 'function', strict: true,
       parameters: { required: ['instruction', 'elementId', 'baseRevision'], additionalProperties: false },
+    });
+    expect(tools?.find(tool => tool.type === 'function' && tool.name === 'answer_clarification')).toMatchObject({
+      type: 'function', strict: true,
+      parameters: {
+        required: ['clarificationId', 'clarificationVersion', 'answers'], additionalProperties: false,
+        properties: { answers: { type: 'array', items: { required: ['questionId', 'answer'], additionalProperties: false } } },
+      },
     });
   });
 });
