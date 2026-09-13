@@ -22,6 +22,7 @@ type Options = {
 export function subscribeToProject(options: Options) {
   const source = new EventSource(`/api/studio/projects/${encodeURIComponent(options.projectId)}/events?after=${options.after}`);
   let stopped = false, reading = false, pending = false, live = false;
+  let lastReadAt = 0, pollMs = 15000;
   let debounce: ReturnType<typeof setTimeout> | undefined;
   let request: AbortController | undefined;
   options.onConnection('connecting');
@@ -30,11 +31,15 @@ export function subscribeToProject(options: Options) {
     if (stopped) return;
     if (reading) { pending = true; return; }
     reading = true;
+    lastReadAt = Date.now();
     request = new AbortController();
     const controller = request;
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const next = await options.read(controller.signal);
+      // Hosted proxies may delay SSE. Keep visible handoffs responsive without
+      // paying for rapid polling on idle projects or starting any agent work.
+      pollMs = next.runs?.some(run => ['queued', 'in_progress'].includes(run.status)) ? 3000 : 15000;
       if (!stopped) {
         options.onSnapshot(next);
         options.onConnection(live ? 'live' : 'polling');
@@ -54,7 +59,7 @@ export function subscribeToProject(options: Options) {
   source.onmessage = schedule;
   source.onopen = () => { live = true; schedule(); };
   source.onerror = () => { live = false; schedule(); };
-  const poll = setInterval(schedule, 15000);
+  const poll = setInterval(() => { if (Date.now() - lastReadAt >= pollMs) schedule(); }, 1000);
   window.addEventListener('focus', schedule);
   window.addEventListener('online', schedule);
   schedule();

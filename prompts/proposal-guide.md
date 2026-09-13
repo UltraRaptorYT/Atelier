@@ -1,5 +1,7 @@
 # Author, inspect and submit a canonical proposal
 
+For Kai's Blender-first tasks, `execute_python` is disabled. Use `open_blender` and real GUI controls, `read_design` for existing data, and the structured `write_proposal` tool instead of the Python authoring examples below. `open_proposal_in_blender` opens the saved candidate in Blender; app-owned conversion runs internally. GUI components must be saved separately, registered with `register_blender_asset`, and referenced in the proposal before inspection/submission. The Python examples below apply only to specialists whose runtime actually provides `execute_python`; they do not override Kai's no-coding policy.
+
 This guide is installed at `/home/user/project/proposal-guide.md`; the exact invocation schema is `proposal-schema.json` beside it. Import `design_authoring` from that directory. All dimensions are metres, +Y is up, element positions are centres, and floor indices start at zero. Helpers return ordinary canonical dictionaries/lists, with stable IDs derived from your chosen assembly prefixes. Reuse those prefixes and opening layouts when making bounded revisions. Do not import the historical Pikachu authoring script or use Blender-only geometry fields.
 
 1. Read the task's `design.json`, effective requirements and dependency outputs. Initial Architecture builds the full candidate; existing-design Architecture and Interior write only explicit edits. The file contract is identified by the supplied schema.

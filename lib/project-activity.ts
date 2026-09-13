@@ -16,6 +16,9 @@ function runEvents(snapshot: Snapshot, run: StudioRun | null): StudioEvent[] {
   return ordered.filter(event => {
     const owner = eventRun(event);
     if (owner && owner !== run.id) return false;
+    // A voice handoff can precede the profile artifact. Explicit run ownership
+    // is authoritative; timestamp fencing must not discard its meeting end.
+    if (owner === run.id) return true;
     if (profile) return event.createdAt >= profile.createdAt;
     if (queue && !queueBelongsElsewhere) return event.id >= queue.id;
     return owner === run.id;
@@ -39,6 +42,7 @@ export function projectActivity(snapshot: Snapshot | null) {
   const liveMeeting = currentRun?.status === 'in_progress' && ['generate', 'change'].includes(currentRun.kind) && lastMeeting?.type === 'meeting_started';
   // Specialist execution is stronger evidence than an unclosed meeting event.
   // In the bounded runtime, meetings coordinate batches rather than interrupt them.
-  const meeting = !activeTasks.some(task => task.agent !== 'principal') && Boolean(awaitingInput || liveMeeting);
+  const dispatched = officeTasks.some(task => task.agent !== 'principal' && ['queued', 'in_progress', 'review', 'completed'].includes(task.status));
+  const meeting = !dispatched && Boolean(awaitingInput || liveMeeting);
   return { currentRun, activeRuns, activeTasks, tasks, officeTasks, events, meeting, awaitingInput, continuingBrief };
 }

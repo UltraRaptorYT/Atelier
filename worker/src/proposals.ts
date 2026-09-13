@@ -172,11 +172,47 @@ export class ProposalSession {
   private attempts = 0;
   private inspection: ProposalInspection | null = null;
   private accepted: SubmittedProposal | null = null;
+  private openedBlenderHash: string | null = null;
   constructor(options: Options) {
     if (!/^[a-zA-Z0-9_.-]{1,160}$/.test(options.key) || !Number.isInteger(options.baseRevision) || options.baseRevision < 0) throw new Error('Invalid proposal task identity.');
     this.options = { ...options, baseDesign: options.baseDesign ? DesignSchema.parse(options.baseDesign) : null };
   }
   get submitted(): SubmittedProposal | null { return this.accepted ? structuredClone(this.accepted) : null; }
+  /** Native structured tool: the agent supplies design records, never a script. */
+  async write(input: unknown): Promise<{ saved: true; elementCount: number }> {
+    const o = this.options;
+    await o.checkActive();
+    o.timeBudget?.check();
+    if (this.accepted) throw new ProposalError('The submitted proposal is frozen. Finish with your summary.');
+    const json = JSON.stringify(input);
+    if (new TextEncoder().encode(json).byteLength > MAX_PROPOSAL_BYTES) throw new ProposalError('The proposal exceeds its file allowance. Make a smaller bounded edit.');
+    const candidate = parseProposal(input, o.baseDesign, o.agent, o.registeredAssets());
+    await o.desktop.files.write(PROPOSAL_PATH, json);
+    await o.checkActive();
+    return { saved: true, elementCount: candidate.elements.length };
+  }
+  /** A derived Blender workbench, separate from the inspected/committed model. */
+  async openInBlender(): Promise<{ path: string; candidateHash: string; message: string }> {
+    const o = this.options, candidate = await this.readCandidate();
+    const output = `/home/user/project/output/workbench-${candidate.hash.slice(0, 16)}`;
+    const path = `${output}/design.blend`;
+    if (this.openedBlenderHash !== candidate.hash) {
+      const timeoutMs = o.timeBudget?.allowance(60000, PROPOSAL_FINISH_MS + 60000, 6000) ?? 60000;
+      await o.prepare(structuredClone(candidate.design), INSPECTED_PATH);
+      await o.desktop.files.write(INSPECTED_PATH, candidate.json);
+      const seconds = Math.max(1, Math.floor((timeoutMs - 5000) / 1000));
+      // Trusted compiler runs in the background; do not replace the watched
+      // Blender viewport with source code or a foreground terminal.
+      const result = await o.desktop.commands.run(`timeout ${seconds}s blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design ${INSPECTED_PATH} --output ${output} --revision ${o.baseRevision}`, { timeoutMs });
+      if (result.exitCode !== 0) throw new ProposalError('The Blender workbench could not compile. The saved proposal is unchanged; inspect its canonical preview or report the unavailable viewport.');
+      await o.checkActive();
+      // Each candidate has a distinct file. Opening it must never overwrite
+      // an original component or silently discard an unsaved GUI document.
+      await o.desktop.open(path);
+      this.openedBlenderHash = candidate.hash;
+    }
+    return { path, candidateHash: candidate.hash, message: 'Blender workbench opening requested. Inspect desktop_screenshot to confirm. Save original GUI components separately and register_blender_asset, then reference them through write_proposal. Edits to this derived workbench alone do not update the canonical design. Save any unsaved component before opening a different candidate.' };
+  }
   async saveDraft(): Promise<void> {
     if (this.accepted) return;
     await this.options.checkActive();

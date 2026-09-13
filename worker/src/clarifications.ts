@@ -124,6 +124,8 @@ export async function saveBriefDetails(env: Bindings, projectId: string, owner: 
   ]);
   if (!saved[0].meta.changes) {
     const replay = await receipt(env, projectId, data.operationId, request); if (replay) return replay;
+    const active = await env.DB.prepare("SELECT id,kind,status FROM runs WHERE project_id = ? AND status IN ('queued','in_progress') LIMIT 1").bind(projectId).first<{ id: string; kind: string; status: string }>();
+    if (active) throw new HttpError(409, 'The team already has an active job and is using the current brief. This new detail has not been added to that brief. Wait for the job to finish or stop it in Activity before updating the brief; do not start another job.');
     throw new HttpError(409, 'The brief changed or the team is already starting work. This detail was not added. Read the latest project context before retrying; wait for active work to finish before editing its brief.');
   }
   return result;

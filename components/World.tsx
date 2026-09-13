@@ -52,6 +52,7 @@ function Desk({ p, accent }: { p: [number, number, number]; accent: string }) {
   return <group position={p}><Box p={[0, .8, 0]} s={[2.6, .12, 1.05]} color="#ad885d" collision /><Box p={[-1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[1, .4, 0]} s={[.08, .8, .85]} color="#4e514c" /><Box p={[0, 1.35, -.28]} s={[1.02, .66, .06]} color="#333b37" /><Box p={[0, 1.35, -.24]} s={[.91, .54, .015]} color={accent} /><Box p={[0, .87, .18]} s={[.7, .03, .25]} color="#e0ded4" /><Box p={[0, 1.02, -.28]} s={[.05, .35, .05]} color="#42463f" /><Box p={[.9, .91, .1]} s={[.38, .06, .5]} color="#eeebdf" /><Chair p={[0, 0, 1]} angle={Math.PI} /></group>;
 }
 function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active: boolean; meeting: boolean; positions: React.RefObject<Partial<Record<RoomId, [number, number, number]>>> }) {
+  const invalidate = useThree(state => state.invalidate);
   const group = useRef<Group>(null), pose = useRef<Group>(null), hands = useRef<Group>(null);
   const forearms = useRef<(Group | null)[]>([]);
   const thighs = useRef<(Group | null)[]>([]), knees = useRef<(Group | null)[]>([]);
@@ -62,10 +63,14 @@ function Avatar({ agent, active, meeting, positions }: { agent: AgentId; active:
     const p = group.current?.position;
     route.current = officeRoute(p ? [p.x,0,p.z] : initial.current, agent, meeting).map(p => new Vector3(...p));
     setTravelling(route.current.length > 1);
-  }, [agent, meeting]);
+    invalidate();
+  }, [agent, meeting, invalidate]);
   useFrame((state, dt) => {
     const g = group.current; if (!g) return;
     const target = route.current[0];
+    // A workstation overlay pauses player input and switches to demand frames,
+    // but must not freeze a real meeting-to-desk handoff behind that overlay.
+    if (target) invalidate();
     const distance = target ? Math.hypot(g.position.x-target.x,g.position.z-target.z) : 0;
     const moving = distance > .035;
     if (target && !moving) { g.position.copy(target); route.current.shift(); if (!route.current.length) setTravelling(false); }

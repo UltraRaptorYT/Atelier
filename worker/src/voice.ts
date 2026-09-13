@@ -39,6 +39,7 @@ Do not delegate to the backend when: Greeting the user or asking a short clarifi
       reasoning: { effort: 'low' },
       instructions: `You route voice input to Atelier's existing project system, speaking for the currentAgent returned by get_project_context. You do not own or directly regenerate the design.
 Use get_project_context before answering project questions or choosing a mutation. Read the latest brief, revision, selection, pending work, clarification and accepted changes. User speech can contain unfinished phrases and corrections; clarify ambiguous targets.
+The project's status may still say draft while activeRuns shows the Principal preparing it. activeRuns is authoritative for whether work is already queued or running. While a run is active, do not run another team review, repeat saves, or say the team cannot begin: it has already begun processing the brief. Explain the current task and that brief edits must wait or the user can stop the run in Activity. pendingBriefDetails are retained failed save attempts, NOT requirements applied to the current run. Once no run is active and no design exists, use retry_saved_brief_details with their exact operation IDs to finish saving the original requests without asking the user to repeat them. If clarification is awaiting_input, do not replay these details blindly: use the actual current question IDs for user answers. Never claim pending details were saved into the brief until a tool confirms saved=true. Do not start a new job until pending details are resolved.
 ${meetingHandoffInstructions}
 The effectiveRequirements record contains every applied amendment in order. Later amendments replace earlier requirements only on overlapping subject and scope; preserve unrelated requirements. Never restore an original brief choice superseded by applied feedback. Use application and review milestones separately when reporting progress.
 When clarification contains pending questions, use answer_clarification for actual user answers. Copy the clarification ID, current version and matching question IDs from context; include only questions the user has answered. Partial answers remain saved. Once every required question is answered, the server requests continuation of the work the user already started. Report the returned continuation status precisely. Asking "What would you recommend?" is a question, not an answer; give advice without saving it as a requirement. Never infer an answer from your own suggestion. Never call finish_meeting to bypass unanswered questions, stale answers or cancelled work.
@@ -50,6 +51,7 @@ Answer questions without queuing changes. Check tool results. Report saved or qu
         { type: 'function', name: 'finish_meeting', description: 'Start the team when the user says start working. Preserve the voice call.', strict: true, parameters: { type: 'object', properties: { confirmed: { type: 'boolean' } }, required: ['confirmed'], additionalProperties: false } },
         { type: 'function', name: 'get_project_context', description: 'Read the current saved brief, design revision, selected element and task/change status.', strict: true, parameters: { type: 'object', properties: {}, required: [], additionalProperties: false } },
         { type: 'function', name: 'save_brief', description: 'Append only new user requirements (1–4000 characters) before the first design. Extra details may be saved while questions are open; actual answers use answer_clarification. Preserve existing details without starting work.', strict: true, parameters: { type: 'object', properties: { details: { type: 'string' } }, required: ['details'], additionalProperties: false } },
+        { type: 'function', name: 'retry_saved_brief_details', description: 'Retry an exact retained brief-save operation from pendingBriefDetails once active work has stopped. Reuses its original receipt, so requirements are not appended twice. Does not start work.', strict: true, parameters: { type: 'object', properties: { operationId: { type: 'string' } }, required: ['operationId'], additionalProperties: false } },
         { type: 'function', name: 'answer_clarification', description: 'Save actual user answers to pending Principal questions. All required answers request continuation of an already-started briefing.', strict: true, parameters: { type: 'object', properties: {
           clarificationId: { type: 'string' }, clarificationVersion: { type: 'integer' },
           answers: { type: 'array', items: { type: 'object', properties: { questionId: { type: 'string' }, answer: { type: 'string' } }, required: ['questionId', 'answer'], additionalProperties: false } },
@@ -200,20 +202,29 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
     }
     if (call.name === 'get_project_context') {
       const design = await designFromRow(env, project);
-      const [tasks, changes, effectiveRequirements, clarification] = await Promise.all([
+      const [tasks, changes, effectiveRequirements, clarification, activeRuns, pendingBriefDetails] = await Promise.all([
         env.DB.prepare('SELECT agent,title,status,detail FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
         env.DB.prepare('SELECT instruction,status,base_revision,started_at,applied_at,applied_revision,reviewed_at,reviewed_revision,review_summary,review_findings,failure_detail FROM changes WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
         readEffectiveRequirements(env, projectId, BriefSchema.parse(JSON.parse(project.brief)), project.revision),
         getClarification(env, projectId),
+        env.DB.prepare("SELECT id,kind,status,created_at AS createdAt FROM runs WHERE project_id = ? AND status IN ('queued','in_progress') ORDER BY created_at DESC").bind(projectId).all(),
+        env.DB.prepare("SELECT id AS operationId,json_extract(request_json,'$.instruction') AS details FROM conversation_turns WHERE project_id = ? AND result_json IS NULL AND json_extract(decision_json,'$.intent') = 'brief_update' ORDER BY rowid LIMIT 12").bind(projectId).all(),
       ]);
       return { currentAgent: agents[agent], location: meeting ? 'meeting room (whole team)' : agents[agent].role + ' workstation', brief: JSON.parse(project.brief), revision: project.revision, status: project.status, generationEnabled: String(env.GENERATION_ENABLED) === 'true', selectedElementId: selected,
         design: design ? { title: design.title, floors: design.floors, spaces: design.spaces, elements: design.elements.map(({ id, name, materialId }) => ({ id, name, materialId })), materials: design.materials } : null,
-        tasks: tasks.results, changes: changes.results, effectiveRequirements, clarification };
+        tasks: tasks.results, changes: changes.results, effectiveRequirements, clarification, activeRuns: activeRuns.results, pendingBriefDetails: pendingBriefDetails.results };
     }
     let result: unknown;
     if (call.name === 'review_team') {
       if (!meeting || project.design_key) throw new HttpError(409, 'Meet at the team table before the first design.');
+      const active = await env.DB.prepare("SELECT id FROM runs WHERE project_id = ? AND status IN ('queued','in_progress') LIMIT 1").bind(projectId).first();
+      if (active) return { alreadyStarted: true, message: 'The team is already processing the saved brief. Read activeRuns and tasks for progress instead of starting another meeting review.' };
       return { perspectives: await reviewMeeting(env, projectId, owner, BriefSchema.parse(JSON.parse(project.brief))) };
+    } else if (call.name === 'retry_saved_brief_details') {
+      const retry = z.object({ operationId: z.string().uuid() }).strict().parse(args);
+      const retained = await env.DB.prepare('SELECT request_json,decision_json FROM conversation_turns WHERE id = ? AND project_id = ?').bind(retry.operationId, projectId).first<{ request_json: string; decision_json: string }>();
+      if (!retained || JSON.parse(retained.decision_json).intent !== 'brief_update') throw new HttpError(409, 'That retained brief detail is not available in this project. Read the current project context.');
+      result = await handleInteraction(env, projectId, owner, InteractionRequestSchema.parse(JSON.parse(retained.request_json)));
     } else if (call.name === 'finish_meeting') {
       z.object({confirmed:z.literal(true)}).parse(args);
       const clarification = await getClarification(env, projectId);
@@ -225,13 +236,15 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
       if (!env.E2B_API_KEY) throw new HttpError(503, 'Your brief can be saved, but remote computers are not configured for design work.');
       const active = await env.DB.prepare("SELECT id,project_id FROM runs WHERE owner_id = ? AND status IN ('queued','in_progress')").bind(owner).first<{id:string;project_id:string}>();
       if (active) return active.project_id === projectId
-        ? {runId:active.id, alreadyStarted:true, message:'The team is already working. Keep the voice call open for steering.'}
+        ? {runId:active.id, alreadyStarted:true, message:'The run is already queued or processing the brief. Read the current tasks before saying specialists are working. Keep the voice call open for steering.'}
         : {error:'Another project is still working. Wait for it to finish or stop that project from its panel; this voice call remains available.'};
+      const pendingBrief = await env.DB.prepare("SELECT id FROM conversation_turns WHERE project_id = ? AND result_json IS NULL AND json_extract(decision_json,'$.intent') = 'brief_update' LIMIT 1").bind(projectId).first();
+      if (pendingBrief) throw new HttpError(409, 'Earlier brief details are retained but have not been saved to the brief. Read pendingBriefDetails and retry their original operations before starting; the user does not need to repeat them.');
       const started = await env.PROJECTS.getByName(projectId).requestRun({projectId,userId:owner,runId:operationId,kind:'generate',baseRevision:project.revision,instruction:'[VOICE_START] The user explicitly said start working. Proceed with the saved brief. Infer reasonable defaults for unresolved preferences; only pause for impossible requirements or platform limits.'});
       if (!started.ok) throw new HttpError(started.status, started.message);
       const announcement = "That wraps up our questions for now. Your project is queued, and we're getting ready to head to our rooms and work. You can visit us and keep talking to steer the design.";
       result = { ...started, queued: true, announcement };
-      await emit(env, projectId, 'meeting_ended', announcement, 'principal', null, operationId + '-start');
+      await emit(env, projectId, 'meeting_ended', announcement, 'principal', `${operationId}-principal`, operationId + '-start');
     } else if (call.name === 'request_change') {
       if (String(env.GENERATION_ENABLED) !== 'true') throw new HttpError(503, 'Design generation is paused. Your spoken brief can still be saved before generation.');
       if (!project.design_key) throw new HttpError(409, 'Save the requirements as brief details, then use Start team briefing.');

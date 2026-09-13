@@ -16,6 +16,7 @@ import { requestClarification } from './clarifications';
 import { saveRuntimeProfile } from './runtime-profile';
 import { TaskTimeBudget, TASK_STEP_TIMEOUT } from './task-time';
 import { checkedWorkflowStep } from './workflow-errors';
+import { BRIEFING_MODEL_LIMITS } from './model-settings';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
 type ImageStepResult = { ok: true; value: string | null } | { ok: false; status: number; message: string };
 async function imageStepResult(work: () => Promise<string | null>): Promise<ImageStepResult> {
@@ -108,7 +109,8 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('principal', 'Prepare the project brief', p.kind === 'change' ? 'Assessing the requested design change.' : 'Interpreting the brief and assigning specialists.');
           if (p.kind === 'change') return original;
           const requirements = await readEffectiveRequirements(this.env, p.projectId, original, p.baseRevision, p.runId);
-          const parsed = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Start authorization: ${p.instruction || "No explicit voice start instruction."}. Preserve request exactly. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the effective requirements. If the user explicitly asks you to choose defaults, do so. Summarize the effective requirements in goals and constraints; a superseded original choice is not an unresolved conflict.\n${requirementsPrompt(requirements)}`, BriefSchema, undefined, [], undefined, timeBudget);
+          const extracted = await modelJSON(this.env, p.userId, 'principal', `Prepare a structured brief from: ${original.request}. Start authorization: ${p.instruction || "No explicit voice start instruction."}. Return a short summary, concise goals and constraints, and at most two questions. The application preserves the original request and answer history; do not copy them into your output. Infer reasonable defaults. Consider these real specialist perspectives: ${JSON.stringify(perspectives)}. Ask at most two high-impact unanswered questions if needed to resolve occupancy, scale, realism, conflicts or limits (4 floors/40 spaces). Do not repeat questions answered in the effective requirements. If the user explicitly asks you to choose defaults, do so. Summarize the effective requirements in goals and constraints; a superseded original choice is not an unresolved conflict.\n${requirementsPrompt(requirements)}`, BriefSchema.omit({ request: true, clarificationAnswers: true }), undefined, [], 'low', timeBudget, BRIEFING_MODEL_LIMITS);
+          const parsed = BriefSchema.parse({ ...original, ...extracted });
           parsed.request = original.request;
           if (original.clarificationAnswers !== undefined) parsed.clarificationAnswers = original.clarificationAnswers;
           else delete parsed.clarificationAnswers;
@@ -121,6 +123,10 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await step.do('needs-clarification', () => requestClarification(this.env, p, brief));
           return { needsClarification: true };
         }
+        await step.do('briefing-handoff', async () => {
+          await checkCancelled();
+          await emit(this.env, p.projectId, 'meeting_ended', 'The brief is saved. Questions are resolved for now; the team is heading to its workstations to prepare the first tasks.', 'principal', `${p.runId}-principal`, `${p.runId}-briefing-handoff`);
+        });
         // Images are optional and generated only by explicit image jobs. A
         // checkpoint loads a selected reference for all specialist stages.
         const referenceId = imageStepValue(await step.do('visual-reference', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, () => imageStepResult(async () => {

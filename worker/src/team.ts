@@ -215,14 +215,14 @@ read_design returns the exact assigned canonical snapshot from /home/user/projec
 Accepted change for this round: ${p.instruction || 'none'}.
 Completed dependencies and their saved outputs: ${JSON.stringify(dependencySummaries)}.
 ${extraInstruction} ${visual}
-${firstDraft ? 'FIRST DRAFT PASS: this is a six-minute work allowance, not a final presentation. Author one useful bounded candidate promptly; start inspection with at least three minutes remaining. Prefer canonical construction helpers. Skip optional Blender GUI setup, custom asset sculpting, alternative studies and cosmetic polishing in this pass. Required inspect_proposal and submit_proposal still apply. The next tasks will refine this saved draft in parallel; leave clear limitations instead of pretending it is finished.' : ''}
+${firstDraft ? 'FIRST DRAFT PASS: this is a six-minute work allowance, not a final presentation. Author one useful bounded candidate promptly; start inspection with at least three minutes remaining. Kai uses Blender and the structured write_proposal tool, not Python. Show the useful candidate in Blender; skip elaborate custom sculpting, alternative studies and cosmetic polishing in this pass. Required inspect_proposal and submit_proposal still apply. The next tasks will refine this saved draft in parallel; leave clear limitations instead of pretending it is finished.' : ''}
 ${visualSpec ? `Visual specification: ${JSON.stringify(visualSpec)}\nMap each required feature to actual stable element IDs and geometry; a name or note is not implementation. Use the accepted current change to resolve any conflict with the reference. Preserve unrelated existing design during scoped repairs.` : ''}
 Use dependency outputs to coordinate your work. Preserve unrelated elements and stable IDs. Your output is a proposal; the coordinator publishes the canonical revision after checking conflicts.`;
         let desktop;
         if (sandboxId) {
           const { Sandbox } = await import('@e2b/desktop');
           desktop = await Sandbox.connect(sandboxId, { apiKey: env.E2B_API_KEY });
-          if (base.design) await syncDesktop(desktop, base.design, env, p.projectId);
+          if (base.design) await syncDesktop(desktop, base.design, env, p.projectId, task.agent !== 'architect');
           else await desktop.files.write('/home/user/project/design.json', JSON.stringify({ brief }));
         }
         const communications: { target: z.infer<typeof AgentIdSchema>; message: string }[] = [];
@@ -278,7 +278,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
           else if (base.design) {
             const edits = await teamModel(task.agent, `${prompt}\n${ownership}\nWrite explicit incremental edits to /home/user/project/proposal.json: upsert complete records for changed or new IDs, and remove only existing IDs that this objective requires deleting. Empty arrays leave a collection unchanged; null metadata values preserve the current values. Omitted elements, materials and spaces are preserved automatically. Do not list untouched records, rebuild the scene, or return an asset registry. Use only existing asset IDs or IDs returned by register_blender_asset or read_design_revision. To restore missing work, read the relevant saved revision and upsert only the needed records while preserving current accepted repairs. Inspect the proposal with inspect_proposal, examine its images, then submit_proposal. Your final JSON contains only the requested summary.`, DesignEditsSchema, context, images);
             result.proposal = applyDesignEdits(base.design, edits, registeredAssets);
-          } else result.proposal = await teamModel(task.agent, `${prompt}\n${ownership}\nWrite the initial complete design to /home/user/project/proposal.json. Use design_authoring helpers and supported mesh geometry to fulfill the brief. Inspect the candidate with inspect_proposal, examine its images, then submit_proposal. Your final JSON contains only the requested summary.`, DesignSchema, context, images);
+          } else result.proposal = await teamModel(task.agent, `${prompt}\n${ownership}\nWrite the initial complete design to /home/user/project/proposal.json. ${task.agent === 'architect' ? 'Use Blender GUI modeling and write_proposal for canonical records; do not write scripts. Open the saved candidate with open_proposal_in_blender.' : 'Use design_authoring helpers and supported mesh geometry to fulfill the brief.'} Inspect the candidate with inspect_proposal, examine its images, then submit_proposal. Your final JSON contains only the requested summary.`, DesignSchema, context, images);
           // Enforce ownership before a proposal reaches shared state.
           mergeDesignProposal(base.design, base.design, result.proposal, task.agent);
           result.summary = `${task.title}: design proposal prepared from revision ${base.revision}.`;
@@ -298,7 +298,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
             await checkCancelled();
             const { Sandbox } = await import('@e2b/desktop');
             const desktop = await Sandbox.connect(sandboxId, { apiKey: env.E2B_API_KEY });
-            if (completed.proposal) await syncDesktop(desktop, completed.proposal, env, p.projectId);
+            if (completed.proposal) await syncDesktop(desktop, completed.proposal, env, p.projectId, task.agent !== 'architect');
             await checkpointDesktop(env, desktop, p.projectId, `${p.runId}-${key}`, base.revision, task.agent);
           });
         } catch {
