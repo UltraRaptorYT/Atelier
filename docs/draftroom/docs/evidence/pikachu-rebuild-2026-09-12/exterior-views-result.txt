@@ -1,0 +1,10 @@
+Applied 168 changes. Created 14 objects: P_G_GARDEN ROOM (id ea8aa359-b9a8-462d-a355-083eb5ea3630, TextGeometry, ~241×34×0), P_U_LANDING (id 50d7129d-85dd-48e7-bb90-add3fec6c4af, TextGeometry, ~241×34×0), P_U_BATH (id 7e50a189-6e67-437c-9fb3-43b42ce76c61, TextGeometry, ~241×34×0), P_U_PRIMARY (id 347b466d-a894-463a-85b1-224737561231, TextGeometry, ~241×34×0), P_U_FAMILY (id e540254b-236a-4234-b839-3b800d18173a, TextGeometry, ~241×34×0), +9 more (ids via get_scene). Scene now has 194 objects.
+⚠ Z-FIGHTING RISK: coplanar surfaces will flicker as the camera moves. Fix each pair now (small offsets read as flush):
+- 'P_G_ENTRY' (id 7f1d9bfd-37f8-4734-afba-72f7d9cb48a7) and 'P_G_GUEST' (id 7a8d97f3-c375-4a96-b8c4-9be0a21f5228) have flush overlapping faces on the plane y ≈ 1.5 — 'P_G_ENTRY' is a thin sheet riding that surface — rebuild it as a Decal (it stamps ONTO the surface and cannot z-fight), or offset it by ≥0.5 along y.
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-1.png
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-2.png
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-3.png
+Screenshot budget reached for now — no capture was taken. Verify facts (counts, positions, sizes) with get_scene — the scene graph is the source of truth. If the request still needs real building, keep going: another capture unlocks after a few more successful run_code edits. Don't pad with filler edits to earn one — if the work is done, finish with your summary.

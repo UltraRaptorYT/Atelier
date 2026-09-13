@@ -1,0 +1,662 @@
+[
+  {
+    "id": "fbf23b39-926a-4595-a2d3-e2da336f428d",
+    "name": "G_floor_south",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -300,
+        -10,
+        -200
+      ],
+      "max": [
+        300,
+        0,
+        400
+      ],
+      "size": [
+        600,
+        10,
+        600
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      300,
+      0,
+      400
+    ]
+  },
+  {
+    "id": "9805e7a5-68ab-4072-be23-540069ca14da",
+    "name": "G_floor_rear",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -100,
+        -10,
+        -350
+      ],
+      "max": [
+        300,
+        0,
+        -200
+      ],
+      "size": [
+        400,
+        10,
+        150
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      300,
+      0,
+      -200
+    ]
+  },
+  {
+    "id": "31ac6a9a-0795-4c87-952f-a2c53f5f05b2",
+    "name": "T_garden_threshold",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -300,
+        -10,
+        -350
+      ],
+      "max": [
+        -100,
+        0,
+        -200
+      ],
+      "size": [
+        200,
+        10,
+        150
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      -100,
+      0,
+      -200
+    ]
+  },
+  {
+    "id": "25466e81-a79d-4c2f-9a15-9e3af2ef183f",
+    "name": "U_floor_west",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -300,
+        150,
+        -350
+      ],
+      "max": [
+        25,
+        160,
+        400
+      ],
+      "size": [
+        325,
+        10,
+        750
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      25,
+      160,
+      400
+    ]
+  },
+  {
+    "id": "f556fcd5-2f34-4c6d-ae65-3718bf39a0c2",
+    "name": "U_floor_east",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        100,
+        150,
+        -350
+      ],
+      "max": [
+        230,
+        160,
+        400
+      ],
+      "size": [
+        130,
+        10,
+        750
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      230,
+      160,
+      400
+    ]
+  },
+  {
+    "id": "c8b7bd70-46ca-458d-9269-0e40a796f50d",
+    "name": "U_floor_south",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        25,
+        150,
+        175
+      ],
+      "max": [
+        100,
+        160,
+        400
+      ],
+      "size": [
+        75,
+        10,
+        225
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      100,
+      160,
+      400
+    ]
+  },
+  {
+    "id": "5de859e8-ee74-4376-a02a-c93f085b3640",
+    "name": "U_floor_north",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        25,
+        150,
+        -350
+      ],
+      "max": [
+        100,
+        160,
+        -63
+      ],
+      "size": [
+        75,
+        10,
+        287
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      100,
+      160,
+      -63
+    ]
+  },
+  {
+    "id": "302edf6f-5dbc-45cb-9df1-57aca11ee451",
+    "name": "T_east_roof_deck",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        230,
+        150,
+        -350
+      ],
+      "max": [
+        300,
+        160,
+        400
+      ],
+      "size": [
+        70,
+        10,
+        750
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      300,
+      160,
+      400
+    ]
+  },
+  {
+    "id": "58e37119-4823-4c0a-9e6c-a21d6f7ac036",
+    "name": "R_west_fold",
+    "geometry": "NonParametricGeometry",
+    "space": "world",
+    "vertexCount": 8,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -300,
+        310,
+        -350
+      ],
+      "max": [
+        -100,
+        373,
+        400
+      ],
+      "size": [
+        200,
+        63,
+        750
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      -300,
+      310,
+      400
+    ]
+  },
+  {
+    "id": "e3eed320-370f-42d3-831b-372234cbd9f2",
+    "name": "R_east_fold",
+    "geometry": "NonParametricGeometry",
+    "space": "world",
+    "vertexCount": 8,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -100,
+        325,
+        -350
+      ],
+      "max": [
+        230,
+        373,
+        400
+      ],
+      "size": [
+        330,
+        48,
+        750
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      -100,
+      365,
+      400
+    ]
+  },
+  {
+    "id": "16c489d2-871b-42b0-a73a-4c31ef600a3a",
+    "name": "G_stair_tread_1",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        32.5,
+        0,
+        161
+      ],
+      "max": [
+        92.5,
+        8.889,
+        175
+      ],
+      "size": [
+        60,
+        8.889,
+        14
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      92.5,
+      8.889,
+      175
+    ]
+  },
+  {
+    "id": "99443622-af46-4341-90b1-1d50de85d636",
+    "name": "G_stair_tread_17",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        32.5,
+        0,
+        -63
+      ],
+      "max": [
+        92.5,
+        151.111,
+        -49
+      ],
+      "size": [
+        60,
+        151.111,
+        14
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      92.5,
+      151.111,
+      -49
+    ]
+  },
+  {
+    "id": "f5c8b2eb-4a19-4fa8-8d63-2a4239654270",
+    "name": "G_service_west lintel 1",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        96,
+        110,
+        185
+      ],
+      "max": [
+        104,
+        150,
+        235
+      ],
+      "size": [
+        8,
+        40,
+        50
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      104,
+      150,
+      235
+    ]
+  },
+  {
+    "id": "47a1705f-79ae-4ee3-a795-b9573d610db7",
+    "name": "G_utility_north lintel 0",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        165,
+        110,
+        -4
+      ],
+      "max": [
+        215,
+        150,
+        4
+      ],
+      "size": [
+        50,
+        40,
+        8
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      215,
+      150,
+      4
+    ]
+  },
+  {
+    "id": "e3359805-6639-446b-940c-79d3e63d3edb",
+    "name": "U_bath_north lintel 0",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        135,
+        270,
+        -49
+      ],
+      "max": [
+        182.5,
+        310,
+        -41
+      ],
+      "size": [
+        47.5,
+        40,
+        8
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      182.5,
+      310,
+      -41
+    ]
+  },
+  {
+    "id": "cd5b61de-8314-4f1d-80e4-7ea40f19d648",
+    "name": "U_west_privacy end",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -300,
+        160,
+        -340
+      ],
+      "max": [
+        -290,
+        313,
+        390
+      ],
+      "size": [
+        10,
+        153,
+        730
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      -290,
+      313,
+      390
+    ]
+  },
+  {
+    "id": "3f26e40e-8286-40fb-937a-a3cc147eb083",
+    "name": "U_east_privacy end",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        220,
+        160,
+        -340
+      ],
+      "max": [
+        230,
+        326.5,
+        -105
+      ],
+      "size": [
+        10,
+        166.5,
+        235
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      230,
+      326.5,
+      -105
+    ]
+  },
+  {
+    "id": "66b90139-5e77-4ff6-b62f-e71092017e4a",
+    "name": "S_site",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -500,
+        -17.5,
+        -750
+      ],
+      "max": [
+        500,
+        -10.5,
+        750
+      ],
+      "size": [
+        1000,
+        7,
+        1500
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      500,
+      -10.5,
+      750
+    ]
+  },
+  {
+    "id": "baa17a54-5ba2-4de2-b5fe-9e725255fbc5",
+    "name": "S_parking",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        175,
+        -10.5,
+        450
+      ],
+      "max": [
+        315,
+        0,
+        700
+      ],
+      "size": [
+        140,
+        10.5,
+        250
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      315,
+      0,
+      700
+    ]
+  },
+  {
+    "id": "aa8c61b0-8b3f-4fe0-9c0b-3e9acc201fbf",
+    "name": "S_entry_path",
+    "geometry": "CubeGeometry",
+    "space": "world",
+    "vertexCount": 24,
+    "triangleCount": 12,
+    "indexed": true,
+    "bounds": {
+      "min": [
+        -65,
+        -10.5,
+        400
+      ],
+      "max": [
+        15,
+        0,
+        750
+      ],
+      "size": [
+        80,
+        10.5,
+        350
+      ]
+    },
+    "start": 0,
+    "count": 1,
+    "vertices": [
+      15,
+      0,
+      750
+    ]
+  }
+]

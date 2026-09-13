@@ -1,0 +1,24 @@
+{
+  "sceneId": "f2161163-3018-412c-8dfe-814898e9913d",
+  "authoringMethod": "mcp",
+  "promptVersion": "1.1.0",
+  "status": "ready_for_review",
+  "assemblyStatus": "fail",
+  "geometryFrozen": true,
+  "writerReleasedAt": "2026-09-12T15:50:11.017869+00:00",
+  "applicationRunIds": null,
+  "sceneRevision": null,
+  "spatialModelRevision": "architect-shell-1",
+  "objectCount": 199,
+  "unexpectedHiddenModelRows": [],
+  "finalLiveCapture": {
+    "framing": "pass, content83% of frameheight",
+    "hero": "pass, roof/facade46% of frameheight, clear sightline"
+  },
+  "saveStatus": "unverified; root UI export and reopen pending",
+  "missingViews": [
+    "dedicated site plan",
+    "dedicated family-room interior-to-garden view; north elevation is limited fallback"
+  ],
+  "captureLimit": "MCP private screenshots refused additional plans; root obtained actual native screenshots instead"
+}

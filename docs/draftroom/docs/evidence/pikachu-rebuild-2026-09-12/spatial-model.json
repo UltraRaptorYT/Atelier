@@ -1,0 +1,2767 @@
+{
+  "schemaVersion": "concept-spatial-model-1",
+  "revision": "architect-shell-1",
+  "applicationIdentifiers": null,
+  "provenance": "Live MCP shell. Actual readback verifies critical floors, roof, stair, opening and site bounds; visual route review is pending.",
+  "coordinateMapping": {
+    "site": "origin southwest, +X east, +Z north, +Y up",
+    "metresToSpline": "[(x-10)*50,y*50,(15-z)*50]",
+    "worldUnitsPerMetre": 50
+  },
+  "site": {
+    "boundary": [
+      0,
+      20,
+      0,
+      30
+    ],
+    "buildingCoveredBoundary": [
+      4,
+      16,
+      7,
+      22
+    ],
+    "street": "south",
+    "neighbours": [
+      "east",
+      "west"
+    ],
+    "garden": "north and connected side strips"
+  },
+  "levels": [
+    {
+      "id": "G",
+      "finishedFloorM": 0,
+      "ceilingM": 3
+    },
+    {
+      "id": "U",
+      "finishedFloorM": 3.2,
+      "ceilingM": [
+        6.2,
+        7.3,
+        6.5
+      ]
+    }
+  ],
+  "spaces": [
+    {
+      "id": "guest",
+      "level": "G",
+      "use": "bedroom",
+      "boundsXZ": [
+        4,
+        8,
+        7,
+        11.5
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "study",
+      "level": "G",
+      "use": "study",
+      "boundsXZ": [
+        12,
+        16,
+        7,
+        10
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "shower",
+      "level": "G",
+      "use": "shower room",
+      "boundsXZ": [
+        12,
+        16,
+        10,
+        12.5
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "utility",
+      "level": "G",
+      "use": "utility storage",
+      "boundsXZ": [
+        12,
+        16,
+        12.5,
+        15
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "kitchen",
+      "level": "G",
+      "use": "kitchen",
+      "boundsXZ": [
+        12,
+        16,
+        15,
+        20
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "living",
+      "level": "G",
+      "use": "living dining",
+      "boundsXZ": [
+        4,
+        10.5,
+        11.5,
+        19
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "rear-dining",
+      "level": "G",
+      "use": "dining circulation",
+      "boundsXZ": [
+        8,
+        12,
+        19,
+        22
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "entry-hall",
+      "level": "G",
+      "use": "entry circulation",
+      "boundsXZ": [
+        8,
+        12,
+        7,
+        11
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "primary",
+      "level": "U",
+      "use": "bedroom",
+      "boundsXZ": [
+        4,
+        11,
+        18,
+        22
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "child",
+      "level": "U",
+      "use": "bedroom",
+      "boundsXZ": [
+        4,
+        9,
+        7,
+        11
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "family",
+      "level": "U",
+      "use": "family lounge",
+      "boundsXZ": [
+        4,
+        10.5,
+        11,
+        15.3
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "bath",
+      "level": "U",
+      "use": "bathroom",
+      "boundsXZ": [
+        12.08,
+        14.6,
+        11,
+        15.9
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "dressing",
+      "level": "U",
+      "use": "wardrobe",
+      "boundsXZ": [
+        11,
+        14.6,
+        18,
+        22
+      ],
+      "classification": "enclosed",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "threshold",
+      "level": "G",
+      "use": "covered garden threshold",
+      "boundsXZ": [
+        4,
+        8,
+        19,
+        22
+      ],
+      "classification": "covered_outdoor",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    },
+    {
+      "id": "east-terrace",
+      "level": "U",
+      "use": "terrace roof over ground rooms",
+      "boundsXZ": [
+        14.6,
+        16,
+        7,
+        22
+      ],
+      "classification": "open_terrace",
+      "boundaryBasis": "concept zone including boundary walls; not net usable area"
+    }
+  ],
+  "stairs": {
+    "id": "G_stair",
+    "from": "G",
+    "to": "U",
+    "risers": 18,
+    "riseEachM": 0.17777777777777778,
+    "treads": 17,
+    "goingM": 0.28,
+    "widthM": 1.2,
+    "boundsXZ": [
+      10.65,
+      11.85,
+      11.5,
+      16.26
+    ],
+    "slabOpeningXZ": [
+      10.5,
+      12,
+      11.5,
+      16.26
+    ],
+    "topLandingXZ": [
+      10.5,
+      12,
+      16.26,
+      17.6
+    ],
+    "bottomApproachXZ": [
+      10.5,
+      12,
+      10.3,
+      11.5
+    ],
+    "headroom": "pending built check",
+    "guarding": "concept only, handrail continuity and compliance not resolved"
+  },
+  "openings": [
+    {
+      "id": "entry",
+      "host": "G_south",
+      "connects": [
+        "exterior",
+        "entry-hall"
+      ],
+      "widthM": 1.3,
+      "heightM": 2.4
+    },
+    {
+      "id": "guest-door",
+      "host": "G_guest_east",
+      "connects": [
+        "entry-hall",
+        "guest"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "study-door",
+      "host": "G_service_west",
+      "connects": [
+        "entry-hall",
+        "study"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "shower-door",
+      "host": "G_service_west",
+      "connects": [
+        "hall",
+        "shower"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "utility-door",
+      "host": "G_utility_north",
+      "connects": [
+        "kitchen",
+        "utility"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "kitchen-opening",
+      "host": "G_service_west",
+      "connects": [
+        "hall",
+        "kitchen"
+      ],
+      "widthM": 2.3,
+      "heightM": 2.65
+    },
+    {
+      "id": "garden-slider",
+      "host": "G_threshold_slider",
+      "connects": [
+        "living",
+        "threshold"
+      ],
+      "widthM": 3,
+      "heightM": 2.65
+    },
+    {
+      "id": "garden-side-door",
+      "host": "G_threshold_return",
+      "connects": [
+        "rear-dining",
+        "threshold"
+      ],
+      "widthM": 1.4,
+      "heightM": 2.5
+    },
+    {
+      "id": "rear-opening",
+      "host": "G_north",
+      "connects": [
+        "rear-dining",
+        "garden"
+      ],
+      "widthM": 3,
+      "heightM": 2.65
+    },
+    {
+      "id": "child-door",
+      "host": "U_child_east",
+      "connects": [
+        "upper-hall",
+        "child"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "primary-door",
+      "host": "U_primary_south",
+      "connects": [
+        "upper-hall",
+        "primary"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    },
+    {
+      "id": "bath-door",
+      "host": "U_bath_north",
+      "connects": [
+        "upper-landing",
+        "bath"
+      ],
+      "widthM": 0.95,
+      "heightM": 2.2
+    },
+    {
+      "id": "terrace-door",
+      "host": "U_east_privacy",
+      "connects": [
+        "upper-hall",
+        "east-terrace"
+      ],
+      "widthM": 1,
+      "heightM": 2.2
+    }
+  ],
+  "intentionalExceptions": [
+    {
+      "id": "rear-recess",
+      "areaM2": 12,
+      "reason": "Outdoor room under upper floor; direct living/garden connection, excluded GFA, included footprint"
+    },
+    {
+      "id": "stair-opening",
+      "areaM2": 7.14,
+      "reason": "Void for actual stair between floors; excluded upper GFA; covered by roof"
+    },
+    {
+      "id": "east-roof-terrace",
+      "areaM2": 21,
+      "reason": "Upper setback becomes continuous roof over lower floor, with privacy parapet; excluded GFA"
+    }
+  ],
+  "conceptAccounting": {
+    "groundGfaM2": 168,
+    "upperGfaM2": 151.86,
+    "totalGfaM2": 319.86,
+    "coveredFootprintM2": 180,
+    "plantedGardenM2": 392.4,
+    "gardenMethod": "600-180-14parking-11.2entrypath-2.4rearstep; rendered unpaved site surface intended planting",
+    "status": "calculated from actual readback"
+  },
+  "sceneMapping": [
+    {
+      "name": "Rebuild Site",
+      "id": "4646ac29-e542-4b00-a700-96badeefebec",
+      "type": "Empty",
+      "worldPositionFromDigest": [
+        23.96,
+        -32.46,
+        31.22
+      ],
+      "hidden": false
+    },
+    {
+      "name": "S_rear_threshold_step",
+      "id": "4e522a36-1aaf-40a1-a9a4-a97ff4feb74f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        -6.5,
+        -365.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "S_entry_path",
+      "id": "aa8c61b0-8b3f-4fe0-9c0b-3e9acc201fbf",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -25.0,
+        -5.25,
+        575.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "S_parking",
+      "id": "baa17a54-5ba2-4de2-b5fe-9e725255fbc5",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        245.0,
+        -5.25,
+        575.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "S_site",
+      "id": "66b90139-5e77-4ff6-b62f-e71092017e4a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        -14.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "Rebuild Terrace",
+      "id": "5eb2be0a-be55-4afd-ad19-50d2989a2875",
+      "type": "Empty",
+      "worldPositionFromDigest": [
+        23.96,
+        -32.46,
+        31.22
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_north_parapet",
+      "id": "c4707719-8652-4b6a-8973-4af7e3a86c39",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        261.25,
+        186.25,
+        -346.25
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_south_parapet",
+      "id": "851c74c1-0e30-4d2e-a0db-e0a9ca473c74",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        261.25,
+        186.25,
+        396.25
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_east_parapet",
+      "id": "ed22978f-9f39-48ea-a8db-4c56b0867a3b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        296.25,
+        186.25,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_threshold_column_7.9",
+      "id": "ed7fed09-5281-4fe9-b18f-b8cd9d500c7b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -105.0,
+        75.0,
+        -344.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_threshold_column_4.1",
+      "id": "0abd5d0e-d0b4-4ab4-a547-5678278cf82c",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -295.0,
+        75.0,
+        -344.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_east_roof_deck",
+      "id": "302edf6f-5dbc-45cb-9df1-57aca11ee451",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        265.0,
+        155.0,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "T_garden_threshold",
+      "id": "31ac6a9a-0795-4c87-952f-a2c53f5f05b2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        -5.0,
+        -275.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "Rebuild Roof",
+      "id": "0d937c29-3c86-494f-9286-649d17e33b71",
+      "type": "Empty",
+      "worldPositionFromDigest": [
+        23.96,
+        -32.46,
+        31.22
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_north_east_infill",
+      "id": "97c8f9e4-f232-4a9a-84eb-a2e19a2a93c8",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_north_west_infill",
+      "id": "4dc35c2d-5d64-424c-b3c6-bb8888dd260d",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_south_east_infill",
+      "id": "87f21895-9560-41eb-9af5-fc1a42a016c2",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_south_west_infill",
+      "id": "56bce8b7-ac8c-4bf5-a6bc-71e95765f38e",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_east_fold",
+      "id": "e3eed320-370f-42d3-831b-372234cbd9f2",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "R_west_fold",
+      "id": "58e37119-4823-4c0a-9e6c-a21d6f7ac036",
+      "type": "Mesh/NonParametricGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "Rebuild Upper",
+      "id": "fb253221-f919-43d0-b7af-b7ad02ba72db",
+      "type": "Empty",
+      "worldPositionFromDigest": [
+        23.96,
+        -32.46,
+        31.22
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_family_proxy",
+      "id": "8e6558cf-fe9d-4c4a-aa11-585304e2ff08",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -187.5,
+        177.5,
+        30.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_shower_proxy",
+      "id": "d4490124-1667-4b75-8b92-163b34e35731",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        185.0,
+        161.25,
+        150.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_bed",
+      "id": "8e17d56b-c705-4645-ab80-e1a17b10e5b8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -195.0,
+        171.25,
+        -260.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_bed",
+      "id": "632f37b9-d185-477e-a8eb-0c134513c37b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -220.0,
+        171.25,
+        290.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_12",
+      "id": "84915116-719c-4e50-8353-d7f71bfbabde",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -90.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_11",
+      "id": "f49e8409-a49f-4475-a13d-66eea6be5643",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -104.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_10",
+      "id": "21a51e1e-f484-409b-8459-7c2dc8288df8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -118.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_9",
+      "id": "3c9893c4-df96-482e-b57f-b188a9f7f4e9",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -132.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_8",
+      "id": "35e57551-db86-403b-9cfe-57867b1281d8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -146.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_7",
+      "id": "b70cb289-6b53-4c5d-95b4-b3375b334494",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -160.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_6",
+      "id": "2170501b-af97-4785-ada0-bf393f487a4c",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -174.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_5",
+      "id": "f4969a85-3dd0-4dd3-9d79-7bda5a6ed2e6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -188.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_4",
+      "id": "0ecafef2-a62b-4f8d-b68b-2f801e014c1f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -202.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_3",
+      "id": "c9e21483-dc78-48da-813d-67ae19746082",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -216.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_2",
+      "id": "35256033-dfbf-4c0c-b91f-33ee916b93d1",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -230.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_1",
+      "id": "28e02b63-fb37-4e38-9598-d1d0ee447f9a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -244.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_screen_0",
+      "id": "2b5c4172-08d5-4d6c-9759-6910c53380ff",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -258.75,
+        248.75,
+        398.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_stair_east_guard",
+      "id": "4673570d-6d1b-4a46-a230-0a7d4ef2377e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        101.5,
+        185.0,
+        -56.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_stair_west_guard",
+      "id": "af8e7666-c8f9-4a71-bd66-7d72039037dd",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        23.5,
+        185.0,
+        56.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_bath_north end",
+      "id": "6ca65654-d60f-49ac-9307-841285b27999",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        201.25,
+        235.0,
+        -45.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_bath_north lintel 0",
+      "id": "e3359805-6639-446b-940c-79d3e63d3edb",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        158.75,
+        290.0,
+        -45.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_bath_north segment 0",
+      "id": "e9ac8809-e02f-4cb5-b762-e12f9e338ee9",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        121.5,
+        235.0,
+        -45.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_bath_south end",
+      "id": "f2a5ad10-9c2c-4547-9451-fb300f98163d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        164.0,
+        235.0,
+        200.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_bath_west end",
+      "id": "2318c790-03f3-4cce-8287-1e5052644aff",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        104.0,
+        235.0,
+        77.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_dressing end",
+      "id": "427c46a9-1600-48a4-abb0-d594db41b1f3",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        50.0,
+        235.0,
+        -295.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_dressing lintel 0",
+      "id": "c05b54f6-9e7d-40ef-966c-d7198dcf0fda",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        50.0,
+        290.0,
+        -225.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_dressing segment 0",
+      "id": "063e08e8-6696-4504-92c8-1e19661493a8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        50.0,
+        235.0,
+        -177.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_south end",
+      "id": "06f60299-803b-4f07-9f23-317a60466ab2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        140.0,
+        235.0,
+        -150.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_south lintel 0",
+      "id": "c5b33185-9e24-4353-8860-c96b1ee74700",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        35.0,
+        290.0,
+        -150.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_south segment 0",
+      "id": "709f1289-6831-420f-b5de-0cce71ea762a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -140.0,
+        235.0,
+        -150.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_north end",
+      "id": "9f5e32e5-1028-4a55-a835-ec3f081d87e2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -172.0,
+        235.0,
+        200.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_east end",
+      "id": "b28dfb2d-1332-4ce0-aabb-1c9cada3e5c8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -50.0,
+        235.0,
+        230.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_east lintel 0",
+      "id": "49a428e5-6166-44d7-b974-099f79aab218",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -50.0,
+        290.0,
+        285.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_east segment 0",
+      "id": "17544ac5-6ab1-4592-8858-dfa0dcc5b3d8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -50.0,
+        235.0,
+        350.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_dressing_window jamb 13.7825",
+      "id": "ffc37402-0999-492e-8f0d-0f109436fe5c",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        189.12,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_dressing_window jamb 11.7175",
+      "id": "ce7a523a-0e71-4af8-aac4-4946016c03d6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        85.87,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_dressing_window glass",
+      "id": "20d29eea-92e4-4d2f-ae22-5a54b59a2b5b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        137.5,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_dressing_window head",
+      "id": "f2a9d22d-9710-4ad5-a457-a1b893c5a390",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        137.5,
+        297.5,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_dressing_window sill",
+      "id": "5ff2ea4c-a2be-4453-9f28-a276470c8f74",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        137.5,
+        182.5,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_window jamb 10.1825",
+      "id": "25f02175-205d-404e-a9c9-5c3e3dbd51e0",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        9.12,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_window jamb 4.8175",
+      "id": "a576b011-0faf-407b-a193-8a24a1673421",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -259.13,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_window glass",
+      "id": "2510b2e0-412f-4c40-a4af-c34d4f34fbb1",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -125.0,
+        245.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_window head",
+      "id": "6e8da096-077a-4fb4-9c54-1355f7b574a4",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -125.0,
+        297.5,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_primary_window sill",
+      "id": "598ed4be-e593-4c31-b9ab-8060acdb6a3c",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -125.0,
+        182.5,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_north end",
+      "id": "7062f4dc-d079-44a6-98f9-7d03305cc575",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        210.0,
+        235.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_north segment 1",
+      "id": "9b8c066a-50ac-424a-a00b-a7b2eb091a40",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        47.5,
+        235.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_north segment 0",
+      "id": "c97bdae8-0ea3-4f37-af94-caeba249052e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -280.0,
+        235.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_landing_window jamb 13.7825",
+      "id": "2220efe2-e645-4d5b-856a-e3993b958343",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        189.12,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_landing_window jamb 9.4175",
+      "id": "7c1730b7-036f-4c07-9c0d-e09208d1a20b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -29.13,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_landing_window glass",
+      "id": "5d3ee0a3-703d-4def-ba47-c0fe0f0fcc47",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        80.0,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_landing_window head",
+      "id": "454ec431-7930-489a-ab7a-54facfc8f71b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        80.0,
+        296.25,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_landing_window sill",
+      "id": "2cba4657-cf65-4c55-a02f-efa31d7f3626",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        80.0,
+        182.5,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_window jamb 8.1825",
+      "id": "bafbdaf7-d94a-4fc0-8858-a7ead36c7977",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -90.88,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_window jamb 4.8175",
+      "id": "3eac416c-9ed5-4b8a-ace6-b7ff29ade8a4",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -259.13,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_window glass",
+      "id": "cfc6133b-9641-4807-8ac3-cc74ee0f3dba",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -175.0,
+        243.75,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_window head",
+      "id": "136288a7-cef1-4ec1-a78a-110c7b82ed72",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -175.0,
+        296.25,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_child_window sill",
+      "id": "4d5870be-1b7c-40f7-978f-0f2193a3bfdb",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -175.0,
+        182.5,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_south end",
+      "id": "206a4a2e-e259-465d-a4f6-6a1e6e06820e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        210.0,
+        235.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_south segment 1",
+      "id": "fd13932f-abb4-48a6-bce0-367c934efe27",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -60.0,
+        235.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_south segment 0",
+      "id": "99ca34c4-d602-4dcc-9906-725531af12f2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -280.0,
+        235.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_east_privacy end",
+      "id": "3f26e40e-8286-40fb-937a-a3cc147eb083",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        225.0,
+        243.25,
+        -222.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_east_privacy lintel 0",
+      "id": "3a3fc94e-97a3-45cd-9dab-82fc2f13967b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        225.0,
+        298.25,
+        -80.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_east_privacy segment 0",
+      "id": "16930d45-a2fd-4b84-bd9d-0ccbef261319",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        225.0,
+        243.25,
+        167.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_west_privacy end",
+      "id": "cd5b61de-8314-4f1d-80e4-7ea40f19d648",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -295.0,
+        236.5,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_floor_north",
+      "id": "5de859e8-ee74-4376-a02a-c93f085b3640",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        155.0,
+        -206.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_floor_south",
+      "id": "c8b7bd70-46ca-458d-9269-0e40a796f50d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        155.0,
+        287.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_floor_east",
+      "id": "f556fcd5-2f34-4c6d-ae65-3718bf39a0c2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        165.0,
+        155.0,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "U_floor_west",
+      "id": "25466e81-a79d-4c2f-9a15-9e3af2ef183f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -137.5,
+        155.0,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "Rebuild Ground",
+      "id": "23c84887-6888-4097-a9f7-a401cf598a36",
+      "type": "Empty",
+      "worldPositionFromDigest": [
+        23.96,
+        -32.46,
+        31.22
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_dining_proxy",
+      "id": "193cff9d-7a34-452b-b793-45aad01891bd",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -15.0,
+        18.75,
+        -252.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_living_proxy",
+      "id": "af6bfd85-5028-4f8f-b249-df2ab82a21d6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -245.0,
+        17.5,
+        -15.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_proxy",
+      "id": "3ea525dc-7919-4210-8423-c5b4d2f932f9",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        270.0,
+        22.5,
+        -125.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_shower_proxy",
+      "id": "8f2723c1-6128-4a67-a813-d6eecd6ce517",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        250.0,
+        1.25,
+        175.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_bed",
+      "id": "09df13fb-7d95-4c1c-be2d-96a68b2f7500",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -220.0,
+        11.25,
+        280.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_entry_ceiling",
+      "id": "b881df7d-3105-4d45-846b-74e4e01fd235",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -28.75,
+        143.75,
+        345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_entry_reveal",
+      "id": "596abe0a-1baf-49aa-8325-c9c4070b41ac",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -75.5,
+        70.0,
+        345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_17",
+      "id": "c0b040e5-8b16-4fe8-acdb-e9634e7cc2bc",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        176.11,
+        -63.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_16",
+      "id": "d11cdd93-65ea-4136-b0d7-f42a2dbf7da7",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        167.22,
+        -49.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_15",
+      "id": "9cb44179-d3d4-4378-9b8e-93b01dc4638e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        158.33,
+        -35.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_14",
+      "id": "da067725-38b3-4a68-b987-d1d362354a4e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        149.44,
+        -21.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_13",
+      "id": "5a99be82-482c-4d0a-ba70-2cb9750f33f9",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        140.55,
+        -7.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_12",
+      "id": "5c7ea865-6b26-4795-a458-4bded5e34793",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        131.66,
+        7.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_11",
+      "id": "5e6587a5-6973-451a-87f4-bca4f8945c4e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        122.77,
+        21.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_10",
+      "id": "88811d79-412b-473b-8465-1c87fabf20ab",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        113.89,
+        35.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_9",
+      "id": "4d387d57-d314-4236-8eaf-3228b7d7e757",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        105.0,
+        49.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_8",
+      "id": "84f75563-a020-4b10-afc2-6ee7cbf31927",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        96.11,
+        63.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_7",
+      "id": "71d8571b-8c94-412a-b5ff-2cd8e16c2ee8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        87.22,
+        77.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_6",
+      "id": "627fb83e-5c35-401e-9a84-87e96a786c38",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        78.33,
+        91.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_5",
+      "id": "f4e4d9b3-25c0-403c-97c7-b00ef2586aa1",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        69.44,
+        105.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_4",
+      "id": "8a7df30e-687b-4b3b-b878-abef50353760",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        60.55,
+        119.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_3",
+      "id": "7b57224e-fe0f-4b76-b598-54664a2012f0",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        51.66,
+        133.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_2",
+      "id": "a1f1511a-c64c-40c2-95bd-33f715daebd0",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        42.77,
+        147.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_1",
+      "id": "5b75a30f-7a99-4c2d-9fe1-5ed36da351df",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        33.89,
+        161.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_guard_0",
+      "id": "ae5754d0-c3d2-4b4a-b5aa-884f76702aa6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        28.25,
+        25.0,
+        175.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_17",
+      "id": "99443622-af46-4341-90b1-1d50de85d636",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        75.55,
+        -56.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_16",
+      "id": "77648995-6a45-491e-82b1-164de66908f5",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        71.11,
+        -42.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_15",
+      "id": "a9e397b8-b71e-4a56-b896-608b94632ac2",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        66.66,
+        -28.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_14",
+      "id": "0b06b840-8a69-49ed-950a-5aa7b61d0d75",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        62.22,
+        -14.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_13",
+      "id": "6f10e9ce-69b4-448d-8269-daa6f5a8ebcd",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        57.77,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_12",
+      "id": "3fe5450b-150c-490e-9aa6-b16285c8c47f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        53.33,
+        14.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_11",
+      "id": "857c8c1e-7596-4895-a937-53385ce84dd8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        48.89,
+        28.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_10",
+      "id": "44ffa607-5a0c-4dd1-b043-956b0ce2b283",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        44.44,
+        42.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_9",
+      "id": "7aa4f5aa-ffb6-4b3e-9504-75d246801213",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        40.0,
+        56.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_8",
+      "id": "77211877-82a4-4979-b867-19b72357c0fd",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        35.55,
+        70.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_7",
+      "id": "2600083f-1a8f-47ec-ab9e-b3c29959f5cb",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        31.11,
+        84.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_6",
+      "id": "28d6ae5d-c938-4a88-9c0a-c8fe8097640f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        26.66,
+        98.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_5",
+      "id": "b76656d9-5cde-4d0e-be05-2f19b7c8c4b8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        22.22,
+        112.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_4",
+      "id": "04603d4e-c524-4ef6-9668-24ac5d81a859",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        17.77,
+        126.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_3",
+      "id": "02a6c7a6-177c-4b77-9a3c-b0cfe500346c",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        13.33,
+        140.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_2",
+      "id": "39a105fd-439d-434b-a6fb-c7a8a6d153fb",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        8.89,
+        154.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_stair_tread_1",
+      "id": "16c489d2-871b-42b0-a73a-4c31ef600a3a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        62.5,
+        4.44,
+        168.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_utility_north end",
+      "id": "6027641b-b799-42c3-b354-2578a55fb7d8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        252.5,
+        75.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_utility_north lintel 0",
+      "id": "47a1705f-79ae-4ee3-a795-b9573d610db7",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        190.0,
+        130.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_utility_north segment 0",
+      "id": "e511d8e3-e008-4333-bed7-f34138ce5d9e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        134.5,
+        75.0,
+        0.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_shower_north end",
+      "id": "6cd1333c-524e-4ffd-8cbe-5a060152e1af",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        197.0,
+        75.0,
+        125.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_north end",
+      "id": "51660ef2-c71b-4b55-9c10-8eba61a06788",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        197.0,
+        75.0,
+        250.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west end",
+      "id": "151c833c-2a62-4e96-a3e8-62067579de45",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        75.0,
+        -217.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west lintel 2",
+      "id": "252caf02-1f5e-45a5-9176-4096328c1a04",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        141.25,
+        -127.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west segment 2",
+      "id": "78d8ec67-f1e6-489c-8cb5-16f1f41641da",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        75.0,
+        57.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west lintel 1",
+      "id": "f5c8b2eb-4a19-4fa8-8d63-2a4239654270",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        130.0,
+        210.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west segment 1",
+      "id": "cacf9b8f-6a2a-4fb5-90d0-e50bba8f1820",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        75.0,
+        267.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west lintel 0",
+      "id": "7a187c75-035c-4c41-a22b-7d09dd810dca",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        130.0,
+        325.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_service_west segment 0",
+      "id": "418a98c1-7fab-4b19-9e73-6777c5202d9d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        75.0,
+        370.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_north end",
+      "id": "40a611a1-7bca-4e88-a58f-f1c628865894",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -197.0,
+        75.0,
+        175.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_east end",
+      "id": "88e2dde8-6676-439b-91b5-86761501658d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        75.0,
+        230.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_east lintel 0",
+      "id": "6442e1e1-80a9-471d-ac4c-488ec82ca4b0",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        130.0,
+        310.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_east segment 0",
+      "id": "68c95a5b-6d0a-4e98-82c5-fb67b6f56aa8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        75.0,
+        362.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_north jamb 15.1825",
+      "id": "82db81e4-24e4-4bfb-a882-38570d79a945",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        259.12,
+        80.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_north jamb 12.5175",
+      "id": "326ee6b8-9c09-4421-b3b0-d45044d9e281",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        125.87,
+        80.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_north glass",
+      "id": "308b79c6-0f28-47c3-b690-80e5fb70e619",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        80.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_north head",
+      "id": "4acc0e4a-2f7b-4f88-b333-63e75c4bd0b7",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        135.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_kitchen_north sill",
+      "id": "8dd9a9ca-3973-492d-a83a-e79b8e2a240a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        20.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_north end",
+      "id": "60ab8238-a650-4f7f-bcc4-a7966bb5a882",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        280.0,
+        75.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_north segment 1",
+      "id": "cdc14bb3-8c98-4447-a963-da9e262243d4",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        105.0,
+        75.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_north lintel 0",
+      "id": "e2df2e0c-b539-4190-ae4d-07720bc189fe",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        10.0,
+        141.25,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_north segment 0",
+      "id": "0a41ee8c-b3a6-4e42-a454-833a33938911",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -80.5,
+        75.0,
+        -345.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_entry_open_leaf",
+      "id": "a2c6e82f-d548-4c64-9152-a585025567ca",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        3.0,
+        58.75,
+        362.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_window jamb 15.0825",
+      "id": "8cac0307-108c-49da-becd-e599009651ca",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        254.12,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_window jamb 12.6175",
+      "id": "33aa525f-a9e1-4d58-a5ac-a8efab6cf2e1",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        130.87,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_window glass",
+      "id": "b46b7aa7-34fd-45ad-96e7-63f0c68a4069",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_window head",
+      "id": "797b79c8-7d09-49bd-a749-5ac04b81dbc3",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        135.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_study_window sill",
+      "id": "520bd552-9f6d-4dbc-86f5-9e40d10ac233",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        192.5,
+        20.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_window jamb 7.2825",
+      "id": "3be77b73-ff16-4242-abea-cdb93faea3f6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -135.88,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_window jamb 4.7175",
+      "id": "7959d801-0ced-478f-86d2-f8d0ae3cc3d8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -264.13,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_window glass",
+      "id": "d4ea0ca1-7a86-42bc-b618-33b867c4963d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        80.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_window head",
+      "id": "affcfcae-fe9c-442f-a102-c70818bda35a",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        135.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_guest_window sill",
+      "id": "fa783adb-5547-469b-ae93-f5410fb49377",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        20.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_south end",
+      "id": "529d7b86-6928-4f9f-91fa-0eaf28601759",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        277.5,
+        75.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_south segment 2",
+      "id": "7743de0b-dcd5-4bfa-9c86-242a722d3e21",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        67.5,
+        75.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_south lintel 1",
+      "id": "f6eaa8f6-dc35-4ac4-bc19-0b69cab8be73",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -27.5,
+        135.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_south segment 1",
+      "id": "242a956c-26b3-423c-bfa2-9ec68d725dfd",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -97.5,
+        75.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_south segment 0",
+      "id": "4677dcb9-e81d-4adb-8b32-83a6b004f7c8",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -282.5,
+        75.0,
+        395.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_slider end",
+      "id": "505b19e6-d5f8-43c0-bafa-09b0f2890964",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -110.5,
+        75.0,
+        -200.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_slider lintel 0",
+      "id": "9cde3a13-9631-485c-899e-717b7495a962",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        141.25,
+        -200.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_slider segment 0",
+      "id": "d40b7747-6e26-4d6d-b651-2c1c76875af6",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -282.5,
+        75.0,
+        -200.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_return end",
+      "id": "de817da0-e547-42a1-ab69-7410e0fa4f62",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        75.0,
+        -322.5
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_return lintel 0",
+      "id": "713f772f-c24f-4806-877d-ec111f1c7d2e",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        137.5,
+        -270.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_threshold_return segment 0",
+      "id": "58fcaebc-1a7e-411c-8dbe-c88bd11f2f62",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        75.0,
+        -220.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_east end",
+      "id": "23d43c90-fb82-49ae-937d-a94cf898c21b",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        295.0,
+        75.0,
+        25.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_west end",
+      "id": "fde6f576-f585-43cd-b179-dad7a36b0d0f",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        -295.0,
+        75.0,
+        95.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_floor_rear",
+      "id": "9805e7a5-68ab-4072-be23-540069ca14da",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        100.0,
+        -5.0,
+        -275.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "G_floor_south",
+      "id": "fbf23b39-926a-4595-a2d3-e2da336f428d",
+      "type": "Mesh/CubeGeometry",
+      "worldPositionFromDigest": [
+        0.0,
+        -5.0,
+        100.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "P_G_GARDEN ROOM",
+      "id": "ea8aa359-b9a8-462d-a355-083eb5ea3630",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        1.5,
+        -265.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_U_LANDING",
+      "id": "50d7129d-85dd-48e7-bb90-add3fec6c4af",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        50.0,
+        161.5,
+        -100.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_U_BATH",
+      "id": "7e50a189-6e67-437c-9fb3-43b42ce76c61",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        175.0,
+        161.5,
+        50.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_U_PRIMARY",
+      "id": "347b466d-a894-463a-85b1-224737561231",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -100.0,
+        161.5,
+        -265.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_U_FAMILY",
+      "id": "e540254b-236a-4234-b839-3b800d18173a",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -125.0,
+        161.5,
+        110.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_U_CHILD",
+      "id": "1a3937d7-2179-41cd-ad68-318818487d1a",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -150.0,
+        161.5,
+        300.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_ENTRY",
+      "id": "7f1d9bfd-37f8-4734-afba-72f7d9cb48a7",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -50.0,
+        1.5,
+        270.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_DINING",
+      "id": "8bee537b-df45-4fce-9656-bbd8527b941a",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -25.0,
+        1.5,
+        -300.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_LIVING",
+      "id": "47f19fe0-3540-4b52-883e-8a4690500b56",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -165.0,
+        1.5,
+        -85.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_KITCHEN",
+      "id": "550eb275-0846-4b18-96a4-7687c2f96b6b",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        200.0,
+        1.5,
+        -125.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_UTILITY",
+      "id": "16280ad7-497a-4ff4-bfcc-f1e9032bd7df",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        200.0,
+        1.5,
+        70.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_SHOWER",
+      "id": "bc430bbe-281a-42f1-aeb0-f9541adf7e74",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        200.0,
+        1.5,
+        210.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_STUDY",
+      "id": "8f95e36b-2426-4811-8b48-95dda23edbf5",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        200.0,
+        1.5,
+        335.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "P_G_GUEST",
+      "id": "7a8d97f3-c375-4a96-b8c4-9be0a21f5228",
+      "type": "Mesh/TextGeometry",
+      "worldPositionFromDigest": [
+        -200.0,
+        1.5,
+        300.0
+      ],
+      "hidden": true
+    },
+    {
+      "name": "L_daylight",
+      "id": "11dacae4-9d20-48b3-a3d5-94c5ddba3d67",
+      "type": "DirectionalLight",
+      "worldPositionFromDigest": [
+        -600.0,
+        1000.0,
+        800.0
+      ],
+      "hidden": false
+    },
+    {
+      "name": "Directional Light",
+      "id": "830a2708-8ed9-49cf-a68e-085299899103",
+      "type": "DirectionalLight",
+      "worldPositionFromDigest": [
+        200.0,
+        300.0,
+        300.0
+      ],
+      "hidden": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "gfa",
+      "status": "pass",
+      "actual": 319.86,
+      "unit": "m2",
+      "target": 320,
+      "hardCap": 340,
+      "method": "Sum of non-overlapping actual closed floor plate rectangle bounds. Stair opening excluded.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "covered-footprint",
+      "status": "pass",
+      "actual": 180.0,
+      "unit": "m2",
+      "hardCap": 180,
+      "method": "Ground enclosure plus covered threshold. Roof and terrace share the same 12 x 15 m outer bounds.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "exposed-lower-floor-coverage",
+      "status": "pass",
+      "actual": 21.0,
+      "unit": "m2",
+      "method": "Actual east deck bounds x=230..300, z=-350..400, y=150..160 exactly close the exposed 21 m2 ground strip. Upper floor and deck cover 180 m2 except the intentional 7.14 m2 stair void, which is covered by the roof.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "level-junction",
+      "status": "pass",
+      "actual": {
+        "slabUndersideM": 3,
+        "upperFloorTopM": 3.2
+      },
+      "method": "Actual world bounds: all upper plates y=150..160; ground walls end at 150; upper walls start at 160. No open vertical band.",
+      "evidence": [
+        "geometry-readback.txt",
+        "scene-shell-readback.txt",
+        "south-elevation.png",
+        "east-elevation.png",
+        "north-elevation.png",
+        "west-elevation.png"
+      ]
+    },
+    {
+      "id": "stair-rise-run-landing",
+      "status": "pass",
+      "actual": {
+        "riserM": 0.17778,
+        "goingM": 0.28,
+        "widthM": 1.2,
+        "treadCount": 17,
+        "riserCountIncludingLanding": 18,
+        "totalRiseM": 3.2
+      },
+      "method": "Actual first and last tread bounds and scene digest confirm 17 treads. Last tread north edge z=-63 meets the upper north plate south edge z=-63. Final rise is 0.17778 m.",
+      "evidence": [
+        "geometry-readback.txt",
+        "scene-shell-readback.txt"
+      ]
+    },
+    {
+      "id": "bedroom-count",
+      "status": "pass",
+      "actual": 3,
+      "method": "Three named room shells and three simple bed proxies. Gross zones of 18, 20 and 28 m2 are planning allocations, not net usable areas.",
+      "evidence": [
+        "spatial-model.json",
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "room-door-route-clearance",
+      "status": "unknown",
+      "method": "Physical openings were built and key door lintels read back. Complete route clearance awaits actual floor plan and cutaway review. No automated path solver ran.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "stair-guard-handrail",
+      "status": "unknown",
+      "method": "Concept edge guards and posts modeled. Continuous handrails and regulatory clearances remain unresolved. Accessibility is not certified.",
+      "evidence": [
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "garden-area",
+      "status": "pass",
+      "actual": 392.4,
+      "unit": "m2",
+      "minimum": 240,
+      "method": "600 m2 site minus 180 covered, 14 parking, 11.2 entry path and 2.4 rear step. The unpaved site surface denotes intended planting, not a planting specification.",
+      "evidence": [
+        "geometry-readback.txt",
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "side-privacy-intent",
+      "status": "unknown",
+      "method": "Solid west/east walls and front child screen observed. Privacy intent has not been verified through sightline analysis. Neighboring buildings are not modeled.",
+      "evidence": [
+        "east-elevation.png",
+        "west-elevation.png"
+      ]
+    },
+    {
+      "id": "bedroom-wall-roof-closure",
+      "status": "fail",
+      "observed": "Internal bedroom partitions stop at 6.2 m while the roof rises above them, up to 7.3 m. No flat ceiling or wall infill closes these bands. Geometry leaves the bedroom air volumes connected above the partitions; acoustic performance is unverified.",
+      "evidence": [
+        "organized-scene.txt",
+        "geometry-readback.txt"
+      ],
+      "requiredCorrection": "Critic to assess the actual cutaway before selecting a revision. Do not advance to detail on an assumed closure."
+    }
+  ],
+  "sceneId": "f2161163-3018-412c-8dfe-814898e9913d",
+  "evidenceViews": [
+    "south-elevation.png",
+    "east-elevation.png",
+    "north-elevation.png",
+    "west-elevation.png",
+    "upper-plan-ui.png",
+    "ground-plan-ui.png",
+    "stair-section-west-ui.png",
+    "stair-section-ui.png",
+    "final-street-perspective.png"
+  ]
+}

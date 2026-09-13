@@ -1,0 +1,59 @@
+{
+  "experiment": "Pikachu House: Architect then Critic",
+  "recordedAt": "2026-09-12T15:17:48.084919+00:00",
+  "provenance": "Standalone real Spline MCP experiment coordinated in Codex; not an integrated Draftroom application run.",
+  "applicationIds": {
+    "projectId": null,
+    "runId": null,
+    "iterationId": null
+  },
+  "promptVersion": "1.1.0",
+  "briefVersion": "1.0.0",
+  "promptSources": [
+    {
+      "path": "prompts/shared.md",
+      "sha256": "c86e863701ba1165b0761d3e9c9d0ab43bbc94e58bcb6b63ba936b6b318c63a5"
+    },
+    {
+      "path": "prompts/agents/architect.md",
+      "sha256": "789b1511cdc5069a9dd7bacafa9a34e2171817969f5cfdb72a301194b17e09f8"
+    },
+    {
+      "path": "prompts/agents/critic.md",
+      "sha256": "b9c7d25f0ff61dd7d28f0de323ce530c89834bffa703f67ef8386a3126690ba9"
+    },
+    {
+      "path": "prompts/projects/03-pikachu-house.md",
+      "sha256": "8895b7c72a06a00e32a3b3b33c48125faa059db3f12dba23820fc53543ace8b6"
+    }
+  ],
+  "sequence": [
+    "Architect creates and verifies new checkpoint",
+    "Critic independently reviews committed evidence"
+  ],
+  "coordination": "Root manually serializes scene writer. No application lease/worker exists. Critic does not edit geometry.",
+  "scope": "New creative shell and program, assembly evidence, independent critique. Preserve earlier scene. No automatic Critic-to-Architect revision requested.",
+  "baselineEvidence": "../pikachu-mcp-2026-09-12/",
+  "status": "architect_working",
+  "sceneStrategy": {
+    "fileId": "84fddf46-c714-45a6-b0f2-8d559f6b6b67",
+    "strategy": "Separate named rebuild and hidden original archive groups within existing Scene 1",
+    "reason": "New-file attempt yielded a home tab; adding another scene showed an upgrade screen. No purchase or upgrade performed.",
+    "selectedAt": "2026-09-12T15:23:54.640879+00:00",
+    "preservation": "Attempted archive group unexpectedly renamed/hid old objects. One UI Undo restored them; Architect readback matched120 listed geometry rows with0 differences; root screenshot confirmed original visible. Prior immutable export retained.",
+    "status": "superseded_before_rebuild"
+  },
+  "cleanup": {
+    "userDirective": "Delete other files; only keep original Pikachu for comparison.",
+    "method": "Move to Archive in Spline UI; no permanent purge",
+    "verified": "Active My files view only original Pikachu; Workspace Project empty. Starter and Cube/Pyramid archive actions performed; Hybrid Simple House already absent when inspected.",
+    "at": "2026-09-12T15:30:42.907500+00:00"
+  },
+  "currentStrategy": "Create fresh Spline file after authorized cleanup; preserve original Pikachu",
+  "rebuildFile": {
+    "id": "f2161163-3018-412c-8dfe-814898e9913d",
+    "url": "https://app.spline.design/file/f2161163-3018-412c-8dfe-814898e9913d",
+    "blankVerifiedAt": "2026-09-12T15:32:34.687395+00:00",
+    "observation": "New editor shows only Directional Light. Explicit viewport click changed focused HTML from original to new file. Architect to verify MCP target before writes."
+  }
+}

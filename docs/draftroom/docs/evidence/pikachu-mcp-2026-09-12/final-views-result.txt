@@ -1,0 +1,15 @@
+Applied 7 changes. Scene now has 224 objects.
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-1.png
+Applied 10 changes. Scene now has 224 objects.
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-3.png
+Applied 6 changes. Scene now has 224 objects.
+NOT VERIFIED YET: this task has changed the scene 3 times and has never looked at the USER's actual view. Your screenshot camera is private, so framing it proves nothing about what they see. Before you finish: set the final framing with lookFrom/focus in run_code, then take_screenshot({ view: 'live', hero: [<the brief's main object names>] }) and fix whatever the EXPOSURE / FRAMING / HERO readouts flag.
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-5.png
+Applied 3 changes. Scene now has 224 objects.
+Current view (the USER'S live viewport — their actual framing; if the subject is cropped, tiny, or missing here, fix the viewport framing with lookFrom/focus and re-check):
+IMAGE: /tmp/draftroom-spline-capture-7.png
+FRAMING CHECK: all major objects are in frame; the camera sits INSIDE the content cluster (interior composition) — fine for a room shot, just verify the focal furniture reads.
+HERO CHECK: hero ("Upper floor", "Upper Floorplate south", "Upper Floorplate north", "Upper Floorplate east") reads at ~80% of the frame height with a clear line of sight.

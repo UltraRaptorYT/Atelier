@@ -1,0 +1,137 @@
+{
+  "kind": "bounded deterministic checks of actual MCP geometry",
+  "sceneId": "f2161163-3018-412c-8dfe-814898e9913d",
+  "spatialModelRevision": "architect-shell-1",
+  "toleranceM": 0.002,
+  "checks": [
+    {
+      "id": "gfa",
+      "status": "pass",
+      "actual": 319.86,
+      "unit": "m2",
+      "target": 320,
+      "hardCap": 340,
+      "method": "Sum of non-overlapping actual closed floor plate rectangle bounds. Stair opening excluded.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "covered-footprint",
+      "status": "pass",
+      "actual": 180.0,
+      "unit": "m2",
+      "hardCap": 180,
+      "method": "Ground enclosure plus covered threshold. Roof and terrace share the same 12 x 15 m outer bounds.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "exposed-lower-floor-coverage",
+      "status": "pass",
+      "actual": 21.0,
+      "unit": "m2",
+      "method": "Actual east deck bounds x=230..300, z=-350..400, y=150..160 exactly close the exposed 21 m2 ground strip. Upper floor and deck cover 180 m2 except the intentional 7.14 m2 stair void, which is covered by the roof.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "level-junction",
+      "status": "pass",
+      "actual": {
+        "slabUndersideM": 3,
+        "upperFloorTopM": 3.2
+      },
+      "method": "Actual world bounds: all upper plates y=150..160; ground walls end at 150; upper walls start at 160. No open vertical band.",
+      "evidence": [
+        "geometry-readback.txt",
+        "scene-shell-readback.txt",
+        "south-elevation.png",
+        "east-elevation.png",
+        "north-elevation.png",
+        "west-elevation.png"
+      ]
+    },
+    {
+      "id": "stair-rise-run-landing",
+      "status": "pass",
+      "actual": {
+        "riserM": 0.17778,
+        "goingM": 0.28,
+        "widthM": 1.2,
+        "treadCount": 17,
+        "riserCountIncludingLanding": 18,
+        "totalRiseM": 3.2
+      },
+      "method": "Actual first and last tread bounds and scene digest confirm 17 treads. Last tread north edge z=-63 meets the upper north plate south edge z=-63. Final rise is 0.17778 m.",
+      "evidence": [
+        "geometry-readback.txt",
+        "scene-shell-readback.txt"
+      ]
+    },
+    {
+      "id": "bedroom-count",
+      "status": "pass",
+      "actual": 3,
+      "method": "Three named room shells and three simple bed proxies. Gross zones of 18, 20 and 28 m2 are planning allocations, not net usable areas.",
+      "evidence": [
+        "spatial-model.json",
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "room-door-route-clearance",
+      "status": "unknown",
+      "method": "Physical openings were built and key door lintels read back. Complete route clearance awaits actual floor plan and cutaway review. No automated path solver ran.",
+      "evidence": [
+        "geometry-readback.txt"
+      ]
+    },
+    {
+      "id": "stair-guard-handrail",
+      "status": "unknown",
+      "method": "Concept edge guards and posts modeled. Continuous handrails and regulatory clearances remain unresolved. Accessibility is not certified.",
+      "evidence": [
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "garden-area",
+      "status": "pass",
+      "actual": 392.4,
+      "unit": "m2",
+      "minimum": 240,
+      "method": "600 m2 site minus 180 covered, 14 parking, 11.2 entry path and 2.4 rear step. The unpaved site surface denotes intended planting, not a planting specification.",
+      "evidence": [
+        "geometry-readback.txt",
+        "organized-scene.txt"
+      ]
+    },
+    {
+      "id": "side-privacy-intent",
+      "status": "unknown",
+      "method": "Solid west/east walls and front child screen observed. Privacy intent has not been verified through sightline analysis. Neighboring buildings are not modeled.",
+      "evidence": [
+        "east-elevation.png",
+        "west-elevation.png"
+      ]
+    },
+    {
+      "id": "bedroom-wall-roof-closure",
+      "status": "fail",
+      "observed": "Internal bedroom partitions stop at 6.2 m while the roof rises above them, up to 7.3 m. No flat ceiling or wall infill closes these bands. Geometry leaves the bedroom air volumes connected above the partitions; acoustic performance is unverified.",
+      "evidence": [
+        "organized-scene.txt",
+        "geometry-readback.txt"
+      ],
+      "requiredCorrection": "Critic to assess the actual cutaway before selecting a revision. Do not advance to detail on an assumed closure."
+    }
+  ],
+  "limitations": [
+    "Rectangular areas use actual mesh bounds, not screenshots.",
+    "These are concept assembly checks, not structural or statutory verification.",
+    "Floor plans and oblique stair cutaway were captured natively after MCP screenshot limits. Dedicated site and interior garden views are missing."
+  ]
+}

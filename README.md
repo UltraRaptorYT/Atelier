@@ -1,0 +1,73 @@
+# Atelier
+
+An AI architecture studio with four specialists, observable tool work, persistent design revisions and an explorable 3D office and building. The Principal coordinates the brief; the Architect develops layout and structure; the Interior Designer handles materials, furniture and lighting; the Critic reviews the result.
+
+The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.
+
+## Run the local preview
+
+Install the locked dependencies and start Next.js:
+
+```sh
+npm ci
+npm run dev
+```
+
+Open [127.0.0.1:3000](http://127.0.0.1:3000). The sample office/building can be explored without provider credentials. Sample geometry is illustrative; it does not represent live agent activity.
+
+For local saved projects and backend routes, initialize local storage and start the Worker in another terminal:
+
+```sh
+npm run setup:local
+npm run worker:dev
+```
+
+`setup:local` creates a local credential-encryption key in `worker/.dev.vars.local` only if that file does not exist, generates Worker types, and applies local database migrations. It does not supply external service credentials. The development frontend defaults to the Worker at `http://127.0.0.1:8787`. See [.env.local.example](.env.local.example) for frontend settings and [worker/.dev.vars.example](worker/.dev.vars.example) for Worker secrets; preserve existing local files when adding values.
+
+## Explore and steer
+
+- **Studio / Design** switches between the office and the current building.
+- **Orbit** lets you drag to rotate and scroll to zoom.
+- **Click to walk** shows a visitor in both views. Click/tap a clear floor to follow a path around obstacles; another click replaces the route. Drag to orbit, and press Escape to stop. Routes follow connected rendered slab/stair surfaces with enough clearance; unreachable targets display a message. Use Cutaway to expose interior floors.
+- **Walk inside** explores at eye level using WASD and mouse look; Escape releases the mouse. The help dialog describes controls.
+- Choose a room or specialist to inspect their task, send a contextual change, or open an available live workstation. Room controls select the workspace and reset the walking start; they do not automatically walk the visitor there.
+- In the design view, select an element to give steering a precise target. **Cutaway** exposes the interior for inspection.
+- **Files** provides canonical JSON, GLB export, floor plans, saved artifacts and comparison with the previous saved revision when available.
+
+WASD and E interaction belong to **Walk inside**. Click walking stops for dialogs/workstations or when the window loses focus; click a new destination to continue. Geometry or cutaway changes reset its starting point safely. Routes allow steps up/down of at most 0.2 m, so a raised floor needs a connected step or staircase to reach lower ground.
+
+Start with a brief such as “Design a futuristic Pokémon-inspired home for four people, with two floors, a generous living room and a yellow exterior.” Then select an exterior element and ask the Designer to make it red. The sample and your saved project are distinct; actual generation and steering require the live services below.
+
+## Live services
+
+The code contains a Cloudflare Worker backend with D1 metadata, R2 artifacts, Durable Object coordination and Workflow execution. Clerk provides deployed authentication; users connect their OpenAI API key through Settings. Agent desktops use E2B, and Blender rendering runs on those desktops.
+
+Generation and rendering are disabled in the checked-in [Worker configuration](worker/wrangler.jsonc). Configure the appropriate deployment's bindings, authentication, encryption secrets and E2B template before enabling its `GENERATION_ENABLED` and `RENDER_ENABLED` settings. `npm run desktop:build` builds the `atelier-desktop` template when `E2B_API_KEY` is supplied. Local previews do not establish that provider calls, desktop execution or rendering have been verified.
+
+Current canonical schema limits are four floors, 40 spaces and 1,200 elements. [shared/design.ts](shared/design.ts) defines these limits and the brief/change contracts. Simple review helpers do not establish complete traversability, engineering or regulatory compliance.
+
+## Prompts and documentation
+
+The [active prompt library](prompts/README.md) contains shared instructions and the five imported role files, adapted to Atelier's four active roles. Director maps to Principal; Analyst is reference-only. [worker/src/prompts.ts](worker/src/prompts.ts) composes the active Markdown into model instructions while keeping briefs and tool evidence as separate runtime input.
+
+Five detailed hypothetical-site briefs are available for the [AI startup office](prompts/projects/01-ai-startup-office.md), [courtyard library](prompts/projects/02-courtyard-library.md), [Pikachu house](prompts/projects/03-pikachu-house.md), [waterfront cultural centre](prompts/projects/04-waterfront-culture.md) and [sky garden tower](prompts/projects/05-sky-garden-tower.md). Copy the brief text into the New project form. The 40-floor tower exceeds the current four-floor schema and needs an agreed smaller scope; its original requirements are preserved for future development.
+
+The [Draftroom migration index](docs/draftroom/index.md) links the original vision, README, prompts, presentation direction, decisions and evidence. Historical Spline/Supabase architecture and test results remain clearly identified as Draftroom references. [AGENTS.md](AGENTS.md) remains Atelier's current project guidance.
+
+## Code and checks
+
+- [components/Studio.tsx](components/Studio.tsx): studio interface, brief, steering and navigation controls.
+- [components/World.tsx](components/World.tsx): office, design renderer and first-person exploration.
+- [shared/design.ts](shared/design.ts) and [shared/geometry.ts](shared/geometry.ts): canonical schema and derived geometry.
+- [worker/src/ai.ts](worker/src/ai.ts) and [worker/src/workflow.ts](worker/src/workflow.ts): model invocation, real tools and task sequence.
+- [scripts/blender_compile.py](scripts/blender_compile.py): canonical design to Blender/GLB compilation.
+
+```sh
+npm run worker:types
+npm run typecheck
+npm test
+npm run build
+npm run worker:check
+```
+
+These are the available verification commands, not a record that this checkout or a live deployment has passed them.

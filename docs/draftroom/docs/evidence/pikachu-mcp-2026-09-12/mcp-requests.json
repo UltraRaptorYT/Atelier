@@ -1,0 +1,442 @@
+[
+  {
+    "file": "Building-the-house-shell.json",
+    "request_file_written_at": "2026-09-12T20:53:09.834470+08:00",
+    "requests": {
+      "method": "tools/call",
+      "params": {
+        "name": "3d_run_code",
+        "arguments": {
+          "title": "Building the house shell",
+          "code": "mesh('Cube',{width:1000,height:16,depth:1500,cornerRadius:6});\nposition({x:0,y:-12,z:0});\ncolor('#7c9169');\nrename('Site Plot 20 x 30m');\nmesh('Cube',{width:600,height:10,depth:750,cornerRadius:0});\nposition({x:0,y:1,z:-75});\ncolor('#d7c8ae');\nrename('Ground Floorplate 12 x 15m');\nmesh('Cube',{width:8,height:150,depth:734,cornerRadius:0});\nposition({x:-296,y:81,z:-75});\ncolor('#eee9dc');\nrename('Ground West privacy wall');\nmesh('Cube',{width:8,height:150,depth:734,cornerRadius:0});\nposition({x:296,y:81,z:-75});\ncolor('#eee9dc');\nrename('Ground East privacy wall');\nmesh('Cube',{width:20,height:150,depth:8,cornerRadius:0});\nposition({x:-290.0,y:81,z:296});\ncolor('#eee9dc');\nrename('Ground Front pier -300');\nmesh('Cube',{width:55,height:150,depth:8,cornerRadius:0});\nposition({x:-72.5,y:81,z:296});\ncolor('#eee9dc');\nrename('Ground Front pier -100');\nmesh('Cube',{width:105,height:150,depth:8,cornerRadius:0});\nposition({x:97.5,y:81,z:296});\ncolor('#eee9dc');\nrename('Ground Front pier 45');\nmesh('Cube',{width:50,height:150,depth:8,cornerRadius:0});\nposition({x:275.0,y:81,z:296});\ncolor('#eee9dc');\nrename('Ground Front pier 250');\nmesh('Cube',{width:180,height:34,depth:8,cornerRadius:0});\nposition({x:-190,y:23,z:296});\ncolor('#eee9dc');\nrename('Ground Front sill -190');\nmesh('Cube',{width:180,height:25,depth:8,cornerRadius:0});\nposition({x:-190,y:143.5,z:296});\ncolor('#eee9dc');\nrename('Ground Front lintel -190');\nmesh('Cube',{width:180,height:91,depth:5,cornerRadius:0});\nposition({x:-190,y:85.5,z:295});\ncolor('#6d9292');\nrename('Ground Front glazing -190');\nmesh('Cube',{width:4,height:92,depth:8,cornerRadius:0});\nposition({x:-277.0,y:86,z:299});\ncolor('#303a38');\nrename('Ground Front mullion -277.0');\nmesh('Cube',{width:4,height:92,depth:8,cornerRadius:0});\nposition({x:-103.0,y:86,z:299});\ncolor('#303a38');\nrename('Ground Front mullion -103.0');\nmesh('Cube',{width:100,height:34,depth:8,cornerRadius:0});\nposition({x:200,y:23,z:296});\ncolor('#eee9dc');\nrename('Ground Front sill 200');\nmesh('Cube',{width:100,height:25,depth:8,cornerRadius:0});\nposition({x:200,y:143.5,z:296});\ncolor('#eee9dc');\nrename('Ground Front lintel 200');\nmesh('Cube',{width:100,height:91,depth:5,cornerRadius:0});\nposition({x:200,y:85.5,z:295});\ncolor('#6d9292');\nrename('Ground Front glazing 200');\nmesh('Cube',{width:4,height:92,depth:8,cornerRadius:0});\nposition({x:153.0,y:86,z:299});\ncolor('#303a38');\nrename('Ground Front mullion 153.0');\nmesh('Cube',{width:4,height:92,depth:8,cornerRadius:0});\nposition({x:247.0,y:86,z:299});\ncolor('#303a38');\nrename('Ground Front mullion 247.0');\nmesh('Cube',{width:65,height:125,depth:6,cornerRadius:0});\nposition({x:-11,y:68.5,z:279});\ncolor('#b58e62');\nrename('Ground Entry door');\nmesh('Cube',{width:22,height:125,depth:5,cornerRadius:0});\nposition({x:34,y:68.5,z:279});\ncolor('#6d9292');\nrename('Ground Entry sidelight');\nmesh('Cube',{width:3,height:32,depth:5,cornerRadius:0});\nposition({x:13,y:65,z:285});\ncolor('#303a38');\nrename('Ground Entry handle');\nmesh('Cube',{width:9,height:143,depth:72,cornerRadius:0});\nposition({x:-50,y:77.5,z:260});\ncolor('#e5b929');\nrename('Ground Entry portal left');\nmesh('Cube',{width:9,height:143,depth:72,cornerRadius:0});\nposition({x:50,y:77.5,z:260});\ncolor('#e5b929');\nrename('Ground Entry portal right');\nmesh('Cube',{width:145,height:9,depth:120,cornerRadius:0});\nposition({x:0,y:153,z:240});\ncolor('#e5b929');\nrename('Ground Entry portal canopy');\nmesh('Cube',{width:70,height:150,depth:8,cornerRadius:0});\nposition({x:265,y:81,z:-446});\ncolor('#eee9dc');\nrename('Ground Rear east pier');\nmesh('Cube',{width:35,height:150,depth:8,cornerRadius:0});\nposition({x:82.5,y:81,z:-446});\ncolor('#eee9dc');\nrename('Ground Rear central pier');\nmesh('Cube',{width:360,height:133,depth:5,cornerRadius:0});\nposition({x:-115,y:73,z:-443});\ncolor('#6d9292');\nrename('Ground Rear garden glazing');\nmesh('Cube',{width:125,height:110,depth:5,cornerRadius:0});\nposition({x:167.5,y:87,z:-443});\ncolor('#6d9292');\nrename('Ground Rear kitchen glazing');\nmesh('Cube',{width:592,height:12,depth:8,cornerRadius:0});\nposition({x:0,y:150,z:-446});\ncolor('#eee9dc');\nrename('Ground Rear lintel');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:-288,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame -288');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:-175,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame -175');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:-62,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame -62');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:58,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame 58');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:107,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame 107');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});\nposition({x:226,y:73,z:-448});\ncolor('#303a38');\nrename('Ground Rear slider frame 226');\nmesh('Cube',{width:500,height:10,depth:700,cornerRadius:0});\nposition({x:-50,y:161,z:-75});\ncolor('#eee9dc');\nrename('Upper Floorplate 10 x 14m');\nmesh('Cube',{width:8,height:142,depth:684,cornerRadius:0});\nposition({x:-296,y:237,z:-75});\ncolor('#eee9dc');\nrename('Upper West privacy wall');\nmesh('Cube',{width:8,height:142,depth:684,cornerRadius:0});\nposition({x:196,y:237,z:-75});\ncolor('#eee9dc');\nrename('Upper East privacy wall');\nmesh('Cube',{width:32,height:142,depth:8,cornerRadius:0});\nposition({x:-284,y:237,z:271});\ncolor('#eee9dc');\nrename('Upper Front pier -284');\nmesh('Cube',{width:32,height:142,depth:8,cornerRadius:0});\nposition({x:-32,y:237,z:271});\ncolor('#eee9dc');\nrename('Upper Front pier -32');\nmesh('Cube',{width:32,height:142,depth:8,cornerRadius:0});\nposition({x:184,y:237,z:271});\ncolor('#eee9dc');\nrename('Upper Front pier 184');\nmesh('Cube',{width:484,height:30,depth:8,cornerRadius:0});\nposition({x:-50,y:181,z:271});\ncolor('#eee9dc');\nrename('Upper Front sill');\nmesh('Cube',{width:484,height:25,depth:8,cornerRadius:0});\nposition({x:-50,y:295.5,z:271});\ncolor('#e5b929');\nrename('Upper Front lintel');\nmesh('Cube',{width:222,height:87,depth:5,cornerRadius:0});\nposition({x:-157,y:239.5,z:270});\ncolor('#6d9292');\nrename('Upper Front glazing -157');\nmesh('Cube',{width:184,height:87,depth:5,cornerRadius:0});\nposition({x:76,y:239.5,z:270});\ncolor('#6d9292');\nrename('Upper Front glazing 76');\nmesh('Cube',{width:484,height:142,depth:8,cornerRadius:0});\nposition({x:-50,y:237,z:-421});\ncolor('#eee9dc');\nrename('Upper Rear wall');\nmesh('Cube',{width:275,height:87,depth:6,cornerRadius:0});\nposition({x:-132,y:240,z:-427});\ncolor('#6d9292');\nrename('Upper Rear primary window');\nmesh('Cube',{width:150,height:8,depth:100,cornerRadius:0});\nposition({x:-225,y:158,z:-400});\ncolor('#b58e62');\nrename('Ground Garden threshold canopy');\nmesh('Cube',{width:6,height:149,depth:6,cornerRadius:0});\nposition({x:-287,y:80.5,z:-438});\ncolor('#303a38');\nrename('Ground Garden threshold column');\nmesh('Cube',{width:92,height:6,depth:684,cornerRadius:0});\nposition({x:250,y:160,z:-75});\ncolor('#b58e62');\nrename('Upper East terrace deck');\nmesh('Cube',{width:7,height:45,depth:684,cornerRadius:0});\nposition({x:296,y:186,z:-75});\ncolor('#eee9dc');\nrename('Upper East terrace parapet');\nbackground('#e8e6dc');\nenvironment({ao:true,ambient:{color:'#e6e9f0',intensity:0.8}});\nselect(o=>o.isLight);\nupdateLight({intensity:0.85,size:2400,shadowRadius:3});\nposition({x:-600,y:1000,z:800});",
+          "screenshot": false
+        }
+      }
+    }
+  },
+  {
+    "file": "fix-shell.json",
+    "request_file_written_at": "2026-09-12T20:54:22.576382+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Cleaning the facade junctions",
+            "code": "select('Ground Garden threshold canopy');position({y:149});\nselect(o=>o.name.startsWith('Upper Front pier'));geometry({height:117});position({y:224.5});\nselect('Upper Front sill');geometry({width:222});position({x:-157});\nmesh('Cube',{width:184,height:30,depth:8,cornerRadius:0});position({x:76,y:181,z:271});color('#eee9dc');rename('Upper Front sill east');\nselect('Ground Rear east pier');geometry({height:138});position({y:75});\nselect('Ground Rear central pier');geometry({height:138});position({y:75});\nselect(o=>o.name.startsWith('Upper'));lookFrom({azimuth:-28,elevation:18,target:'selection'});\n",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {
+            "view": "live"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "Folding-roof-and-planting-garden.json",
+    "request_file_written_at": "2026-09-12T20:56:05.604877+08:00",
+    "requests": {
+      "method": "tools/call",
+      "params": {
+        "name": "3d_run_code",
+        "arguments": {
+          "title": "Folding roof and planting garden",
+          "code": "select('Ground Garden threshold canopy');translate({x:1,z:1});\ncustomMesh({\"vertices\": [-300, 385, -425, -60, 318, -425, -60, 328, -425, -300, 395, -425, -300, 385, 275, -60, 318, 275, -60, 328, 275, -300, 395, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#e5b929');\nshading({flatShading:true});\nrename('Roof Fold west');\ncustomMesh({\"vertices\": [-300, 308, 267, -60, 308, 267, -60, 318, 267, -300, 385, 267, -300, 308, 275, -60, 308, 275, -60, 318, 275, -300, 385, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#e5b929');\nshading({flatShading:true});\nrename('Roof Gable west front');\ncustomMesh({\"vertices\": [-300, 308, -425, -60, 308, -425, -60, 318, -425, -300, 385, -425, -300, 308, -417, -60, 308, -417, -60, 318, -417, -300, 385, -417], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#e5b929');\nshading({flatShading:true});\nrename('Roof Gable west rear');\ncustomMesh({\"vertices\": [-300, 395.5, -425, -278, 389.35833333333335, -425, -278, 393.85833333333335, -425, -300, 400.0, -425, -300, 395.5, 275, -278, 389.35833333333335, 275, -278, 393.85833333333335, 275, -300, 400.0, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#303a38');\nshading({flatShading:true});\nrename('Roof Graphite edge west');\ncustomMesh({\"vertices\": [-60, 318, -425, 200, 420, -425, 200, 430, -425, -60, 328, -425, -60, 318, 275, 200, 420, 275, 200, 430, 275, -60, 328, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#eee9dc');\nshading({flatShading:true});\nrename('Roof Fold east');\ncustomMesh({\"vertices\": [-60, 308, 267, 200, 308, 267, 200, 420, 267, -60, 318, 267, -60, 308, 275, 200, 308, 275, 200, 420, 275, -60, 318, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#eee9dc');\nshading({flatShading:true});\nrename('Roof Gable east front');\ncustomMesh({\"vertices\": [-60, 308, -425, 200, 308, -425, 200, 420, -425, -60, 318, -425, -60, 308, -417, 200, 308, -417, 200, 420, -417, -60, 318, -417], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#eee9dc');\nshading({flatShading:true});\nrename('Roof Gable east rear');\ncustomMesh({\"vertices\": [178, 421.86923076923074, -425, 200, 430.5, -425, 200, 435.0, -425, 178, 426.36923076923074, -425, 178, 421.86923076923074, 275, 200, 430.5, 275, 200, 435.0, 275, 178, 426.36923076923074, 275], \"indices\": [0, 2, 1, 4, 5, 6, 0, 3, 2, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]});\nposition({x:0,y:0,z:0});\ncolor('#303a38');\nshading({flatShading:true});\nrename('Roof Graphite edge east');\nmesh('Cube',{width:10,height:8,depth:690,cornerRadius:0});\nposition({x:-60,y:325,z:-75});\ncolor('#303a38');\nrename('Roof Valley gutter');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-402});\ncolor('#b58e62');\nrename('Upper West timber fin 0');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-372});\ncolor('#b58e62');\nrename('Upper West timber fin 1');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-342});\ncolor('#b58e62');\nrename('Upper West timber fin 2');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-312});\ncolor('#b58e62');\nrename('Upper West timber fin 3');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-282});\ncolor('#b58e62');\nrename('Upper West timber fin 4');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-252});\ncolor('#b58e62');\nrename('Upper West timber fin 5');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-222});\ncolor('#b58e62');\nrename('Upper West timber fin 6');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-192});\ncolor('#b58e62');\nrename('Upper West timber fin 7');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-162});\ncolor('#b58e62');\nrename('Upper West timber fin 8');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-132});\ncolor('#b58e62');\nrename('Upper West timber fin 9');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-102});\ncolor('#b58e62');\nrename('Upper West timber fin 10');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-72});\ncolor('#b58e62');\nrename('Upper West timber fin 11');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-42});\ncolor('#b58e62');\nrename('Upper West timber fin 12');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:-12});\ncolor('#b58e62');\nrename('Upper West timber fin 13');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:18});\ncolor('#b58e62');\nrename('Upper West timber fin 14');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:48});\ncolor('#b58e62');\nrename('Upper West timber fin 15');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:78});\ncolor('#b58e62');\nrename('Upper West timber fin 16');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:108});\ncolor('#b58e62');\nrename('Upper West timber fin 17');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:138});\ncolor('#b58e62');\nrename('Upper West timber fin 18');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:168});\ncolor('#b58e62');\nrename('Upper West timber fin 19');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:198});\ncolor('#b58e62');\nrename('Upper West timber fin 20');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:228});\ncolor('#b58e62');\nrename('Upper West timber fin 21');\nmesh('Cube',{width:12,height:134,depth:5,cornerRadius:0});\nposition({x:-307,y:237,z:258});\ncolor('#b58e62');\nrename('Upper West timber fin 22');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:14,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 0');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:27,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 1');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:40,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 2');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:53,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 3');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:66,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 4');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:79,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 5');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:92,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 6');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:105,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 7');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:118,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 8');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:131,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 9');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:144,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 10');\nmesh('Cube',{width:4,height:95,depth:10,cornerRadius:0});\nposition({x:157,y:241,z:283});\ncolor('#b58e62');\nrename('Upper Child sun screen 11');\nmesh('Cube',{width:169,height:6,depth:15,cornerRadius:0});\nposition({x:88,y:291,z:285});\ncolor('#b58e62');\nrename('Upper Child screen head');\nmesh('Cube',{width:4,height:86,depth:8,cornerRadius:0});\nposition({x:-158,y:239,z:274});\ncolor('#303a38');\nrename('Upper Front bronze mullion');\nmesh('Cube',{width:220,height:25,depth:25,cornerRadius:0});\nposition({x:-162,y:178,z:289});\ncolor('#eee9dc');\nrename('Upper Front balcony planter');\nmesh('Cube',{width:210,height:12,depth:20,cornerRadius:4});\nposition({x:-162,y:196,z:289});\ncolor('#7c9169');\nrename('Upper Front planter planting');\nmesh('Cube',{width:85,height:7,depth:27,cornerRadius:1});\nposition({x:-97,y:28,z:266});\ncolor('#b58e62');\nrename('Ground Entry bench seat');\nmesh('Cube',{width:67,height:19,depth:21,cornerRadius:0});\nposition({x:-97,y:15,z:266});\ncolor('#eee9dc');\nrename('Ground Entry bench plinth');\nmesh('Cube',{width:390,height:4,depth:150,cornerRadius:0});\nposition({x:-25,y:0,z:-526});\ncolor('#c1bdaf');\nrename('Garden Terrace');\nmesh('Cube',{width:85,height:5,depth:48,cornerRadius:2});\nposition({x:-100,y:40,z:-520});\ncolor('#b58e62');\nrename('Garden Table top');\nmesh('Cube',{width:6,height:33,depth:34,cornerRadius:0});\nposition({x:-130,y:21,z:-520});\ncolor('#303a38');\nrename('Garden Table support -130');\nmesh('Cube',{width:6,height:33,depth:34,cornerRadius:0});\nposition({x:-70,y:21,z:-520});\ncolor('#303a38');\nrename('Garden Table support -70');\nmesh('Cube',{width:32,height:5,depth:52,cornerRadius:1});\nposition({x:-155,y:25,z:-520});\ncolor('#b58e62');\nrename('Garden Bench seat -155');\nmesh('Cube',{width:23,height:22,depth:40,cornerRadius:0});\nposition({x:-155,y:12,z:-520});\ncolor('#eee9dc');\nrename('Garden Bench base -155');\nmesh('Cube',{width:32,height:5,depth:52,cornerRadius:1});\nposition({x:-45,y:25,z:-520});\ncolor('#b58e62');\nrename('Garden Bench seat -45');\nmesh('Cube',{width:23,height:22,depth:40,cornerRadius:0});\nposition({x:-45,y:12,z:-520});\ncolor('#eee9dc');\nrename('Garden Bench base -45');\nmesh('Cube',{width:140,height:4,depth:275,cornerRadius:0});\nposition({x:275,y:0,z:585});\ncolor('#c1bdaf');\nrename('Site Car bay 2.8 x 5.5m');\nmesh('Cube',{width:75,height:4,depth:423,cornerRadius:0});\nposition({x:0,y:0,z:513.5});\ncolor('#c1bdaf');\nrename('Site Entry walk');\nmesh('Cube',{width:170,height:4,depth:50,cornerRadius:0});\nposition({x:0,y:0,z:325});\ncolor('#c1bdaf');\nrename('Site Entry landing');\nmesh('Cube',{width:1000,height:5,depth:60,cornerRadius:0});\nposition({x:0,y:-1,z:720});\ncolor('#aaaca5');\nrename('Site Street edge');\nmesh('Cube',{width:10,height:36,depth:1340,cornerRadius:0});\nposition({x:-480,y:14,z:-50});\ncolor('#b3b5a6');\nrename('Site Side boundary -480');\nmesh('Cube',{width:10,height:36,depth:1340,cornerRadius:0});\nposition({x:480,y:14,z:-50});\ncolor('#b3b5a6');\nrename('Site Side boundary 480');\nmesh('Cube',{width:330,height:24,depth:56,cornerRadius:0});\nposition({x:-280,y:10,z:640});\ncolor('#eee9dc');\nrename('Garden Front planter -280');\nmesh('Cube',{width:320,height:32,depth:46,cornerRadius:7});\nposition({x:-280,y:38,z:640});\ncolor('#7c9169');\nrename('Garden Front hedge -280');\nmesh('Cube',{width:150,height:24,depth:56,cornerRadius:0});\nposition({x:140,y:10,z:640});\ncolor('#eee9dc');\nrename('Garden Front planter 140');\nmesh('Cube',{width:140,height:32,depth:46,cornerRadius:7});\nposition({x:140,y:38,z:640});\ncolor('#7c9169');\nrename('Garden Front hedge 140');\ntree({\"kind\": \"palm\", \"height\": 320, \"seed\": 11, \"leafiness\": 0.75, \"trunkColor\": \"#756451\", \"leafColor\": \"#5c7549\", \"name\": \"Garden Shade tree 0\", \"position\": [-370, -4, -575]});\ntree({\"kind\": \"oak\", \"height\": 290, \"seed\": 12, \"leafiness\": 0.75, \"trunkColor\": \"#756451\", \"leafColor\": \"#5c7549\", \"name\": \"Garden Shade tree 1\", \"position\": [355, -4, -555]});\ntree({\"kind\": \"oak\", \"height\": 250, \"seed\": 13, \"leafiness\": 0.75, \"trunkColor\": \"#756451\", \"leafColor\": \"#5c7549\", \"name\": \"Garden Shade tree 2\", \"position\": [-370, -4, 405]});",
+          "screenshot": false
+        }
+      }
+    }
+  },
+  {
+    "file": "Laying-out-rooms-and-stairs.json",
+    "request_file_written_at": "2026-09-12T20:57:39.777383+08:00",
+    "requests": {
+      "method": "tools/call",
+      "params": {
+        "name": "3d_run_code",
+        "arguments": {
+          "title": "Laying out rooms and stairs",
+          "code": "select('Site Entry walk');geometry({depth:375});position({z:537.5});\nselect('Upper Floorplate 10 x 14m');geometry({width:340});position({x:-130});rename('Upper Floorplate west');\nmesh('Cube',{width:40,height:10,depth:700,cornerRadius:0});\nposition({x:180,y:161,z:-75});\ncolor('#eee9dc');\nrename('Upper Floorplate east');\nmesh('Cube',{width:120,height:10,depth:325,cornerRadius:0});\nposition({x:100,y:161,z:-262.5});\ncolor('#eee9dc');\nrename('Upper Floorplate north');\nmesh('Cube',{width:120,height:10,depth:175,cornerRadius:0});\nposition({x:100,y:161,z:187.5});\ncolor('#eee9dc');\nrename('Upper Floorplate south');\nmesh('Cube',{width:192,height:132,depth:7,cornerRadius:0});\nposition({x:196,y:72,z:71.5});\ncolor('#eee9dc');\nrename('Ground Partition Guest rear');\nmesh('Cube',{width:7,height:132,depth:130,cornerRadius:0});\nposition({x:96.5,y:72,z:227});\ncolor('#eee9dc');\nrename('Ground Partition Guest west front');\nmesh('Cube',{width:7,height:132,depth:30,cornerRadius:0});\nposition({x:96.5,y:72,z:86});\ncolor('#eee9dc');\nrename('Ground Partition Guest west rear');\nmesh('Cube',{width:188,height:132,depth:7,cornerRadius:0});\nposition({x:-198,y:72,z:96});\ncolor('#eee9dc');\nrename('Ground Partition Study rear');\nmesh('Cube',{width:7,height:132,depth:90,cornerRadius:0});\nposition({x:-96,y:72,z:247});\ncolor('#eee9dc');\nrename('Ground Partition Study east front');\nmesh('Cube',{width:7,height:132,depth:65,cornerRadius:0});\nposition({x:-96,y:72,z:128.5});\ncolor('#eee9dc');\nrename('Ground Partition Study east rear');\nmesh('Cube',{width:102,height:132,depth:7,cornerRadius:0});\nposition({x:241,y:72,z:66});\ncolor('#eee9dc');\nrename('Ground Partition Shower south');\nmesh('Cube',{width:7,height:132,depth:60,cornerRadius:0});\nposition({x:186,y:72,z:-45});\ncolor('#eee9dc');\nrename('Ground Partition Shower west rear');\nmesh('Cube',{width:102,height:132,depth:7,cornerRadius:0});\nposition({x:241,y:72,z:-78});\ncolor('#eee9dc');\nrename('Ground Partition Shower north');\nmesh('Cube',{width:95,height:16,depth:20,cornerRadius:0});\nposition({x:100,y:14.0,z:90});\ncolor('#b58e62');\nrename('Ground Stair tread 1');\nmesh('Cube',{width:95,height:32,depth:20,cornerRadius:0});\nposition({x:100,y:22.0,z:70});\ncolor('#b58e62');\nrename('Ground Stair tread 2');\nmesh('Cube',{width:95,height:48,depth:20,cornerRadius:0});\nposition({x:100,y:30.0,z:50});\ncolor('#b58e62');\nrename('Ground Stair tread 3');\nmesh('Cube',{width:95,height:64,depth:20,cornerRadius:0});\nposition({x:100,y:38.0,z:30});\ncolor('#b58e62');\nrename('Ground Stair tread 4');\nmesh('Cube',{width:95,height:80,depth:20,cornerRadius:0});\nposition({x:100,y:46.0,z:10});\ncolor('#b58e62');\nrename('Ground Stair tread 5');\nmesh('Cube',{width:95,height:96,depth:20,cornerRadius:0});\nposition({x:100,y:54.0,z:-10});\ncolor('#b58e62');\nrename('Ground Stair tread 6');\nmesh('Cube',{width:95,height:112,depth:20,cornerRadius:0});\nposition({x:100,y:62.0,z:-30});\ncolor('#b58e62');\nrename('Ground Stair tread 7');\nmesh('Cube',{width:95,height:128,depth:20,cornerRadius:0});\nposition({x:100,y:70.0,z:-50});\ncolor('#b58e62');\nrename('Ground Stair tread 8');\nmesh('Cube',{width:95,height:144,depth:20,cornerRadius:0});\nposition({x:100,y:78.0,z:-70});\ncolor('#b58e62');\nrename('Ground Stair tread 9');\nmesh('Cube',{width:95,height:160,depth:20,cornerRadius:0});\nposition({x:100,y:86.0,z:-90});\ncolor('#b58e62');\nrename('Ground Stair tread 10');\nmesh('Cube',{width:4,height:44,depth:198,cornerRadius:0});\nposition({x:150,y:130,z:-3});\ncolor('#303a38');\nrename('Ground Stair rail');\nmesh('Cube',{width:70,height:16,depth:100,cornerRadius:2});\nposition({x:210,y:14,z:205});\ncolor('#b58e62');\nrename('Ground Guest bed base');\nmesh('Cube',{width:66,height:10,depth:96,cornerRadius:3});\nposition({x:210,y:27,z:205});\ncolor('#f3efe6');\nrename('Ground Guest mattress');\nmesh('Cube',{width:65,height:3,depth:55,cornerRadius:2});\nposition({x:210,y:33.5,z:222});\ncolor('#a6b5a2');\nrename('Ground Guest blanket');\nmesh('Cube',{width:54,height:6,depth:21,cornerRadius:4});\nposition({x:210,y:34,z:173});\ncolor('#eee9dc');\nrename('Ground Guest pillow');\nmesh('Cube',{width:74,height:48,depth:5,cornerRadius:2});\nposition({x:210,y:30,z:153});\ncolor('#b58e62');\nrename('Ground Guest headboard');\nmesh('Cube',{width:25,height:115,depth:90,cornerRadius:0});\nposition({x:274,y:63.5,z:132});\ncolor('#b58e62');\nrename('Ground Guest wardrobe');\nmesh('Cube',{width:110,height:5,depth:42,cornerRadius:1});\nposition({x:-215,y:43,z:242});\ncolor('#b58e62');\nrename('Ground Study desk');\nmesh('Cube',{width:29,height:31,depth:29,cornerRadius:3});\nposition({x:-210,y:21.5,z:195});\ncolor('#303a38');\nrename('Ground Study chair');\nmesh('Cube',{width:60,height:3,depth:65,cornerRadius:0});\nposition({x:253,y:8,z:-37});\ncolor('#b5c4c0');\nrename('Ground Shower tray');\nmesh('Cube',{width:3,height:90,depth:65,cornerRadius:0});\nposition({x:221,y:54.5,z:-37});\ncolor('#6d9292');\nrename('Ground Shower screen');\nmesh('Cube',{width:35,height:42,depth:28,cornerRadius:3});\nposition({x:255,y:27,z:38});\ncolor('#eee9dc');\nrename('Ground Shower basin');\nmesh('Cube',{width:34,height:44,depth:180,cornerRadius:0});\nposition({x:270,y:28,z:-290});\ncolor('#b58e62');\nrename('Ground Kitchen counter');\nmesh('Cube',{width:38,height:3,depth:183,cornerRadius:0});\nposition({x:268,y:51.5,z:-290});\ncolor('#eee9dc');\nrename('Ground Kitchen worktop');\nmesh('Cube',{width:70,height:46,depth:115,cornerRadius:0});\nposition({x:170,y:29,z:-285});\ncolor('#eee9dc');\nrename('Ground Kitchen island');\nmesh('Cube',{width:75,height:3,depth:120,cornerRadius:0});\nposition({x:170,y:53.5,z:-285});\ncolor('#b58e62');\nrename('Ground Kitchen island top');\nmesh('Cube',{width:135,height:22,depth:52,cornerRadius:5});\nposition({x:-204,y:17,z:-312});\ncolor('#d5d2b9');\nrename('Ground Living sofa seat');\nmesh('Cube',{width:135,height:28,depth:11,cornerRadius:3});\nposition({x:-204,y:42,z:-333});\ncolor('#d5d2b9');\nrename('Ground Living sofa back');\nmesh('Cube',{width:155,height:1,depth:110,cornerRadius:0});\nposition({x:-183,y:7,z:-255});\ncolor('#b0b8a3');\nrename('Ground Living rug');\nmesh('Cube',{width:63,height:20,depth:40,cornerRadius:3});\nposition({x:-170,y:18,z:-244});\ncolor('#b58e62');\nrename('Ground Living table');\nmesh('Cube',{width:90,height:4,depth:55,cornerRadius:2});\nposition({x:-58,y:45,z:-125});\ncolor('#b58e62');\nrename('Ground Dining table');\nmesh('Cube',{width:23,height:28,depth:23,cornerRadius:3});\nposition({x:-88,y:20,z:-164});\ncolor('#82957c');\nrename('Ground Dining chair -88 -164');\nmesh('Cube',{width:23,height:28,depth:23,cornerRadius:3});\nposition({x:-88,y:20,z:-87});\ncolor('#82957c');\nrename('Ground Dining chair -88 -87');\nmesh('Cube',{width:23,height:28,depth:23,cornerRadius:3});\nposition({x:-30,y:20,z:-164});\ncolor('#82957c');\nrename('Ground Dining chair -30 -164');\nmesh('Cube',{width:23,height:28,depth:23,cornerRadius:3});\nposition({x:-30,y:20,z:-87});\ncolor('#82957c');\nrename('Ground Dining chair -30 -87');\nmesh('Cube',{width:484,height:125,depth:7,cornerRadius:0});\nposition({x:-50,y:228.5,z:-217});\ncolor('#eee9dc');\nrename('Upper Partition primary south');\nmesh('Cube',{width:7,height:125,depth:197,cornerRadius:0});\nposition({x:57,y:228.5,z:-319});\ncolor('#eee9dc');\nrename('Upper Partition primary wardrobe');\nmesh('Cube',{width:7,height:125,depth:159,cornerRadius:0});\nposition({x:-7,y:228.5,z:191.5});\ncolor('#eee9dc');\nrename('Upper Partition child west');\nmesh('Cube',{width:192,height:125,depth:7,cornerRadius:0});\nposition({x:96,y:228.5,z:22});\ncolor('#eee9dc');\nrename('Upper Partition child north');\nmesh('Cube',{width:7,height:125,depth:97,cornerRadius:0});\nposition({x:57,y:228.5,z:-165.5});\ncolor('#eee9dc');\nrename('Upper Partition bathroom west');\nmesh('Cube',{width:134,height:125,depth:7,cornerRadius:0});\nposition({x:125,y:228.5,z:-113.5});\ncolor('#eee9dc');\nrename('Upper Partition bathroom south');\nselect('Upper Partition primary south');geometry({width:320});position({x:-140});\nmesh('Cube',{width:92,height:16,depth:100,cornerRadius:2});\nposition({x:-158,y:174,z:-334});\ncolor('#b58e62');\nrename('Upper Primary bed base');\nmesh('Cube',{width:88,height:10,depth:96,cornerRadius:3});\nposition({x:-158,y:187,z:-334});\ncolor('#f3efe6');\nrename('Upper Primary mattress');\nmesh('Cube',{width:87,height:3,depth:55,cornerRadius:2});\nposition({x:-158,y:193.5,z:-317});\ncolor('#a6b5a2');\nrename('Upper Primary blanket');\nmesh('Cube',{width:76,height:6,depth:21,cornerRadius:4});\nposition({x:-158,y:194,z:-366});\ncolor('#eee9dc');\nrename('Upper Primary pillow');\nmesh('Cube',{width:96,height:48,depth:5,cornerRadius:2});\nposition({x:-158,y:190,z:-386});\ncolor('#b58e62');\nrename('Upper Primary headboard');\nmesh('Cube',{width:58,height:16,depth:100,cornerRadius:2});\nposition({x:110,y:174,z:174});\ncolor('#b58e62');\nrename('Upper Child bed base');\nmesh('Cube',{width:54,height:10,depth:96,cornerRadius:3});\nposition({x:110,y:187,z:174});\ncolor('#f3efe6');\nrename('Upper Child mattress');\nmesh('Cube',{width:53,height:3,depth:55,cornerRadius:2});\nposition({x:110,y:193.5,z:191});\ncolor('#a6b5a2');\nrename('Upper Child blanket');\nmesh('Cube',{width:42,height:6,depth:21,cornerRadius:4});\nposition({x:110,y:194,z:142});\ncolor('#eee9dc');\nrename('Upper Child pillow');\nmesh('Cube',{width:62,height:48,depth:5,cornerRadius:2});\nposition({x:110,y:190,z:122});\ncolor('#b58e62');\nrename('Upper Child headboard');\nmesh('Cube',{width:27,height:120,depth:150,cornerRadius:0});\nposition({x:37,y:226,z:-326});\ncolor('#b58e62');\nrename('Upper Primary wardrobe');\nmesh('Cube',{width:77,height:5,depth:29,cornerRadius:0});\nposition({x:120,y:208,z:47});\ncolor('#b58e62');\nrename('Upper Child desk');\nmesh('Cube',{width:125,height:32,depth:49,cornerRadius:4});\nposition({x:-220,y:182,z:193});\ncolor('#bbbca3');\nrename('Upper Family sofa');\nmesh('Cube',{width:125,height:20,depth:9,cornerRadius:3});\nposition({x:-220,y:208,z:211});\ncolor('#bbbca3');\nrename('Upper Family sofa back');\nmesh('Cube',{width:50,height:22,depth:40,cornerRadius:3});\nposition({x:-203,y:177,z:126});\ncolor('#b58e62');\nrename('Upper Family table');\nmesh('Cube',{width:142,height:1,depth:117,cornerRadius:0});\nposition({x:-203,y:166.6,z:148});\ncolor('#d6c271');\nrename('Upper Family rug');\nmesh('Cube',{width:50,height:44,depth:28,cornerRadius:0});\nposition({x:149,y:188,z:-191});\ncolor('#b58e62');\nrename('Upper Bath vanity');\nmesh('Cube',{width:67,height:3,depth:69,cornerRadius:0});\nposition({x:145,y:168,z:-153});\ncolor('#b5c4c0');\nrename('Upper Bath shower');",
+          "screenshot": false
+        }
+      }
+    }
+  },
+  {
+    "file": "organize.json",
+    "request_file_written_at": "2026-09-12T20:58:42.433718+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Resolving details and opening glazing",
+            "code": "select('Upper Partition primary south');geometry({width:282});position({x:-151});\nselect('Ground Stair rail');geometry({height:4,depth:254});position({y:141,z:0});rotation({x:38.66});\nselect('Upper Rear wall');geometry({height:30});position({y:181});\nmesh('Cube',{width:484,height:25,depth:8,cornerRadius:0});position({x:-50,y:295.5,z:-421});color('#eee9dc');rename('Upper Rear lintel');\nmesh('Cube',{width:22.5,height:87,depth:8,cornerRadius:0});position({x:-280.75,y:239.5,z:-421});color('#eee9dc');rename('Upper Rear west jamb');\nmesh('Cube',{width:186.5,height:87,depth:8,cornerRadius:0});position({x:98.75,y:239.5,z:-421});color('#eee9dc');rename('Upper Rear east jamb');\nselect(o=>o.name.includes('glazing')||o.name.includes('sidelight')||o.name==='Upper Rear primary window');opacity(0.58);\n",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Organizing the house model",
+            "code": "select(o=>o.name.startsWith('Ground '));group();rename('Ground floor');\nselect(o=>o.name.startsWith('Upper '));group();rename('Upper floor');\nselect(o=>o.name.startsWith('Roof '));group();rename('Folded roof');\nselect(o=>o.name.startsWith('Garden '));group();rename('Connected garden');\nselect(o=>o.name.startsWith('Site '));group();rename('Site 20 x 30 m');\nselect('Ground floor');select('Upper floor','add');select('Folded roof','add');lookFrom({azimuth:-28,elevation:18,target:'selection'});\n",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_get_scene",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {
+            "view": "live",
+            "hero": [
+              "Ground floor",
+              "Upper floor",
+              "Folded roof"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "revise.json",
+    "request_file_written_at": "2026-09-12T21:00:17.276043+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Refining roof light and arrival",
+            "code": "select('Ground Entry portal canopy');translate({z:-1});\nselect('Garden Front planter 140');geometry({width:130});translate({x:-10});\nselect('Garden Front hedge 140');geometry({width:120});translate({x:-10});\nselect('Garden Shade tree 2');scale({x:0.78,y:0.78,z:0.78});\nmesh('Cube',{width:5,height:77,depth:680,cornerRadius:0});position({x:-296,y:346.5,z:-75});color('#7eaaa9');opacity(0.45);rename('Upper West high clerestory');\nmesh('Cube',{width:5,height:112,depth:680,cornerRadius:0});position({x:196,y:364,z:-75});color('#7eaaa9');opacity(0.45);rename('Upper East high clerestory');\n",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Framing the finished house",
+            "code": "select(o=>o.name.includes('high clerestory'));moveInto('Upper floor');select('Ground floor');select('Upper floor','add');select('Folded roof','add');lookFrom({azimuth:-28,elevation:18,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {
+            "view": "live",
+            "hero": [
+              "Ground floor",
+              "Upper floor",
+              "Folded roof"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "labels.json",
+    "request_file_written_at": "2026-09-12T21:01:13.453976+08:00",
+    "requests": {
+      "method": "tools/call",
+      "params": {
+        "name": "3d_run_code",
+        "arguments": {
+          "title": "Labeling the concept floor plans",
+          "code": "mesh('Text',{text:\"GUEST\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:160,y:8,z:125});\ncolor('#454b42');\nrename('Ground Plan label GUEST');\nmesh('Text',{text:\"STUDY\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:-250,y:8,z:150});\ncolor('#454b42');\nrename('Ground Plan label STUDY');\nmesh('Text',{text:\"SHOWER\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:214,y:8,z:0});\ncolor('#454b42');\nrename('Ground Plan label SHOWER');\nmesh('Text',{text:\"KITCHEN\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:120,y:8,z:-385});\ncolor('#454b42');\nrename('Ground Plan label KITCHEN');\nmesh('Text',{text:\"LIVING / DINING\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:-210,y:8,z:-175});\ncolor('#454b42');\nrename('Ground Plan label LIVING / DINING');\nmesh('Text',{text:\"ENTRY\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:-38,y:8,z:170});\ncolor('#454b42');\nrename('Ground Plan label ENTRY');\nmesh('Text',{text:\"PRIMARY\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:-265,y:168,z:-260});\ncolor('#454b42');\nrename('Upper Plan label PRIMARY');\nmesh('Text',{text:\"CHILD\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:40,y:168,z:95});\ncolor('#454b42');\nrename('Upper Plan label CHILD');\nmesh('Text',{text:\"FAMILY LOUNGE\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:-275,y:168,z:65});\ncolor('#454b42');\nrename('Upper Plan label FAMILY LOUNGE');\nmesh('Text',{text:\"BATH\",fontSize:16,font:'Inter_500'});\nrotation({x:-90});\nposition({x:95,y:168,z:-150});\ncolor('#454b42');\nrename('Upper Plan label BATH');",
+          "screenshot": false
+        }
+      }
+    }
+  },
+  {
+    "file": "plans.json",
+    "request_file_written_at": "2026-09-12T21:01:42.603410+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Viewing the upper floor plan",
+            "code": "select(o=>o.name.startsWith('Upper Plan label'));moveInto('Upper floor');select(o=>o.name.startsWith('Ground Plan label'));moveInto('Ground floor');select(o=>['Folded roof','Ground floor','Connected garden','Site 20 x 30 m'].includes(o.name));hide();select(o=>o.name==='Upper floor');viewport('orthographic');lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Viewing the ground floor plan",
+            "code": "select(o=>o.name==='Upper floor');hide();select(o=>o.name==='Ground floor');show();lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Restoring the full house",
+            "code": "select(o=>['Upper floor','Folded roof','Connected garden','Site 20 x 30 m'].includes(o.name));show();select(o=>o.name.includes('Plan label'));hide();viewport('perspective');select(o=>['Ground floor','Upper floor','Folded roof'].includes(o.name));lookFrom({azimuth:-28,elevation:18,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "plans-final.json",
+    "request_file_written_at": "2026-09-12T21:03:22.457232+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Viewing the upper floor plan",
+            "code": "select(o=>o.name.includes('Plan label'));geometry({width:140,height:24});show();\nselect(o=>o.name==='Upper Plan label PRIMARY');translate({x:130});\nselect(o=>o.name==='Upper Plan label CHILD');translate({x:85});\nselect(o=>o.name==='Upper Plan label FAMILY LOUNGE');translate({x:95});\nselect(o=>o.name==='Upper Plan label BATH');translate({x:55});\nselect(o=>o.name==='Ground Plan label STUDY');translate({x:60});\nselect(o=>o.name==='Ground Plan label GUEST');translate({x:35});\nselect(o=>o.name==='Ground Plan label ENTRY');translate({x:53});\nselect(o=>o.name==='Ground Plan label KITCHEN');translate({x:80});\nselect(o=>o.name==='Ground Plan label SHOWER');translate({x:39});\nselect(o=>o.name==='Upper Plan label BATH'||o.name==='Ground Plan label SHOWER');geometry({width:90});\nselect(o=>o.name.startsWith('Upper Plan label'));moveInto('Upper floor');select(o=>o.name.startsWith('Ground Plan label'));moveInto('Ground floor');select(o=>['Folded roof','Ground floor','Connected garden','Site 20 x 30 m'].includes(o.name));hide();select(o=>o.name==='Upper floor');viewport('orthographic');lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Viewing the ground floor plan",
+            "code": "select(o=>o.name==='Ground Entry portal canopy'||o.name==='Ground Garden threshold canopy');hide();select(o=>o.name==='Upper floor');hide();select(o=>o.name==='Ground floor');show();lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Restoring the full house",
+            "code": "select(o=>o.name==='Ground Entry portal canopy'||o.name==='Ground Garden threshold canopy');show();select(o=>['Upper floor','Folded roof','Connected garden','Site 20 x 30 m'].includes(o.name));show();select(o=>o.name.includes('Plan label'));hide();viewport('perspective');select(o=>['Ground floor','Upper floor','Folded roof'].includes(o.name));lookFrom({azimuth:-28,elevation:18,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "threshold.json",
+    "request_file_written_at": "2026-09-12T21:05:03.045419+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Opening the covered garden threshold",
+            "code": "select(o=>o.name==='Ground Rear garden glazing');geometry({width:210});translate({x:75});\nselect(o=>o.name==='Ground Rear slider frame -288');translate({z:97});\nselect(o=>o.name==='Ground Rear slider frame -175');translate({x:20,z:97});\nmesh('Cube',{width:135,height:133,depth:5,cornerRadius:0});position({x:-221.5,y:73,z:-346});color('#6d9292');opacity(0.58);rename('Ground Recessed garden slider');\nmesh('Cube',{width:5,height:133,depth:94,cornerRadius:0});position({x:-148,y:73,z:-394});color('#6d9292');opacity(0.58);rename('Ground Garden threshold return glass');\nmesh('Cube',{width:4,height:134,depth:8,cornerRadius:0});position({x:-143,y:73,z:-448});color('#303a38');rename('Ground Garden threshold jamb');\nselect(o=>o.name==='Upper Plan label BATH');translate({y:3});\n",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Inspecting the garden connection",
+            "code": "select(o=>['Ground Recessed garden slider','Ground Garden threshold return glass','Ground Garden threshold jamb'].includes(o.name));moveInto('Ground floor');select(o=>['Ground floor','Upper floor','Folded roof'].includes(o.name));lookFrom({azimuth:155,elevation:18,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {
+            "view": "live",
+            "hero": [
+              "Ground floor",
+              "Upper floor",
+              "Folded roof"
+            ]
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_get_scene",
+          "arguments": {
+            "expand": [
+              "c61b0bef-3997-4609-ae3b-ae05a7f34857",
+              "cbdbba8a-af87-406b-bb0b-a8ce528d551b",
+              "b28d1502-0e3b-4627-b382-82fe84dde84b"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "final-views.json",
+    "request_file_written_at": "2026-09-12T21:05:49.685037+08:00",
+    "requests": [
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Capturing the upper floor",
+            "code": "select(o=>['Folded roof','Ground floor','Connected garden','Site 20 x 30 m'].includes(o.name));hide();select(o=>o.name.startsWith('Upper Plan label'));show();select(o=>o.name==='Upper floor');viewport('orthographic');lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Capturing the ground floor",
+            "code": "select(o=>o.name==='Upper floor');hide();select(o=>o.name==='Ground floor');show();select(o=>o.name.startsWith('Ground Plan label'));show();select(o=>o.name==='Ground Entry portal canopy'||o.name==='Ground Garden threshold canopy');hide();select(o=>o.name==='Ground floor');lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Capturing the site plan",
+            "code": "select(o=>['Upper floor','Folded roof','Connected garden','Site 20 x 30 m','Ground Entry portal canopy','Ground Garden threshold canopy'].includes(o.name));show();select(o=>o.name.includes('Plan label'));hide();select(o=>o.name==='Site 20 x 30 m');lookFrom({azimuth:0,elevation:90,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {}
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_run_code",
+          "arguments": {
+            "title": "Presenting the finished house",
+            "code": "viewport('perspective');select(o=>['Ground floor','Upper floor','Folded roof'].includes(o.name));lookFrom({azimuth:-28,elevation:18,target:'selection'});",
+            "screenshot": false
+          }
+        }
+      },
+      {
+        "method": "tools/call",
+        "params": {
+          "name": "3d_take_screenshot",
+          "arguments": {
+            "view": "live",
+            "hero": [
+              "Ground floor",
+              "Upper floor",
+              "Folded roof"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "site-overview.json",
+    "request_file_written_at": "2026-09-12T21:06:42.284822+08:00",
+    "requests": {
+      "method": "tools/call",
+      "params": {
+        "name": "3d_take_screenshot",
+        "arguments": {
+          "objects": [
+            "b28d1502-0e3b-4627-b382-82fe84dde84b"
+          ],
+          "azimuth": 0,
+          "elevation": 90
+        }
+      }
+    }
+  }
+]

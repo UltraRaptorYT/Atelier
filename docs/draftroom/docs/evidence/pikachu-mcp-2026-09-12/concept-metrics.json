@@ -1,0 +1,19 @@
+{
+  "scale_world_units_per_m": 50,
+  "site_m2": 600,
+  "ground_plate_m2": 180,
+  "upper_slab_m2": 130.4,
+  "covered_threshold_m2_approx": 6,
+  "planted_ground_lower_bound_m2": 321.526,
+  "conservative_exclusions_m2": {
+    "ground_plate": 180,
+    "rear_terrace": 23.4,
+    "car_bay": 15.399999999999999,
+    "entry_walk": 11.25,
+    "entry_landing": 3.4,
+    "street_edge": 24.0,
+    "side_boundaries": 10.72,
+    "front_planters": 10.304
+  },
+  "warning": "Concept geometry arithmetic only. GFA classification, detailed room areas, full covered footprint, access and technical compliance are not verified."
+}

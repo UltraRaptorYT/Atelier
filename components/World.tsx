@@ -6,6 +6,7 @@ import { Physics, RigidBody, CapsuleCollider, type RapierRigidBody } from '@reac
 import { Vector3, Group, Euler, PCFShadowMap } from 'three';
 import { agents, type AgentId, type Design, type Task } from '@/shared/design';
 import { geometryParts } from '@/shared/geometry';
+import ClickNavigation from './ClickNavigation';
 
 export type RoomId = 'reception' | AgentId | 'presentation';
 export const rooms: { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] }[] = [
@@ -16,9 +17,9 @@ export const rooms: { id: RoomId; label: string; position: [number, number, numb
   { id: 'critic', label: 'Design review', position: [7.5, 0, -4], camera: [7.5, 1.7, -.8] },
   { id: 'presentation', label: 'Presentation', position: [7.5, 0, 4], camera: [7.5, 1.7, 7] },
 ];
-type Props = { room: RoomId; mode: 'office' | 'model'; walking: boolean; design: Design | null; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
-function Box({ p, s, color = '#c7b69e', collision = false, rotation = 0, ...rest }: { p: [number, number, number]; s: [number, number, number]; color?: string; collision?: boolean; rotation?: number; onClick?: (e: ThreeEvent<MouseEvent>) => void }) {
-  const mesh = <mesh position={p} rotation={[0, rotation, 0]} castShadow receiveShadow {...rest}><boxGeometry args={s} /><meshStandardMaterial color={color} roughness={.8} /></mesh>;
+type Props = { room: RoomId; mode: 'office' | 'model'; walking: boolean; clickToWalk: boolean; paused: boolean; onWalkStatus: (message: string) => void; design: Design | null; selected: string | null; onSelect: (id: string) => void; onRoom: (id: RoomId) => void; tasks: Task[]; onUnlock: () => void; cutaway: boolean; revision: number; captureRef: React.RefObject<(() => string) | null> };
+function Box({ p, s, color = '#c7b69e', collision = false, surface = false, rotation = 0, ...rest }: { p: [number, number, number]; s: [number, number, number]; color?: string; collision?: boolean; surface?: boolean; rotation?: number; onClick?: (e: ThreeEvent<MouseEvent>) => void }) {
+  const mesh = <mesh position={p} rotation={[0, rotation, 0]} castShadow receiveShadow userData={{ walkObstacle: collision, walkSurface: surface }} {...rest}><boxGeometry args={s} /><meshStandardMaterial color={color} roughness={.8} /></mesh>;
   return collision ? <RigidBody type="fixed" colliders="cuboid">{mesh}</RigidBody> : mesh;
 }
 function Plant({ p, scale = 1 }: { p: [number, number, number]; scale?: number }) {
@@ -44,7 +45,7 @@ function Avatar({ agent, active, at }: { agent: AgentId; active: boolean; at: [n
 }
 function Office({ onRoom, room, tasks }: Pick<Props, 'onRoom' | 'room' | 'tasks'>) {
   return <group>
-    <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision />
+    <Box p={[0, -.18, 0]} s={[24, .35, 17]} color="#c9bba3" collision surface />
     <Box p={[0, -.38, 0]} s={[24.4, .1, 17.4]} color="#9a927e" />
     {Array.from({ length: 30 }, (_, i) => <Box key={i} p={[-11.7 + i * .8, .002, 0]} s={[.014, .01, 17]} color="#b7a58a" />)}
     <Box p={[0, 1.5, -8.5]} s={[24, 3, .2]} color="#d9d6c9" collision />
@@ -71,13 +72,13 @@ function Office({ onRoom, room, tasks }: Pick<Props, 'onRoom' | 'room' | 'tasks'
     {rooms.map(r => <Html key={r.id} position={[r.position[0], .25, r.position[2] + 2]} center distanceFactor={22} occlude={false}><button className={`world-room ${room === r.id ? 'current' : ''}`} onClick={() => onRoom(r.id)}><span>{String(rooms.indexOf(r) + 1).padStart(2, '0')}</span>{r.label}</button></Html>)}
   </group>;
 }
-function Building({ design, selected, onSelect, cutaway }: { design: Design; selected: string | null; onSelect: Props['onSelect']; cutaway: boolean }) {
+function Building({ design, selected, onSelect, cutaway, clickToWalk }: { design: Design; selected: string | null; onSelect: Props['onSelect']; cutaway: boolean; clickToWalk: boolean }) {
   return <group>{design.elements.filter(e => !(cutaway && e.kind === 'roof')).map(e => {
     const material = design.materials.find(m => m.id === e.materialId)!;
     const collision = !['light', 'window', 'door'].includes(e.kind);
-    const shapes = <group position={e.position} rotation={[0, e.rotation, 0]}>{geometryParts(e).map((part, i) => <mesh key={i} position={part.position} castShadow receiveShadow onClick={event => { event.stopPropagation(); onSelect(e.id); }}><boxGeometry args={part.size} /><meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} transparent={e.kind === 'window' || e.kind === 'door'} opacity={e.kind === 'window' ? .25 : e.kind === 'door' ? .4 : 1} emissive={selected === e.id ? '#bd824e' : '#000000'} emissiveIntensity={selected === e.id ? .25 : 0} /></mesh>)}</group>;
+    const shapes = <group position={e.position} rotation={[0, e.rotation, 0]}>{geometryParts(e).map((part, i) => <mesh key={i} position={part.position} castShadow receiveShadow userData={{ walkObstacle: collision, walkSurface: ['slab', 'stair'].includes(e.kind) }} onClick={event => { if (clickToWalk) return; event.stopPropagation(); onSelect(e.id); }}><boxGeometry args={part.size} /><meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} transparent={e.kind === 'window' || e.kind === 'door'} opacity={e.kind === 'window' ? .25 : e.kind === 'door' ? .4 : 1} emissive={selected === e.id ? '#bd824e' : '#000000'} emissiveIntensity={selected === e.id ? .25 : 0} /></mesh>)}</group>;
     return collision ? <RigidBody key={e.id} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
-  })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision /></group>;
+  })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision surface /></group>;
 }
 function Player({ target, onRoom, office, revision, design }: { target: [number, number, number]; onRoom: Props['onRoom']; office: boolean; revision: number; design: Design | null }) {
   const body = useRef<RapierRigidBody>(null);
@@ -153,13 +154,14 @@ function MouseLook({ onUnlock }: { onUnlock: () => void }) {
 export default function World(props: Props) {
   const [quality, setQuality] = useState(1.5);
   const target = props.mode === 'model' && props.design ? props.design.spawn : rooms.find(r => r.id === props.room)!.camera;
+  const geometry = props.mode === 'office' ? <Office onRoom={props.onRoom} room={props.room} tasks={props.tasks} /> : props.design && <Building key={`building-${props.revision}`} design={props.design} selected={props.selected} onSelect={props.onSelect} cutaway={props.cutaway} clickToWalk={props.clickToWalk} />;
   return <Canvas shadows={{ type: PCFShadowMap }} dpr={[1, quality]} camera={{ position: [24, 26, 30], fov: 40 }} gl={{ antialias: true, preserveDrawingBuffer: true }}>
     <color attach="background" args={['#e4e3d9']} /><fog attach="fog" args={['#e4e3d9', 50, 110]} />
     <ambientLight intensity={.9} /><hemisphereLight args={['#fff7df', '#939783', 1.6]} />
     <directionalLight position={[10, 25, 8]} intensity={2.2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-25} shadow-camera-right={25} shadow-camera-top={25} shadow-camera-bottom={-25} shadow-bias={-.0005} />
     <PerformanceMonitor onDecline={() => setQuality(1)} />
     <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
-      {props.mode === 'office' ? <Office onRoom={props.onRoom} room={props.room} tasks={props.tasks} /> : props.design && <Building key={`building-${props.revision}`} design={props.design} selected={props.selected} onSelect={props.onSelect} cutaway={props.cutaway} />}
+      {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
       {props.walking && <Player target={target} revision={props.revision} design={props.design} onRoom={props.onRoom} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />

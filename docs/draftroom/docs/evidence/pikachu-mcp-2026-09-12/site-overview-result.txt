@@ -1,0 +1,2 @@
+Current view (your screenshot camera):
+IMAGE: /tmp/draftroom-spline-capture-0.png

@@ -1,0 +1,31 @@
+The scene is empty — a first build can land at the origin.
+
+1 object(s) across 1 page(s). Nothing selected.
+Page: background #262626.
+# Reading the scene digest
+
+Every scene digest you are given describes the scene as one line per object,
+children INDENTED under their parent (the indent is the hierarchy — there is no
+separate parent field):
+
+  NAME [Type/Geometry] id p=x,y,z r=x,y,z s=x,y,z size=w,h,d FLAGS
+
+- `p` position, `r` rotation in DEGREES, `s` scale, `size` the content
+  bounding box. Anything at its default is left out: `r=0,0,0`, `s=1,1,1`,
+  visible, no interactivity. So a line with no `r` is unrotated.
+- FLAGS, when present: `SELECTED` (the user is pointing at it), `hidden`,
+  `cloner:<type>`, `states:N`, `events:N`, `anims:N`. Read the full detail of
+  those with `get_objects([id])`.
+- `+N more like "<name stem>" [Type/Geometry] p=… size=…` is a FOLDED run: N
+  further siblings just like the ones listed above it, with the exact count and
+  the min..max spread of their transforms. Big scenes fold their repetition to
+  stay small. Counts and spreads are exact, so verify against them directly.
+  Two ways in when you need more than the aggregate: `get_scene({expand:
+  ['<parent id>']})` lists that parent's children one by one, and
+  `select(o => o.name.startsWith('<name stem>'))` targets the whole run in
+  `run_code` without needing any of their ids.
+Directional Light [DirectionalLight] 830a2708-8ed9-49cf-a68e-085299899103 p=200,300,300
+Current view (the USER'S live viewport — their actual framing; if the subject is cropped, tiny, or missing here, fix the viewport framing with lookFrom/focus and re-check):
+IMAGE: /tmp/draftroom-spline-capture-1.png
+EXPOSURE CHECK: this frame is a near-uniform color (luma deviation 0) — nothing is visible in it. The camera is inside an object, buried in a volume (clouds, terrain), or aimed at empty sky. Re-aim at the scene content and re-check. Do not ship this as final.
+HERO CHECK: no hero declared — re-run this live check with hero: [<the brief's main object names>] so the subject's framing is verified, not assumed.

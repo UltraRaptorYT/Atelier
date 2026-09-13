@@ -1,0 +1,498 @@
+{
+  "sourceRepository": "../draftroom",
+  "sourceCommit": "48e8cea6840404882494d3fbe8e500148ae4f501",
+  "sourceWorkingTree": "clean",
+  "importDate": "2026-09-13",
+  "files": [
+    {
+      "source": "prompts/README.md",
+      "archive": "prompts/README.md",
+      "bytes": 9984,
+      "sourceSha256": "76ece0500154d4874c84b1f9faaca8ea760a3d464e27e487299996d147227ff8",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/agents/analyst.md",
+      "archive": "prompts/agents/analyst.md",
+      "bytes": 7597,
+      "sourceSha256": "1cec4b0c60688ce422937ccb23a29cc90ac71aee9249bfc095fb2b64cb5a4451",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/agents/architect.md",
+      "archive": "prompts/agents/architect.md",
+      "bytes": 6882,
+      "sourceSha256": "789b1511cdc5069a9dd7bacafa9a34e2171817969f5cfdb72a301194b17e09f8",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/agents/critic.md",
+      "archive": "prompts/agents/critic.md",
+      "bytes": 6741,
+      "sourceSha256": "b9c7d25f0ff61dd7d28f0de323ce530c89834bffa703f67ef8386a3126690ba9",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/agents/director.md",
+      "archive": "prompts/agents/director.md",
+      "bytes": 8004,
+      "sourceSha256": "2f06deda9034c22047d8368f716eea5618a7fea5003709953f141e4f809ef622",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/agents/interior-designer.md",
+      "archive": "prompts/agents/interior-designer.md",
+      "bytes": 5728,
+      "sourceSha256": "e77bacdd3ed36c47bd5efe406afbaa5ea40aa3b3946ff414d9815d00699fd65a",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/projects/01-ai-startup-office.md",
+      "archive": "prompts/projects/01-ai-startup-office.md",
+      "bytes": 3009,
+      "sourceSha256": "ac93a16fa5ad79e9f9f00e87deecdd15f6941b7f3956e1b7f88959ecf508bc7e",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/projects/02-courtyard-library.md",
+      "archive": "prompts/projects/02-courtyard-library.md",
+      "bytes": 3083,
+      "sourceSha256": "68510ccdc7875979e34d4203e1baa3c398328671e8408fcd9d37d2c9afb36b85",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/projects/03-pikachu-house.md",
+      "archive": "prompts/projects/03-pikachu-house.md",
+      "bytes": 2968,
+      "sourceSha256": "8895b7c72a06a00e32a3b3b33c48125faa059db3f12dba23820fc53543ace8b6",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/projects/04-waterfront-culture.md",
+      "archive": "prompts/projects/04-waterfront-culture.md",
+      "bytes": 3088,
+      "sourceSha256": "715fadf0d8f33698d39c18c3d4ae2e67cd966def8fa10e9bf3fdbb94a652d4ce",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/projects/05-sky-garden-tower.md",
+      "archive": "prompts/projects/05-sky-garden-tower.md",
+      "bytes": 3041,
+      "sourceSha256": "424ad23ab2708992b4e2d453a333f6d8b216862e91c2591f12710d438c0bbfa2",
+      "transformation": "none"
+    },
+    {
+      "source": "prompts/shared.md",
+      "archive": "prompts/shared.md",
+      "bytes": 11669,
+      "sourceSha256": "c86e863701ba1165b0761d3e9c9d0ab43bbc94e58bcb6b63ba936b6b318c63a5",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/.DS_Store",
+      "archive": "docs/.DS_Store",
+      "bytes": 8196,
+      "sourceSha256": "6c2392f79c283bf2cfdc574500865634c9b74f8e0d65a62fbfed7d6fc8767783",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/decisions.md",
+      "archive": "docs/decisions.md",
+      "bytes": 6023,
+      "sourceSha256": "9b44b01e22fe2e9a72ff185dfb3522bf8c1e2e43f7b693681dcab5017daa40a8",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/.DS_Store",
+      "archive": "docs/evidence/.DS_Store",
+      "bytes": 8196,
+      "sourceSha256": "92be9f9621d942a08291532e5b5b393e4cb031733337f70d37ccf5ec57a12ad9",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/concept-metrics.json",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/concept-metrics.json",
+      "bytes": 610,
+      "sourceSha256": "4e801d83c34003df6179fa76fc9085f3ac3f9a06de15d9bcfb00ac50ec906faf",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/final-street.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/final-street.png",
+      "bytes": 65834,
+      "sourceSha256": "909f015a813888e529011a5f2788c65f9808b6798c687a955626c9fd02b6a8bb",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/final-views-result.txt",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/final-views-result.txt",
+      "bytes": 1406,
+      "sourceSha256": "f7c7fffa4e8b12e83c66bfd667f828280bc9ecdf963b9f59a3367405a74c5868",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/garden-view.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/garden-view.png",
+      "bytes": 54102,
+      "sourceSha256": "7a24f45ab377e3281b6c6b8ae54d3dc6c52783043cfcb8cfabae88df7241b704",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/ground-plan.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/ground-plan.png",
+      "bytes": 39394,
+      "sourceSha256": "971824e12b0bc43a946c15f67739b9344b1cac462b459481ee627afa9785c7f5",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/mcp-requests.json",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/mcp-requests.json",
+      "bytes": 50425,
+      "sourceSha256": "1a4ec709e7a6023402106dbda2004e0824a58fb36d767c517b92e2ae4320557f",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/pikachu-house-folded-light.spline",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/pikachu-house-folded-light.spline",
+      "bytes": 983534,
+      "sourceSha256": "f34b3b243dd015a689b4b8b36f57d237c0fdaf206ace0ab1e88176d574f213b1",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/sha256.json",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/sha256.json",
+      "bytes": 1112,
+      "sourceSha256": "cf3635f68d3f6c20c8ca9fa84a67d627b38312681f83de9bb4a5cc9aaffc07c1",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/site-overview-result.txt",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/site-overview-result.txt",
+      "bytes": 82,
+      "sourceSha256": "409ed857192bdd95f348de97167a10c898454158c90c2b3de8f55bf113797544",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/site-plan.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/site-plan.png",
+      "bytes": 32874,
+      "sourceSha256": "53d80c1a17018155c8fd5ee3dff865d6757e606c9d755657c6b5342b6e4646ab",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/threshold-result.txt",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/threshold-result.txt",
+      "bytes": 27174,
+      "sourceSha256": "7c662d470a99439f950d0fb82eb9fccc9cc935a6bda14153d30b15418f89cae5",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/upper-plan.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/upper-plan.png",
+      "bytes": 38571,
+      "sourceSha256": "73051c2babc951677549c3a3cab5b291d6e7a3fb84fadade8ddb11404171e8c3",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-mcp-2026-09-12/v1-street.png",
+      "archive": "docs/evidence/pikachu-mcp-2026-09-12/v1-street.png",
+      "bytes": 33921,
+      "sourceSha256": "9d9b743e51785a9777a5ada7611e5a5fdad2be5967ba051ea2646112216aef42",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/actual-geometry-bounds.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/actual-geometry-bounds.json",
+      "bytes": 10224,
+      "sourceSha256": "a0dc8179c4b7b925c8509c0ed5792c65ec0869a865cb16dcc69d079013840501",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/architect-checkpoint.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/architect-checkpoint.json",
+      "bytes": 884,
+      "sourceSha256": "c49a397c08792a84c34f079d5aa38572b87dadcdd0e5aba63c3a139fd793ba06",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/architect-handoff.md",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/architect-handoff.md",
+      "bytes": 6078,
+      "sourceSha256": "a35835ee92af43dfff2ed14f80327f27ff33592b1c4d88b4b50c8725511de6cb",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/archive-result.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/archive-result.txt",
+      "bytes": 14413,
+      "sourceSha256": "a00072ec1ee5d832b27a416f0f48c1615b36b2f25326721e733650681e87ba5a",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/assembly-checks.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/assembly-checks.json",
+      "bytes": 4897,
+      "sourceSha256": "6c8514daa66f11c73c625ba64887a87467c5b80df6079ba7cf1401f773fc2774",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/author-shell.py",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/author-shell.py",
+      "bytes": 7928,
+      "sourceSha256": "6b5f51e5bb5ff8faae819fbb9df061bab9a42cb8883baa7e93b9dde1a9f7a775",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/blank-confirmed.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/blank-confirmed.txt",
+      "bytes": 2111,
+      "sourceSha256": "b7b3f3c425f028c11aefc6a9897204b74359b0077b3fd20fc540fc5d075d34df",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/build-first-result.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/build-first-result.txt",
+      "bytes": 2639,
+      "sourceSha256": "517dcd56e88e3b7fa3670bc0950eabe16bddb97fb0b2260cccec18cd937b2c97",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/build-second-result.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/build-second-result.txt",
+      "bytes": 3818,
+      "sourceSha256": "6adf88570c0c4ee20c3e5839bef39b844336cfde5624d9c02f0c82abe4ed9761",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/build-start-utc.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/build-start-utc.txt",
+      "bytes": 21,
+      "sourceSha256": "2ed29a75123c748cb2508f5176d7030be68f37952d05bb36899bb01fa432b21b",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/check-assembly.py",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/check-assembly.py",
+      "bytes": 4299,
+      "sourceSha256": "aede217ef83e24c4bf68ef8c362bcb2aac096e1c59767c96e894da73bacb46c0",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/critic-review.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/critic-review.json",
+      "bytes": 15249,
+      "sourceSha256": "814bd4371ab06e1ca112423f6d10898e907ee2f4654aee77bd8a3f675ab10115",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/critic-review.md",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/critic-review.md",
+      "bytes": 5122,
+      "sourceSha256": "f73a52f3a20bf9d350937d473cee28166f92d90fe22b39bb2c48d11999c9d2a6",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/east-elevation.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/east-elevation.png",
+      "bytes": 30485,
+      "sourceSha256": "dd54afbc072e8ad47cef5cc14f29a354ccce2eba19ef07f25193e8cc302d45d9",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/experiment.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/experiment.json",
+      "bytes": 3048,
+      "sourceSha256": "9361e863763e8a63e5c4599f2fb86a3d9d1a13bf42b852d42da27c9e8b309779",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/exterior-views-result.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/exterior-views-result.txt",
+      "bytes": 1572,
+      "sourceSha256": "a8c5f303a8f0b21ff86a0c5cd7b67e3e7189e6c596c0c91157e4a0f6c7b91e6e",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/final-scene-readback.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/final-scene-readback.txt",
+      "bytes": 23708,
+      "sourceSha256": "e67287bf292c6e3e3f3ed4386bb842a6ceb0e172bffb387957a9274608d47669",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/final-street-perspective.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/final-street-perspective.png",
+      "bytes": 30757,
+      "sourceSha256": "6fc6b8880b186f0ef6456780d32424f2265353df92edddd647a2ec936418cdf6",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/geometry-readback.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/geometry-readback.txt",
+      "bytes": 7655,
+      "sourceSha256": "1eb1d372d69ae5aee2c31f4a06deffa33d398455f09f7be45b05da2cb1547a2b",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/ground-plan-ui.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/ground-plan-ui.png",
+      "bytes": 132529,
+      "sourceSha256": "067ed8dbdd0451bb94d559d42d5574205b3f3dc08eb0198ad22d1e7ccfb4fcb2",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/intended-geometry.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/intended-geometry.json",
+      "bytes": 55111,
+      "sourceSha256": "5783c8f536ef96fe84f16356839392b1a71f78fc309ad00a22b5543c5b4ea621",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/mcp-build-requests.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/mcp-build-requests.json",
+      "bytes": 41709,
+      "sourceSha256": "790e294d95de0838a87cd3c86c3e43569ea46ab1a698af9be5e48def9f1d4777",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/new-file-check.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/new-file-check.txt",
+      "bytes": 16713,
+      "sourceSha256": "f060f8281fa0e383cf7b69de416936d6ba4cb5d6b36b67b51893716f0c20ff53",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/north-elevation.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/north-elevation.png",
+      "bytes": 38605,
+      "sourceSha256": "732128595a02e7ba47c0551f1a5e65dc821567ca6c434effc641e42ff455c8d8",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/organized-scene.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/organized-scene.txt",
+      "bytes": 15530,
+      "sourceSha256": "d895b48e4787c25bf8556aa858f9ae64833f50d77e6cab18b9b87cf02cf4867c",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/plan-views-result.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/plan-views-result.txt",
+      "bytes": 918,
+      "sourceSha256": "01639abf6a8d7660e7e789697527502fa978f82e248159f5f8e6b099297a373b",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/prebuild-scene.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/prebuild-scene.txt",
+      "bytes": 16556,
+      "sourceSha256": "c92e99a60bfeb580a0920ab0c482a270c0a74d25a461a12e924f872a60accea3",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/restored-scene.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/restored-scene.txt",
+      "bytes": 16556,
+      "sourceSha256": "c92e99a60bfeb580a0920ab0c482a270c0a74d25a461a12e924f872a60accea3",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/scene-correspondence-check.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/scene-correspondence-check.json",
+      "bytes": 73542,
+      "sourceSha256": "0e82fcd616116bd3d5445e48c30b89ecb7d9052f1a58272cfda2af72b56b0104",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/scene-mapping.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/scene-mapping.json",
+      "bytes": 44470,
+      "sourceSha256": "803523b844b219b2214ad4e77b5a1f8f8ef49e83a2f140c7df5190ae2439a46b",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/scene-shell-readback.txt",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/scene-shell-readback.txt",
+      "bytes": 15426,
+      "sourceSha256": "c56c8006c2dc6c212c6ada4af04e39854b588ac12ef3089ab4e0988dd343ea27",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/south-elevation.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/south-elevation.png",
+      "bytes": 44148,
+      "sourceSha256": "7c0b151df9062331278aa8512cf18d0b98799d1a24c553660ff78ded817fe069",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/spatial-model.json",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/spatial-model.json",
+      "bytes": 62628,
+      "sourceSha256": "d9bdb65ee29851114102aa6e2ea14b625304e3c9fde7a636546661d237be45dd",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/stair-section-ui.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/stair-section-ui.png",
+      "bytes": 119797,
+      "sourceSha256": "0fc44d86e809735466eea9be9bc7e6ec157f96499eb26cd841ac0d01e7f72bad",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/stair-section-west-ui.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/stair-section-west-ui.png",
+      "bytes": 147800,
+      "sourceSha256": "cca88f9a53222bcd4ac303150dbca0a4d62690ff94b54cc7e677f2348442f7bf",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/upper-plan-ui.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/upper-plan-ui.png",
+      "bytes": 138105,
+      "sourceSha256": "c2da08a1ab3a7edb7c5555064ba47d0c20fce154bb0f81a6687338c30ce5ad37",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/evidence/pikachu-rebuild-2026-09-12/west-elevation.png",
+      "archive": "docs/evidence/pikachu-rebuild-2026-09-12/west-elevation.png",
+      "bytes": 32071,
+      "sourceSha256": "4537388ff150da37c147be96b007eccfee24c7df565eb74ad92d8631853b7d7d",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/presentation-experience.md",
+      "archive": "docs/presentation-experience.md",
+      "bytes": 5323,
+      "sourceSha256": "a107af4cce9c2849aef27352d74685f2d568943184b0fa29046b48246e348708",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/progress.md",
+      "archive": "docs/progress.md",
+      "bytes": 3035,
+      "sourceSha256": "52a479102a937cc0d97e9889f3a8f992e3967ff7a3ec6577b9c3ba7ce2bd6f69",
+      "transformation": "none"
+    },
+    {
+      "source": "README.md",
+      "archive": "README.md",
+      "bytes": 3728,
+      "sourceSha256": "9ff6d89f5aca82ac6bbedb459df80ca29b33c861b3da9275b1a26879db3ceda3",
+      "transformation": "Historical-reference banner added; README AGENTS link redirected to engineering-reference.md."
+    },
+    {
+      "source": "DRAFTROOM.md",
+      "archive": "DRAFTROOM.md",
+      "bytes": 21254,
+      "sourceSha256": "226095f1e811b802b75e023fff2d4f780faf592633fd4ddda8a0ca4cde8aa02a",
+      "transformation": "Historical-reference banner added; README AGENTS link redirected to engineering-reference.md."
+    },
+    {
+      "source": "AGENTS.md",
+      "archive": "engineering-reference.md",
+      "bytes": 32565,
+      "sourceSha256": "b3626cab6dbb641a06d0bd2b10b52b48d5a60cc9174ae77aafc061df038d41fe",
+      "transformation": "Historical-reference banner added; README AGENTS link redirected to engineering-reference.md."
+    }
+  ]
+}

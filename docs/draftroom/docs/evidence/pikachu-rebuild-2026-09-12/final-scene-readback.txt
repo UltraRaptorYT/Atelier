@@ -1,0 +1,206 @@
+Applied 17 changes. Scene now has 199 objects.
+Current view (the USER'S live viewport — their actual framing; if the subject is cropped, tiny, or missing here, fix the viewport framing with lookFrom/focus and re-check):
+IMAGE: /tmp/draftroom-spline-capture-1.png
+FRAMING CHECK: all major objects are in frame; the content cluster fills ~83% of the frame height.
+HERO CHECK: hero ("R_east_fold", "R_west_fold", "U_south end", "U_south segment 1") reads at ~46% of the frame height with a clear line of sight.
+199 object(s) across 1 page(s). Nothing selected.
+Page: background #e8e5dc.
+Rebuild Site [Empty] 4646ac29-e542-4b00-a700-96badeefebec p=23.96,-32.46,31.22 size=1000,17.5,1500
+  S_rear_threshold_step [Mesh/CubeGeometry] 4e522a36-1aaf-40a1-a9a4-a97ff4feb74f p=-223.96,25.96,-396.22 size=200,8,30
+  S_entry_path [Mesh/CubeGeometry] aa8c61b0-8b3f-4fe0-9c0b-3e9acc201fbf p=-48.96,27.21,543.78 size=80,10.5,350
+  S_parking [Mesh/CubeGeometry] baa17a54-5ba2-4de2-b5fe-9e725255fbc5 p=221.04,27.21,543.78 size=140,10.5,250
+  S_site [Mesh/CubeGeometry] 66b90139-5e77-4ff6-b62f-e71092017e4a p=-23.96,18.46,-31.22 size=1000,7,1500
+Rebuild Terrace [Empty] 5eb2be0a-be55-4afd-ad19-50d2989a2875 p=23.96,-32.46,31.22 size=600,222.5,750
+  T_north_parapet [Mesh/CubeGeometry] c4707719-8652-4b6a-8973-4af7e3a86c39 p=237.29,218.71,-377.47 size=62.5,52.5,7.5
+  T_south_parapet [Mesh/CubeGeometry] 851c74c1-0e30-4d2e-a0db-e0a9ca473c74 p=237.29,218.71,365.03 size=62.5,52.5,7.5
+  T_east_parapet [Mesh/CubeGeometry] ed22978f-9f39-48ea-a8db-4c56b0867a3b p=272.29,218.71,-6.22 size=7.5,52.5,750
+  T_threshold_column_7.9 [Mesh/CubeGeometry] ed7fed09-5281-4fe9-b18f-b8cd9d500c7b p=-128.96,107.46,-375.22 size=6,150,6
+  T_threshold_column_4.1 [Mesh/CubeGeometry] 0abd5d0e-d0b4-4ab4-a547-5678278cf82c p=-318.96,107.46,-375.22 size=6,150,6
+  T_east_roof_deck [Mesh/CubeGeometry] 302edf6f-5dbc-45cb-9df1-57aca11ee451 p=241.04,187.46,-6.22 size=70,10,750
+  T_garden_threshold [Mesh/CubeGeometry] 31ac6a9a-0795-4c87-952f-a2c53f5f05b2 p=-223.96,27.46,-306.22 size=200,10,150
+Rebuild Roof [Empty] 0d937c29-3c86-494f-9286-649d17e33b71 p=23.96,-32.46,31.22 size=530,63,750
+  R_north_east_infill [Mesh/NonParametricGeometry] 97c8f9e4-f232-4a9a-84eb-a2e19a2a93c8 p=-23.96,32.46,-31.22 size=330,55,10
+  R_north_west_infill [Mesh/NonParametricGeometry] 4dc35c2d-5d64-424c-b3c6-bb8888dd260d p=-23.96,32.46,-31.22 size=200,55,10
+  R_south_east_infill [Mesh/NonParametricGeometry] 87f21895-9560-41eb-9af5-fc1a42a016c2 p=-23.96,32.46,-31.22 size=330,55,10
+  R_south_west_infill [Mesh/NonParametricGeometry] 56bce8b7-ac8c-4bf5-a6bc-71e95765f38e p=-23.96,32.46,-31.22 size=200,55,10
+  R_east_fold [Mesh/NonParametricGeometry] e3eed320-370f-42d3-831b-372234cbd9f2 p=-23.96,32.46,-31.22 size=330,48,750
+  R_west_fold [Mesh/NonParametricGeometry] 58e37119-4823-4c0a-9e6c-a21d6f7ac036 p=-23.96,32.46,-31.22 size=200,63,750
+Rebuild Upper [Empty] fb253221-f919-43d0-b7af-b7ad02ba72db p=23.96,-32.46,31.22 size=530,176.5,750
+  U_family_proxy [Mesh/CubeGeometry] 8e6558cf-fe9d-4c4a-aa11-585304e2ff08 p=-211.46,209.96,-1.22 size=125,35,40
+  U_shower_proxy [Mesh/CubeGeometry] d4490124-1667-4b75-8b92-163b34e35731 p=161.04,193.71,118.78 size=50,2.5,50
+  U_primary_bed [Mesh/CubeGeometry] 8e17d56b-c705-4645-ab80-e1a17b10e5b8 p=-218.96,203.71,-291.22 size=90,22.5,100
+  U_child_bed [Mesh/CubeGeometry] 632f37b9-d185-477e-a8eb-0c134513c37b p=-243.96,203.71,258.78 size=60,22.5,100
+  U_child_screen_12 [Mesh/CubeGeometry] 84915116-719c-4e50-8353-d7f71bfbabde p=-114.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_11 [Mesh/CubeGeometry] f49e8409-a49f-4475-a13d-66eea6be5643 p=-128.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_10 [Mesh/CubeGeometry] 21a51e1e-f484-409b-8459-7c2dc8288df8 p=-142.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_9 [Mesh/CubeGeometry] 3c9893c4-df96-482e-b57f-b188a9f7f4e9 p=-156.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_8 [Mesh/CubeGeometry] 35e57551-db86-403b-9cfe-57867b1281d8 p=-170.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_7 [Mesh/CubeGeometry] b70cb289-6b53-4c5d-95b4-b3375b334494 p=-184.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_6 [Mesh/CubeGeometry] 2170501b-af97-4785-ada0-bf393f487a4c p=-198.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_5 [Mesh/CubeGeometry] f4969a85-3dd0-4dd3-9d79-7bda5a6ed2e6 p=-212.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_4 [Mesh/CubeGeometry] 0ecafef2-a62b-4f8d-b68b-2f801e014c1f p=-226.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_3 [Mesh/CubeGeometry] c9e21483-dc78-48da-813d-67ae19746082 p=-240.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_2 [Mesh/CubeGeometry] 35256033-dfbf-4c0c-b91f-33ee916b93d1 p=-254.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_1 [Mesh/CubeGeometry] 28e02b63-fb37-4e38-9598-d1d0ee447f9a p=-268.71,281.21,367.28 size=2.5,97.5,3
+  U_child_screen_0 [Mesh/CubeGeometry] 2b5c4172-08d5-4d6c-9759-6910c53380ff p=-282.71,281.21,367.28 size=2.5,97.5,3
+  U_stair_east_guard [Mesh/CubeGeometry] 4673570d-6d1b-4a46-a230-0a7d4ef2377e p=77.54,217.46,-87.22 size=3,50,14
+  U_stair_west_guard [Mesh/CubeGeometry] af8e7666-c8f9-4a71-bd66-7d72039037dd p=-0.46,217.46,24.78 size=3,50,238
+  U_bath_north end [Mesh/CubeGeometry] 6ca65654-d60f-49ac-9307-841285b27999 p=177.29,267.46,-76.22 size=37.5,150,8
+  U_bath_north lintel 0 [Mesh/CubeGeometry] e3359805-6639-446b-940c-79d3e63d3edb p=134.79,322.46,-76.22 size=47.5,40,8
+  U_bath_north segment 0 [Mesh/CubeGeometry] e9ac8809-e02f-4cb5-b762-e12f9e338ee9 p=97.54,267.46,-76.22 size=27,150,8
+  U_bath_south end [Mesh/CubeGeometry] f2a5ad10-9c2c-4547-9451-fb300f98163d p=140.04,267.46,168.78 size=112,150,8
+  U_bath_west end [Mesh/CubeGeometry] 2318c790-03f3-4cce-8287-1e5052644aff p=80.04,267.46,46.28 size=8,150,245
+  U_primary_dressing end [Mesh/CubeGeometry] 427c46a9-1600-48a4-abb0-d594db41b1f3 p=26.04,267.46,-326.22 size=8,150,90
+  U_primary_dressing lintel 0 [Mesh/CubeGeometry] c05b54f6-9e7d-40ef-966c-d7198dcf0fda p=26.04,322.46,-256.22 size=8,40,50
+  U_primary_dressing segment 0 [Mesh/CubeGeometry] 063e08e8-6696-4504-92c8-1e19661493a8 p=26.04,267.46,-208.22 size=8,150,46
+  U_primary_south end [Mesh/CubeGeometry] 06f60299-803b-4f07-9f23-317a60466ab2 p=116.04,267.46,-181.22 size=160,150,8
+  U_primary_south lintel 0 [Mesh/CubeGeometry] c5b33185-9e24-4353-8860-c96b1ee74700 p=11.04,322.46,-181.22 size=50,40,8
+  U_primary_south segment 0 [Mesh/CubeGeometry] 709f1289-6831-420f-b5de-0cce71ea762a p=-163.96,267.46,-181.22 size=300,150,8
+  U_child_north end [Mesh/CubeGeometry] 9f5e32e5-1028-4a55-a835-ec3f081d87e2 p=-195.96,267.46,168.78 size=236,150,8
+  U_child_east end [Mesh/CubeGeometry] b28dfb2d-1332-4ce0-aabb-1c9cada3e5c8 p=-73.96,267.46,198.78 size=8,150,60
+  U_child_east lintel 0 [Mesh/CubeGeometry] 49a428e5-6166-44d7-b974-099f79aab218 p=-73.96,322.46,253.78 size=8,40,50
+  U_child_east segment 0 [Mesh/CubeGeometry] 17544ac5-6ab1-4592-8858-dfa0dcc5b3d8 p=-73.96,267.46,318.78 size=8,150,80
+  U_dressing_window jamb 13.7825 [Mesh/CubeGeometry] ffc37402-0999-492e-8f0d-0f109436fe5c p=165.16,277.46,-376.22 size=1.75,80,6
+  U_dressing_window jamb 11.7175 [Mesh/CubeGeometry] ce7a523a-0e71-4af8-aac4-4946016c03d6 p=61.91,277.46,-376.22 size=1.75,80,6
+  U_dressing_window glass [Mesh/CubeGeometry] 20d29eea-92e4-4d2f-ae22-5a54b59a2b5b p=113.54,277.46,-376.22 size=101.5,76.5,2.5
+  U_dressing_window head [Mesh/CubeGeometry] f2a9d22d-9710-4ad5-a457-a1b893c5a390 p=113.54,329.96,-376.22 size=105,25,8
+  U_dressing_window sill [Mesh/CubeGeometry] 5ff2ea4c-a2be-4453-9f28-a276470c8f74 p=113.54,214.96,-376.22 size=105,45,8
+  U_primary_window jamb 10.1825 [Mesh/CubeGeometry] 25f02175-205d-404e-a9c9-5c3e3dbd51e0 p=-14.84,277.46,-376.22 size=1.75,80,6
+  U_primary_window jamb 4.8175 [Mesh/CubeGeometry] a576b011-0faf-407b-a193-8a24a1673421 p=-283.09,277.46,-376.22 size=1.75,80,6
+  U_primary_window glass [Mesh/CubeGeometry] 2510b2e0-412f-4c40-a4af-c34d4f34fbb1 p=-148.96,277.46,-376.22 size=266.5,76.5,2.5
+  U_primary_window head [Mesh/CubeGeometry] 6e8da096-077a-4fb4-9c54-1355f7b574a4 p=-148.96,329.96,-376.22 size=270,25,8
+  U_primary_window sill [Mesh/CubeGeometry] 598ed4be-e593-4c31-b9ab-8060acdb6a3c p=-148.96,214.96,-376.22 size=270,45,8
+  U_north end [Mesh/CubeGeometry] 7062f4dc-d079-44a6-98f9-7d03305cc575 p=186.04,267.46,-376.22 size=40,150,10
+  U_north segment 1 [Mesh/CubeGeometry] 9b8c066a-50ac-424a-a00b-a7b2eb091a40 p=23.54,267.46,-376.22 size=75,150,10
+  U_north segment 0 [Mesh/CubeGeometry] c97bdae8-0ea3-4f37-af94-caeba249052e p=-303.96,267.46,-376.22 size=40,150,10
+  U_landing_window jamb 13.7825 [Mesh/CubeGeometry] 2220efe2-e645-4d5b-856a-e3993b958343 p=165.16,276.21,363.78 size=1.75,77.5,6
+  U_landing_window jamb 9.4175 [Mesh/CubeGeometry] 7c1730b7-036f-4c07-9c0d-e09208d1a20b p=-53.09,276.21,363.78 size=1.75,77.5,6
+  U_landing_window glass [Mesh/CubeGeometry] 5d3ee0a3-703d-4def-ba47-c0fe0f0fcc47 p=56.04,276.21,363.78 size=216.5,74,2.5
+  U_landing_window head [Mesh/CubeGeometry] 454ec431-7930-489a-ab7a-54facfc8f71b p=56.04,328.71,363.78 size=220,27.5,8
+  U_landing_window sill [Mesh/CubeGeometry] 2cba4657-cf65-4c55-a02f-efa31d7f3626 p=56.04,214.96,363.78 size=220,45,8
+  U_child_window jamb 8.1825 [Mesh/CubeGeometry] bafbdaf7-d94a-4fc0-8858-a7ead36c7977 p=-114.84,276.21,363.78 size=1.75,77.5,6
+  U_child_window jamb 4.8175 [Mesh/CubeGeometry] 3eac416c-9ed5-4b8a-ace6-b7ff29ade8a4 p=-283.09,276.21,363.78 size=1.75,77.5,6
+  U_child_window glass [Mesh/CubeGeometry] cfc6133b-9641-4807-8ac3-cc74ee0f3dba p=-198.96,276.21,363.78 size=166.5,74,2.5
+  U_child_window head [Mesh/CubeGeometry] 136288a7-cef1-4ec1-a78a-110c7b82ed72 p=-198.96,328.71,363.78 size=170,27.5,8
+  U_child_window sill [Mesh/CubeGeometry] 4d5870be-1b7c-40f7-978f-0f2193a3bfdb p=-198.96,214.96,363.78 size=170,45,8
+  U_south end [Mesh/CubeGeometry] 206a4a2e-e259-465d-a4f6-6a1e6e06820e p=186.04,267.46,363.78 size=40,150,10
+  U_south segment 1 [Mesh/CubeGeometry] fd13932f-abb4-48a6-bce0-367c934efe27 p=-83.96,267.46,363.78 size=60,150,10
+  U_south segment 0 [Mesh/CubeGeometry] 99ca34c4-d602-4dcc-9906-725531af12f2 p=-303.96,267.46,363.78 size=40,150,10
+  U_east_privacy end [Mesh/CubeGeometry] 3f26e40e-8286-40fb-937a-a3cc147eb083 p=201.04,275.71,-253.72 size=10,166.5,235
+  U_east_privacy lintel 0 [Mesh/CubeGeometry] 3a3fc94e-97a3-45cd-9dab-82fc2f13967b p=201.04,330.71,-111.22 size=10,56.5,50
+  U_east_privacy segment 0 [Mesh/CubeGeometry] 16930d45-a2fd-4b84-bd9d-0ccbef261319 p=201.04,275.71,136.28 size=10,166.5,445
+  U_west_privacy end [Mesh/CubeGeometry] cd5b61de-8314-4f1d-80e4-7ea40f19d648 p=-318.96,268.96,-6.22 size=10,153,730
+  U_floor_north [Mesh/CubeGeometry] 5de859e8-ee74-4376-a02a-c93f085b3640 p=38.54,187.46,-237.72 size=75,10,287
+  U_floor_south [Mesh/CubeGeometry] c8b7bd70-46ca-458d-9269-0e40a796f50d p=38.54,187.46,256.28 size=75,10,225
+  U_floor_east [Mesh/CubeGeometry] f556fcd5-2f34-4c6d-ae65-3718bf39a0c2 p=141.04,187.46,-6.22 size=130,10,750
+  U_floor_west [Mesh/CubeGeometry] 25466e81-a79d-4c2f-9a15-9e3af2ef183f p=-161.46,187.46,-6.22 size=325,10,750
+Rebuild Ground [Empty] 23c84887-6888-4097-a9f7-a401cf598a36 p=23.96,-32.46,31.22 size=600,211.11,750
+  G_dining_proxy [Mesh/CubeGeometry] 193cff9d-7a34-452b-b793-45aad01891bd p=-38.96,51.21,-283.72 size=90,37.5,45
+  G_living_proxy [Mesh/CubeGeometry] af6bfd85-5028-4f8f-b249-df2ab82a21d6 p=-268.96,49.96,-46.22 size=40,35,130
+  G_kitchen_proxy [Mesh/CubeGeometry] 3ea525dc-7919-4210-8423-c5b4d2f932f9 p=246.04,54.96,-156.22 size=30,45,200
+  G_shower_proxy [Mesh/CubeGeometry] 8f2723c1-6128-4a67-a813-d6eecd6ce517 p=226.04,33.71,143.78 size=50,2.5,50
+  G_guest_bed [Mesh/CubeGeometry] 09df13fb-7d95-4c1c-be2d-96a68b2f7500 p=-243.96,43.71,248.78 size=80,22.5,100
+  G_entry_ceiling [Mesh/CubeGeometry] b881df7d-3105-4d45-846b-74e4e01fd235 p=-52.71,176.21,313.78 size=102.5,7.5,90
+  G_entry_reveal [Mesh/CubeGeometry] 596abe0a-1baf-49aa-8325-c9c4070b41ac p=-99.46,102.46,313.78 size=9,140,90
+  G_stair_guard_17 [Mesh/CubeGeometry] c0b040e5-8b16-4fe8-acdb-e9634e7cc2bc p=4.29,208.57,-94.22 size=2.5,50,2.5
+  G_stair_guard_16 [Mesh/CubeGeometry] d11cdd93-65ea-4136-b0d7-f42a2dbf7da7 p=4.29,199.68,-80.22 size=2.5,50,2.5
+  G_stair_guard_15 [Mesh/CubeGeometry] 9cb44179-d3d4-4378-9b8e-93b01dc4638e p=4.29,190.79,-66.22 size=2.5,50,2.5
+  G_stair_guard_14 [Mesh/CubeGeometry] da067725-38b3-4a68-b987-d1d362354a4e p=4.29,181.9,-52.22 size=2.5,50,2.5
+  G_stair_guard_13 [Mesh/CubeGeometry] 5a99be82-482c-4d0a-ba70-2cb9750f33f9 p=4.29,173.01,-38.22 size=2.5,50,2.5
+  G_stair_guard_12 [Mesh/CubeGeometry] 5c7ea865-6b26-4795-a458-4bded5e34793 p=4.29,164.12,-24.22 size=2.5,50,2.5
+  G_stair_guard_11 [Mesh/CubeGeometry] 5e6587a5-6973-451a-87f4-bca4f8945c4e p=4.29,155.23,-10.22 size=2.5,50,2.5
+  G_stair_guard_10 [Mesh/CubeGeometry] 88811d79-412b-473b-8465-1c87fabf20ab p=4.29,146.35,3.78 size=2.5,50,2.5
+  G_stair_guard_9 [Mesh/CubeGeometry] 4d387d57-d314-4236-8eaf-3228b7d7e757 p=4.29,137.46,17.78 size=2.5,50,2.5
+  G_stair_guard_8 [Mesh/CubeGeometry] 84f75563-a020-4b10-afc2-6ee7cbf31927 p=4.29,128.57,31.78 size=2.5,50,2.5
+  G_stair_guard_7 [Mesh/CubeGeometry] 71d8571b-8c94-412a-b5ff-2cd8e16c2ee8 p=4.29,119.68,45.78 size=2.5,50,2.5
+  G_stair_guard_6 [Mesh/CubeGeometry] 627fb83e-5c35-401e-9a84-87e96a786c38 p=4.29,110.79,59.78 size=2.5,50,2.5
+  G_stair_guard_5 [Mesh/CubeGeometry] f4e4d9b3-25c0-403c-97c7-b00ef2586aa1 p=4.29,101.9,73.78 size=2.5,50,2.5
+  G_stair_guard_4 [Mesh/CubeGeometry] 8a7df30e-687b-4b3b-b878-abef50353760 p=4.29,93.01,87.78 size=2.5,50,2.5
+  G_stair_guard_3 [Mesh/CubeGeometry] 7b57224e-fe0f-4b76-b598-54664a2012f0 p=4.29,84.12,101.78 size=2.5,50,2.5
+  G_stair_guard_2 [Mesh/CubeGeometry] a1f1511a-c64c-40c2-95bd-33f715daebd0 p=4.29,75.23,115.78 size=2.5,50,2.5
+  G_stair_guard_1 [Mesh/CubeGeometry] 5b75a30f-7a99-4c2d-9fe1-5ed36da351df p=4.29,66.35,129.78 size=2.5,50,2.5
+  G_stair_guard_0 [Mesh/CubeGeometry] ae5754d0-c3d2-4b4a-b5aa-884f76702aa6 p=4.29,57.46,143.78 size=2.5,50,2.5
+  G_stair_tread_17 [Mesh/CubeGeometry] 99443622-af46-4341-90b1-1d50de85d636 p=38.54,108.01,-87.22 size=60,151.11,14
+  G_stair_tread_16 [Mesh/CubeGeometry] 77648995-6a45-491e-82b1-164de66908f5 p=38.54,103.57,-73.22 size=60,142.22,14
+  G_stair_tread_15 [Mesh/CubeGeometry] a9e397b8-b71e-4a56-b896-608b94632ac2 p=38.54,99.12,-59.22 size=60,133.33,14
+  G_stair_tread_14 [Mesh/CubeGeometry] 0b06b840-8a69-49ed-950a-5aa7b61d0d75 p=38.54,94.68,-45.22 size=60,124.44,14
+  G_stair_tread_13 [Mesh/CubeGeometry] 6f10e9ce-69b4-448d-8269-daa6f5a8ebcd p=38.54,90.23,-31.22 size=60,115.56,14
+  G_stair_tread_12 [Mesh/CubeGeometry] 3fe5450b-150c-490e-9aa6-b16285c8c47f p=38.54,85.79,-17.22 size=60,106.67,14
+  G_stair_tread_11 [Mesh/CubeGeometry] 857c8c1e-7596-4895-a937-53385ce84dd8 p=38.54,81.35,-3.22 size=60,97.78,14
+  G_stair_tread_10 [Mesh/CubeGeometry] 44ffa607-5a0c-4dd1-b043-956b0ce2b283 p=38.54,76.9,10.78 size=60,88.89,14
+  G_stair_tread_9 [Mesh/CubeGeometry] 7aa4f5aa-ffb6-4b3e-9504-75d246801213 p=38.54,72.46,24.78 size=60,80,14
+  G_stair_tread_8 [Mesh/CubeGeometry] 77211877-82a4-4979-b867-19b72357c0fd p=38.54,68.01,38.78 size=60,71.11,14
+  G_stair_tread_7 [Mesh/CubeGeometry] 2600083f-1a8f-47ec-ab9e-b3c29959f5cb p=38.54,63.57,52.78 size=60,62.22,14
+  G_stair_tread_6 [Mesh/CubeGeometry] 28d6ae5d-c938-4a88-9c0a-c8fe8097640f p=38.54,59.12,66.78 size=60,53.33,14
+  G_stair_tread_5 [Mesh/CubeGeometry] b76656d9-5cde-4d0e-be05-2f19b7c8c4b8 p=38.54,54.68,80.78 size=60,44.44,14
+  G_stair_tread_4 [Mesh/CubeGeometry] 04603d4e-c524-4ef6-9668-24ac5d81a859 p=38.54,50.23,94.78 size=60,35.56,14
+  G_stair_tread_3 [Mesh/CubeGeometry] 02a6c7a6-177c-4b77-9a3c-b0cfe500346c p=38.54,45.79,108.78 size=60,26.67,14
+  G_stair_tread_2 [Mesh/CubeGeometry] 39a105fd-439d-434b-a6fb-c7a8a6d153fb p=38.54,41.35,122.78 size=60,17.78,14
+  G_stair_tread_1 [Mesh/CubeGeometry] 16c489d2-871b-42b0-a73a-4c31ef600a3a p=38.54,36.9,136.78 size=60,8.89,14
+  G_utility_north end [Mesh/CubeGeometry] 6027641b-b799-42c3-b354-2578a55fb7d8 p=228.54,107.46,-31.22 size=75,150,8
+  G_utility_north lintel 0 [Mesh/CubeGeometry] 47a1705f-79ae-4ee3-a795-b9573d610db7 p=166.04,162.46,-31.22 size=50,40,8
+  G_utility_north segment 0 [Mesh/CubeGeometry] e511d8e3-e008-4333-bed7-f34138ce5d9e p=110.54,107.46,-31.22 size=61,150,8
+  G_shower_north end [Mesh/CubeGeometry] 6cd1333c-524e-4ffd-8cbe-5a060152e1af p=173.04,107.46,93.78 size=186,150,8
+  G_study_north end [Mesh/CubeGeometry] 51660ef2-c71b-4b55-9c10-8eba61a06788 p=173.04,107.46,218.78 size=186,150,8
+  G_service_west end [Mesh/CubeGeometry] 151c833c-2a62-4e96-a3e8-62067579de45 p=76.04,107.46,-248.72 size=8,150,65
+  G_service_west lintel 2 [Mesh/CubeGeometry] 252caf02-1f5e-45a5-9176-4096328c1a04 p=76.04,173.71,-158.72 size=8,17.5,115
+  G_service_west segment 2 [Mesh/CubeGeometry] 78d8ec67-f1e6-489c-8cb5-16f1f41641da p=76.04,107.46,26.28 size=8,150,255
+  G_service_west lintel 1 [Mesh/CubeGeometry] f5c8b2eb-4a19-4fa8-8d63-2a4239654270 p=76.04,162.46,178.78 size=8,40,50
+  G_service_west segment 1 [Mesh/CubeGeometry] cacf9b8f-6a2a-4fb5-90d0-e50bba8f1820 p=76.04,107.46,236.28 size=8,150,65
+  G_service_west lintel 0 [Mesh/CubeGeometry] 7a187c75-035c-4c41-a22b-7d09dd810dca p=76.04,162.46,293.78 size=8,40,50
+  G_service_west segment 0 [Mesh/CubeGeometry] 418a98c1-7fab-4b19-9e73-6777c5202d9d p=76.04,107.46,338.78 size=8,150,40
+  G_guest_north end [Mesh/CubeGeometry] 40a611a1-7bca-4e88-a58f-f1c628865894 p=-220.96,107.46,143.78 size=186,150,8
+  G_guest_east end [Mesh/CubeGeometry] 88e2dde8-6676-439b-91b5-86761501658d p=-123.96,107.46,198.78 size=8,150,110
+  G_guest_east lintel 0 [Mesh/CubeGeometry] 6442e1e1-80a9-471d-ac4c-488ec82ca4b0 p=-123.96,162.46,278.78 size=8,40,50
+  G_guest_east segment 0 [Mesh/CubeGeometry] 68c95a5b-6d0a-4e98-82c5-fb67b6f56aa8 p=-123.96,107.46,331.28 size=8,150,55
+  G_kitchen_north jamb 15.1825 [Mesh/CubeGeometry] 82db81e4-24e4-4bfb-a882-38570d79a945 p=235.16,112.46,-376.22 size=1.75,80,6
+  G_kitchen_north jamb 12.5175 [Mesh/CubeGeometry] 326ee6b8-9c09-4421-b3b0-d45044d9e281 p=101.91,112.46,-376.22 size=1.75,80,6
+  G_kitchen_north glass [Mesh/CubeGeometry] 308b79c6-0f28-47c3-b690-80e5fb70e619 p=168.54,112.46,-376.22 size=131.5,76.5,2.5
+  G_kitchen_north head [Mesh/CubeGeometry] 4acc0e4a-2f7b-4f88-b333-63e75c4bd0b7 p=168.54,167.46,-376.22 size=135,30,8
+  G_kitchen_north sill [Mesh/CubeGeometry] 8dd9a9ca-3973-492d-a83a-e79b8e2a240a p=168.54,52.46,-376.22 size=135,40,8
+  G_north end [Mesh/CubeGeometry] 60ab8238-a650-4f7f-bcc4-a7966bb5a882 p=256.04,107.46,-376.22 size=40,150,10
+  G_north segment 1 [Mesh/CubeGeometry] cdc14bb3-8c98-4447-a963-da9e262243d4 p=81.04,107.46,-376.22 size=40,150,10
+  G_north lintel 0 [Mesh/CubeGeometry] e2df2e0c-b539-4190-ae4d-07720bc189fe p=-13.96,173.71,-376.22 size=150,17.5,10
+  G_north segment 0 [Mesh/CubeGeometry] 0a41ee8c-b3a6-4e42-a454-833a33938911 p=-104.46,107.46,-376.22 size=31,150,10
+  G_entry_open_leaf [Mesh/CubeGeometry] a2c6e82f-d548-4c64-9152-a585025567ca p=-20.96,91.21,331.28 size=3,117.5,60
+  G_study_window jamb 15.0825 [Mesh/CubeGeometry] 8cac0307-108c-49da-becd-e599009651ca p=230.16,112.46,363.78 size=1.75,80,6
+  G_study_window jamb 12.6175 [Mesh/CubeGeometry] 33aa525f-a9e1-4d58-a5ac-a8efab6cf2e1 p=106.91,112.46,363.78 size=1.75,80,6
+  G_study_window glass [Mesh/CubeGeometry] b46b7aa7-34fd-45ad-96e7-63f0c68a4069 p=168.54,112.46,363.78 size=121.5,76.5,2.5
+  G_study_window head [Mesh/CubeGeometry] 797b79c8-7d09-49bd-a749-5ac04b81dbc3 p=168.54,167.46,363.78 size=125,30,8
+  G_study_window sill [Mesh/CubeGeometry] 520bd552-9f6d-4dbc-86f5-9e40d10ac233 p=168.54,52.46,363.78 size=125,40,8
+  G_guest_window jamb 7.2825 [Mesh/CubeGeometry] 3be77b73-ff16-4242-abea-cdb93faea3f6 p=-159.84,112.46,363.78 size=1.75,80,6
+  G_guest_window jamb 4.7175 [Mesh/CubeGeometry] 7959d801-0ced-478f-86d2-f8d0ae3cc3d8 p=-288.09,112.46,363.78 size=1.75,80,6
+  G_guest_window glass [Mesh/CubeGeometry] d4ea0ca1-7a86-42bc-b618-33b867c4963d p=-223.96,112.46,363.78 size=126.5,76.5,2.5
+  G_guest_window head [Mesh/CubeGeometry] affcfcae-fe9c-442f-a102-c70818bda35a p=-223.96,167.46,363.78 size=130,30,8
+  G_guest_window sill [Mesh/CubeGeometry] fa783adb-5547-469b-ae93-f5410fb49377 p=-223.96,52.46,363.78 size=130,40,8
+  G_south end [Mesh/CubeGeometry] 529d7b86-6928-4f9f-91fa-0eaf28601759 p=253.54,107.46,363.78 size=45,150,10
+  G_south segment 2 [Mesh/CubeGeometry] 7743de0b-dcd5-4bfa-9c86-242a722d3e21 p=43.54,107.46,363.78 size=125,150,10
+  G_south lintel 1 [Mesh/CubeGeometry] f6eaa8f6-dc35-4ac4-bc19-0b69cab8be73 p=-51.46,167.46,363.78 size=65,30,10
+  G_south segment 1 [Mesh/CubeGeometry] 242a956c-26b3-423c-bfa2-9ec68d725dfd p=-121.46,107.46,363.78 size=75,150,10
+  G_south segment 0 [Mesh/CubeGeometry] 4677dcb9-e81d-4adb-8b32-83a6b004f7c8 p=-306.46,107.46,363.78 size=35,150,10
+  G_threshold_slider end [Mesh/CubeGeometry] 505b19e6-d5f8-43c0-bafa-09b0f2890964 p=-134.46,107.46,-231.22 size=29,150,8
+  G_threshold_slider lintel 0 [Mesh/CubeGeometry] 9cde3a13-9631-485c-899e-717b7495a962 p=-223.96,173.71,-231.22 size=150,17.5,8
+  G_threshold_slider segment 0 [Mesh/CubeGeometry] d40b7747-6e26-4d6d-b651-2c1c76875af6 p=-306.46,107.46,-231.22 size=15,150,8
+  G_threshold_return end [Mesh/CubeGeometry] de817da0-e547-42a1-ab69-7410e0fa4f62 p=-123.96,107.46,-353.72 size=8,150,35
+  G_threshold_return lintel 0 [Mesh/CubeGeometry] 713f772f-c24f-4806-877d-ec111f1c7d2e p=-123.96,169.96,-301.22 size=8,25,70
+  G_threshold_return segment 0 [Mesh/CubeGeometry] 58fcaebc-1a7e-411c-8dbe-c88bd11f2f62 p=-123.96,107.46,-251.22 size=8,150,30
+  G_east end [Mesh/CubeGeometry] 23d43c90-fb82-49ae-937d-a94cf898c21b p=271.04,107.46,-6.22 size=8,150,730
+  G_west end [Mesh/CubeGeometry] fde6f576-f585-43cd-b179-dad7a36b0d0f p=-318.96,107.46,63.78 size=8,150,590
+  G_floor_rear [Mesh/CubeGeometry] 9805e7a5-68ab-4072-be23-540069ca14da p=76.04,27.46,-306.22 size=400,10,150
+  G_floor_south [Mesh/CubeGeometry] fbf23b39-926a-4595-a2d3-e2da336f428d p=-23.96,27.46,68.78 size=600,10,600
+P_G_GARDEN ROOM [Mesh/TextGeometry] ea8aa359-b9a8-462d-a355-083eb5ea3630 p=-200,1.5,-265 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_U_LANDING [Mesh/TextGeometry] 50d7129d-85dd-48e7-bb90-add3fec6c4af p=50,161.5,-100 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_U_BATH [Mesh/TextGeometry] 7e50a189-6e67-437c-9fb3-43b42ce76c61 p=175,161.5,50 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_U_PRIMARY [Mesh/TextGeometry] 347b466d-a894-463a-85b1-224737561231 p=-100,161.5,-265 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_U_FAMILY [Mesh/TextGeometry] e540254b-236a-4234-b839-3b800d18173a p=-125,161.5,110 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_U_CHILD [Mesh/TextGeometry] 1a3937d7-2179-41cd-ad68-318818487d1a p=-150,161.5,300 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_ENTRY [Mesh/TextGeometry] 7f1d9bfd-37f8-4734-afba-72f7d9cb48a7 p=-50,1.5,270 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_DINING [Mesh/TextGeometry] 8bee537b-df45-4fce-9656-bbd8527b941a p=-25,1.5,-300 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_LIVING [Mesh/TextGeometry] 47f19fe0-3540-4b52-883e-8a4690500b56 p=-165,1.5,-85 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_KITCHEN [Mesh/TextGeometry] 550eb275-0846-4b18-96a4-7687c2f96b6b p=200,1.5,-125 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_UTILITY [Mesh/TextGeometry] 16280ad7-497a-4ff4-bfcc-f1e9032bd7df p=200,1.5,70 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_SHOWER [Mesh/TextGeometry] bc430bbe-281a-42f1-aeb0-f9541adf7e74 p=200,1.5,210 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_STUDY [Mesh/TextGeometry] 8f95e36b-2426-4811-8b48-95dda23edbf5 p=200,1.5,335 r=-90,0,0 s=0.55,0.55,0.55 hidden
+P_G_GUEST [Mesh/TextGeometry] 7a8d97f3-c375-4a96-b8c4-9be0a21f5228 p=-200,1.5,300 r=-90,0,0 s=0.55,0.55,0.55 hidden
+L_daylight [DirectionalLight] 11dacae4-9d20-48b3-a3d5-94c5ddba3d67 p=-600,1000,800
+Directional Light [DirectionalLight] 830a2708-8ed9-49cf-a68e-085299899103 p=200,300,300 hidden

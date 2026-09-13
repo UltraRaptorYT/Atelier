@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true, "head_sampling_rate": 0.1 },
   "limits": { "cpu_ms": 30000 },
-  "rules": [{ "type": "Text", "globs": ["**/*.py"], "fallthrough": true }],
+  "rules": [{ "type": "Text", "globs": ["**/*.py", "**/*.md"], "fallthrough": true }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ProjectCoordinator", "ComputeBudget"] }],
   "env": {
     "local": {

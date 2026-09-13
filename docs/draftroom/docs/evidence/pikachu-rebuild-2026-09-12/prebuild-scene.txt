@@ -1,0 +1,152 @@
+The scene is empty — a first build can land at the origin.
+
+224 object(s) across 1 page(s). Nothing selected.
+Page: background #e8e6dc.
+# Reading the scene digest
+
+Every scene digest you are given describes the scene as one line per object,
+children INDENTED under their parent (the indent is the hierarchy — there is no
+separate parent field):
+
+  NAME [Type/Geometry] id p=x,y,z r=x,y,z s=x,y,z size=w,h,d FLAGS
+
+- `p` position, `r` rotation in DEGREES, `s` scale, `size` the content
+  bounding box. Anything at its default is left out: `r=0,0,0`, `s=1,1,1`,
+  visible, no interactivity. So a line with no `r` is unrotated.
+- FLAGS, when present: `SELECTED` (the user is pointing at it), `hidden`,
+  `cloner:<type>`, `states:N`, `events:N`, `anims:N`. Read the full detail of
+  those with `get_objects([id])`.
+- `+N more like "<name stem>" [Type/Geometry] p=… size=…` is a FOLDED run: N
+  further siblings just like the ones listed above it, with the exact count and
+  the min..max spread of their transforms. Big scenes fold their repetition to
+  stay small. Counts and spreads are exact, so verify against them directly.
+  Two ways in when you need more than the aggregate: `get_scene({expand:
+  ['<parent id>']})` lists that parent's children one by one, and
+  `select(o => o.name.startsWith('<name stem>'))` targets the whole run in
+  `run_code` without needing any of their ids.
+Upper floor [Empty] c61b0bef-3997-4609-ae3b-ae05a7f34857 p=-6.75,232,-64.25 size=612.5,264,731.5
+  Upper Rear east jamb [Mesh/CubeGeometry] ea9ec3e8-26f7-4e4f-9c38-4ef15a7f800b p=105.5,7.5,-356.75 size=186.5,87,8
+  Upper Rear west jamb [Mesh/CubeGeometry] 5fac2e27-3f02-4ac0-8a3b-35e99d785848 p=-274,7.5,-356.75 size=22.5,87,8
+  Upper Rear lintel [Mesh/CubeGeometry] b1224832-f300-4917-9211-319e540bfb4c p=-43.25,63.5,-356.75 size=484,25,8
+  Upper Bath shower [Mesh/CubeGeometry] 393b451c-3b76-46ae-b946-2e7000447da3 p=151.75,-64,-88.75 size=67,3,69
+  Upper Bath vanity [Mesh/CubeGeometry] 42133cc6-bfda-44f4-9ebe-259459522c00 p=155.75,-44,-126.75 size=50,44,28
+  Upper Family rug [Mesh/CubeGeometry] bbd57110-d846-4455-aace-70e35ce16a20 p=-196.25,-65.4,212.25 size=142,1,117
+  Upper Family table [Mesh/CubeGeometry] 8e511f6d-b8d1-46a9-8514-e9096d8ae283 p=-196.25,-55,190.25 size=50,22,40
+  Upper Family sofa back [Mesh/CubeGeometry] d0725da8-8631-4d2d-8025-3301956d730e p=-213.25,-24,275.25 size=125,20,9
+  Upper Family sofa [Mesh/CubeGeometry] c7aa679c-aff4-488f-bfaf-62473491b10f p=-213.25,-50,257.25 size=125,32,49
+  Upper Child desk [Mesh/CubeGeometry] 8b450733-16de-49d6-a345-06696aad4c97 p=126.75,-24,111.25 size=77,5,29
+  Upper Primary wardrobe [Mesh/CubeGeometry] 7fd03540-6302-4766-b919-7b66da88ca31 p=43.75,-6,-261.75 size=27,120,150
+  Upper Child headboard [Mesh/CubeGeometry] 2f5e7ff5-6b23-4176-b792-b05979c6161d p=116.75,-42,186.25 size=62,48,5
+  Upper Child pillow [Mesh/CubeGeometry] 2560257c-6e26-4b68-95c5-95ff415c3560 p=116.75,-38,206.25 size=42,6,21
+  Upper Child blanket [Mesh/CubeGeometry] ef8d98f3-0250-4921-8c2a-4a36f59f2f18 p=116.75,-38.5,255.25 size=53,3,55
+  Upper Child mattress [Mesh/CubeGeometry] c472dbe4-ae08-4d43-80c1-d27bbb5ff8ef p=116.75,-45,238.25 size=54,10,96
+  Upper Child bed base [Mesh/CubeGeometry] 56f3bbb8-8304-40de-b2de-45bae61ca61d p=116.75,-58,238.25 size=58,16,100
+  Upper Primary headboard [Mesh/CubeGeometry] 5ecbaee4-288d-4d3b-80b3-aba6f4911fdf p=-151.25,-42,-321.75 size=96,48,5
+  Upper Primary pillow [Mesh/CubeGeometry] 15a679ba-c772-43bc-b0cc-74ffd909abde p=-151.25,-38,-301.75 size=76,6,21
+  Upper Primary blanket [Mesh/CubeGeometry] 36bc8c0d-22fe-4315-8d2c-7e132ee66a13 p=-151.25,-38.5,-252.75 size=87,3,55
+  Upper Primary mattress [Mesh/CubeGeometry] d1c8b2cd-9d56-4be2-bebc-ec9ee811ad2b p=-151.25,-45,-269.75 size=88,10,96
+  Upper Primary bed base [Mesh/CubeGeometry] 7973b8de-d40e-4c1b-a98e-9006ebd25071 p=-151.25,-58,-269.75 size=92,16,100
+  Upper Partition bathroom south [Mesh/CubeGeometry] a610f20a-bfb8-448e-9ec7-e34e46fdf5de p=131.75,-3.5,-49.25 size=134,125,7
+  Upper Partition bathroom west [Mesh/CubeGeometry] bd7da64c-bc68-4781-9963-d4516224ba6d p=63.75,-3.5,-101.25 size=7,125,97
+  Upper Partition child north [Mesh/CubeGeometry] 1f9b4507-7bfc-4c2c-a6e2-cfb5c5a713c7 p=102.75,-3.5,86.25 size=192,125,7
+  Upper Partition child west [Mesh/CubeGeometry] 253e3b21-5871-4768-b72c-08e4499439c7 p=-0.25,-3.5,255.75 size=7,125,159
+  Upper Partition primary wardrobe [Mesh/CubeGeometry] 453f9443-cc09-4b92-b374-31ae7ea053f9 p=63.75,-3.5,-254.75 size=7,125,197
+  Upper Partition primary south [Mesh/CubeGeometry] 3b35e020-74d5-466f-9cf1-cd70e8e2dd43 p=-144.25,-3.5,-152.75 size=282,125,7
+  Upper Floorplate south [Mesh/CubeGeometry] ed87b677-4f31-42bf-b801-3a51b5ef0329 p=106.75,-71,251.75 size=120,10,175
+  Upper Floorplate north [Mesh/CubeGeometry] f59ba380-d2f2-4da0-81f6-f826b368805e p=106.75,-71,-198.25 size=120,10,325
+  Upper Floorplate east [Mesh/CubeGeometry] 008ee2e3-48f0-4c10-b305-262d0e0f8d58 p=186.75,-71,-10.75 size=40,10,700
+  Upper Front planter planting [Mesh/CubeGeometry] e1f3c857-5609-4147-9289-660019ee960d p=-155.25,-36,353.25 size=210,12,20
+  Upper Front balcony planter [Mesh/CubeGeometry] 6bc55c47-8d8c-43cb-a605-2c4e8d599dd9 p=-155.25,-54,353.25 size=220,25,25
+  Upper Front bronze mullion [Mesh/CubeGeometry] 4136b2e9-8f7d-4613-b946-134bb713600f p=-151.25,7,338.25 size=4,86,8
+  Upper Child screen head [Mesh/CubeGeometry] 63ff0c13-d1f6-41e4-aa6e-6f18f8399aaa p=94.75,59,349.25 size=169,6,15
+  Upper Child sun screen 11 [Mesh/CubeGeometry] c88e7da9-a0c8-4006-b510-3509b93010d3 p=163.75,9,347.25 size=4,95,10
+  Upper Child sun screen 10 [Mesh/CubeGeometry] ec656d83-c2a4-4345-9975-a7d00bf2b4a8 p=150.75,9,347.25 size=4,95,10
+  +10 more like "Upper Child sun screen" [Mesh/CubeGeometry] p=20.75..137.75,9,347.25 size=4,95,10
+  Upper West timber fin 22 [Mesh/CubeGeometry] 6986c1e2-b6bc-48c9-828f-741b4cc95bbd p=-300.25,5,322.25 size=12,134,5
+  Upper West timber fin 21 [Mesh/CubeGeometry] 446bf145-141b-4a04-a4e7-701c0663fb8d p=-300.25,5,292.25 size=12,134,5
+  +21 more like "Upper West timber fin" [Mesh/CubeGeometry] p=-300.25,5,-337.75..262.25 size=12,134,5
+  Upper Front sill east [Mesh/CubeGeometry] db36867c-d0e9-4245-97bf-d53ad3b3a4fd p=82.75,-51,335.25 size=184,30,8
+  Upper East terrace parapet [Mesh/CubeGeometry] c6297cb4-2408-492e-9c8c-a915d47485d3 p=302.75,-46,-10.75 size=7,45,684
+  Upper East terrace deck [Mesh/CubeGeometry] 5218a24f-9a23-472d-839f-3d749218558b p=256.75,-72,-10.75 size=92,6,684
+  Upper Rear primary window [Mesh/CubeGeometry] da891bfd-853f-4c58-b8b1-3648e1ee0eac p=-125.25,8,-362.75 size=275,87,6
+  Upper Rear wall [Mesh/CubeGeometry] be4c42ce-3efe-4cea-a4be-0b7d7070676c p=-43.25,-51,-356.75 size=484,30,8
+  Upper Front glazing 76 [Mesh/CubeGeometry] e1071bdd-18c6-4727-a56a-2299b8dcc582 p=82.75,7.5,334.25 size=184,87,5
+  Upper Front glazing -157 [Mesh/CubeGeometry] 6aba6a45-702f-45f1-8bf9-0463192048aa p=-150.25,7.5,334.25 size=222,87,5
+  Upper Front lintel [Mesh/CubeGeometry] e65d77f9-e0fd-416a-847a-1fa6ad07bb0a p=-43.25,63.5,335.25 size=484,25,8
+  Upper Front sill [Mesh/CubeGeometry] 43d8af1c-5d7e-4630-8da2-d935d8cc7832 p=-150.25,-51,335.25 size=222,30,8
+  Upper Front pier 184 [Mesh/CubeGeometry] 9dcee923-1a13-4765-a1cd-2eb8b2dfd7e5 p=190.75,-7.5,335.25 size=32,117,8
+  Upper Front pier -32 [Mesh/CubeGeometry] 55821a5d-81ca-4a95-8e44-a46548a2db12 p=-25.25,-7.5,335.25 size=32,117,8
+  Upper Front pier -284 [Mesh/CubeGeometry] 808634d0-7e09-419b-8f72-2c0baafba4b0 p=-277.25,-7.5,335.25 size=32,117,8
+  Upper East privacy wall [Mesh/CubeGeometry] db1898ef-a7f2-4112-b0a2-af8c1d5093c4 p=202.75,5,-10.75 size=8,142,684
+  Upper West privacy wall [Mesh/CubeGeometry] e7f5e3ae-2c60-4533-9417-a798c1228b7b p=-289.25,5,-10.75 size=8,142,684
+  Upper Floorplate west [Mesh/CubeGeometry] 41b168b3-cc04-4c96-9b92-e43cb6e7193e p=-123.25,-71,-10.75 size=340,10,700
+  Upper East high clerestory [Mesh/CubeGeometry] 27c53f86-2266-4753-b97a-456149400bff p=202.75,132,-10.75 size=5,112,680
+  Upper West high clerestory [Mesh/CubeGeometry] dc9ee03d-acdd-4594-8d19-1cf508a82b36 p=-289.25,114.5,-10.75 size=5,77,680
+  Upper Plan label BATH [Mesh/TextGeometry] 1ef42a10-7c0e-43b0-91dd-c8af19c5f0c0 p=156.75,-61,-85.75 r=-90,0,0 hidden
+  Upper Plan label FAMILY LOUNGE [Mesh/TextGeometry] 004af7bc-67ca-430e-a366-fa4fa222e42d p=-173.25,-64,129.25 r=-90,0,0 hidden
+  Upper Plan label CHILD [Mesh/TextGeometry] 4d8d65d1-6ac4-4379-a636-90fdbf627f4e p=131.75,-64,159.25 r=-90,0,0 hidden
+  Upper Plan label PRIMARY [Mesh/TextGeometry] 41c72de0-b7f6-4dc9-8c7e-a487758eae92 p=-128.25,-64,-195.75 r=-90,0,0 hidden
+Ground floor [Empty] cbdbba8a-af87-406b-bb0b-a8ce528d551b p=0,108.95,-74.5 size=600,225.9,755
+  Ground Dining chair -30 -87 [Mesh/CubeGeometry] 1887a734-0553-4582-be4e-f9c0d9652ec2 p=-30,-88.95,-12.5 size=23,28,23
+  Ground Dining chair -30 -164 [Mesh/CubeGeometry] 44b79783-9dfc-4e53-8b6b-2b95f1f4942f p=-30,-88.95,-89.5 size=23,28,23
+  +2 more like "Ground Dining chair" [Mesh/CubeGeometry] p=-88,-88.95,-89.5..-12.5 size=23,28,23
+  Ground Dining table [Mesh/CubeGeometry] 2affbbfa-08e3-4627-b4cf-f5d2da9ee648 p=-58,-63.95,-50.5 size=90,4,55
+  Ground Living table [Mesh/CubeGeometry] 3267f055-72c2-45b2-a596-eee5341da06d p=-170,-90.95,-169.5 size=63,20,40
+  Ground Living rug [Mesh/CubeGeometry] 68ed7ba5-b38e-476a-ada5-e7ffd1eeca3a p=-183,-101.95,-180.5 size=155,1,110
+  Ground Living sofa back [Mesh/CubeGeometry] a0a804ba-a994-4b84-b0ec-3d7c9d2e62aa p=-204,-66.95,-258.5 size=135,28,11
+  Ground Living sofa seat [Mesh/CubeGeometry] f730fb96-445b-4f9e-8b9a-6d8b3220864f p=-204,-91.95,-237.5 size=135,22,52
+  Ground Kitchen island top [Mesh/CubeGeometry] 32765762-eebf-4789-8a1f-4e0013457b7e p=170,-55.45,-210.5 size=75,3,120
+  Ground Kitchen island [Mesh/CubeGeometry] b2bb99f9-e4fd-4076-9c9c-c35e52be9ff2 p=170,-79.95,-210.5 size=70,46,115
+  Ground Kitchen worktop [Mesh/CubeGeometry] 9ad5cc65-538b-4a7d-807a-af4f0c189088 p=268,-57.45,-215.5 size=38,3,183
+  Ground Kitchen counter [Mesh/CubeGeometry] 6a835a5e-9426-4448-b931-b99f4150ad0b p=270,-80.95,-215.5 size=34,44,180
+  Ground Shower basin [Mesh/CubeGeometry] 42ad7e9f-271e-4350-894e-da0f91a5a5ca p=255,-81.95,112.5 size=35,42,28
+  Ground Shower screen [Mesh/CubeGeometry] a5fa157d-5115-4a18-bc0c-57ea88e3470b p=221,-54.45,37.5 size=3,90,65
+  Ground Shower tray [Mesh/CubeGeometry] 1d3f43a8-1fb0-4085-a142-3e6c2c3ff9b5 p=253,-100.95,37.5 size=60,3,65
+  Ground Study chair [Mesh/CubeGeometry] 8962f002-4e4f-4503-96ba-70441601e367 p=-210,-87.45,269.5 size=29,31,29
+  Ground Study desk [Mesh/CubeGeometry] 28ed7107-89ca-46bd-94f7-d0284c9374a8 p=-215,-65.95,316.5 size=110,5,42
+  Ground Guest wardrobe [Mesh/CubeGeometry] 5229ad2d-32af-451a-97b1-1186eeb625c2 p=274,-45.45,206.5 size=25,115,90
+  Ground Guest headboard [Mesh/CubeGeometry] cdff4d02-41d3-48d0-bdf1-6468e8fe4a37 p=210,-78.95,227.5 size=74,48,5
+  Ground Guest pillow [Mesh/CubeGeometry] 1521861c-2d6d-4ecd-9055-9d43aae479dd p=210,-74.95,247.5 size=54,6,21
+  Ground Guest blanket [Mesh/CubeGeometry] 4522684a-4867-47ac-83e4-dd080c1ff5c6 p=210,-75.45,296.5 size=65,3,55
+  Ground Guest mattress [Mesh/CubeGeometry] f1b2be82-136a-411e-bcd9-2412217a6b0e p=210,-81.95,279.5 size=66,10,96
+  Ground Guest bed base [Mesh/CubeGeometry] 516ca888-5d0b-4b03-8d62-fa60eea6d2ec p=210,-94.95,279.5 size=70,16,100
+  Ground Stair rail [Mesh/CubeGeometry] 6297b0d1-24c0-4e8a-bf39-2f2aa1e7c4b2 p=150,32.05,74.5 r=38.66,0,0 size=4,4,254
+  Ground Stair tread 10 [Mesh/CubeGeometry] fc0b7e50-b98f-4dca-bb04-f8792a1583cd p=100,-22.95,-15.5 size=95,160,20
+  Ground Stair tread 9 [Mesh/CubeGeometry] 189e02ce-4f15-43d2-9104-1691ddffd976 p=100,-30.95,4.5 size=95,144,20
+  +8 more like "Ground Stair tread" [Mesh/CubeGeometry] p=100,-94.95..-38.95,24.5..164.5 size=95,16..128,20
+  Ground Partition Shower north [Mesh/CubeGeometry] 2a7df3e1-5cf1-4b9a-b297-cf460215c49a p=241,-36.95,-3.5 size=102,132,7
+  Ground Partition Shower west rear [Mesh/CubeGeometry] eeb58067-f068-46d5-a18b-ee7abd7da52c p=186,-36.95,29.5 size=7,132,60
+  Ground Partition Shower south [Mesh/CubeGeometry] 96d4f7f8-17dc-4c50-8850-15acb4231d68 p=241,-36.95,140.5 size=102,132,7
+  Ground Partition Study east rear [Mesh/CubeGeometry] 0f63d728-2347-4aae-97ff-b6fd2c9a03c1 p=-96,-36.95,203 size=7,132,65
+  Ground Partition Study east front [Mesh/CubeGeometry] 804d6be7-bb67-43bc-9339-ad96839137b9 p=-96,-36.95,321.5 size=7,132,90
+  Ground Partition Study rear [Mesh/CubeGeometry] 82f8793b-a124-4f92-af7a-27151388fc53 p=-198,-36.95,170.5 size=188,132,7
+  Ground Partition Guest west rear [Mesh/CubeGeometry] a10ced0e-71f4-4612-94af-53d256681e07 p=96.5,-36.95,160.5 size=7,132,30
+  Ground Partition Guest west front [Mesh/CubeGeometry] 7c9f070d-e460-4860-81fe-3791fac03ba1 p=96.5,-36.95,301.5 size=7,132,130
+  Ground Partition Guest rear [Mesh/CubeGeometry] aad064bb-0560-4eaf-89c1-523df6f3088f p=196,-36.95,146 size=192,132,7
+  Ground Entry bench plinth [Mesh/CubeGeometry] 063655c2-ec2c-423b-b95c-dd6ee6941a99 p=-97,-93.95,340.5 size=67,19,21
+  Ground Entry bench seat [Mesh/CubeGeometry] 0e90ea06-63b9-40ea-822c-d1ea116c338e p=-97,-80.95,340.5 size=85,7,27
+  Ground Garden threshold column [Mesh/CubeGeometry] b5fe3521-b4dc-4211-b2af-b15902af9ca0 p=-287,-28.45,-363.5 size=6,149,6
+  Ground Garden threshold canopy [Mesh/CubeGeometry] ce202970-cccb-4433-abf8-365bfda75b16 p=-224,40.05,-324.5 size=150,8,100
+  Ground Rear slider frame 226 [Mesh/CubeGeometry] b4091cd1-554a-416a-b391-f6f2c418807f p=226,-35.95,-373.5 size=4,134,8
+  Ground Rear slider frame 107 [Mesh/CubeGeometry] 61030740-7927-4862-9688-39733402054d p=107,-35.95,-373.5 size=4,134,8
+  +4 more like "Ground Rear slider frame" [Mesh/CubeGeometry] p=-288..58,-35.95,-373.5..-276.5 size=4,134,8
+  Ground Rear lintel [Mesh/CubeGeometry] a55d223e-f263-4af5-ac0d-72e061e031e4 p=0,41.05,-371.5 size=592,12,8
+  Ground Rear kitchen glazing [Mesh/CubeGeometry] 741bbd24-3ae1-4ea5-ac03-86450c18713e p=167.5,-21.95,-368.5 size=125,110,5
+  Ground Rear garden glazing [Mesh/CubeGeometry] baccb25a-6c8c-4187-9201-b6c18a3bdcb0 p=-40,-35.95,-368.5 size=210,133,5
+  Ground Rear central pier [Mesh/CubeGeometry] 87f2370e-6613-4c4c-9215-168221298a82 p=82.5,-33.95,-371.5 size=35,138,8
+  Ground Rear east pier [Mesh/CubeGeometry] 191fb166-6312-4be9-b54a-219a715f7eed p=265,-33.95,-371.5 size=70,138,8
+  Ground Entry portal canopy [Mesh/CubeGeometry] 5f3d6b1c-c521-4161-8c89-ac54d250a3d5 p=0,44.05,313.5 size=145,9,120
+  Ground Entry portal right [Mesh/CubeGeometry] 6e4fe377-665a-4791-bf14-45bf78bc2afc p=50,-31.45,334.5 size=9,143,72
+  Ground Entry portal left [Mesh/CubeGeometry] f15ed8e1-2193-4d04-87a6-49ac5bb9ea38 p=-50,-31.45,334.5 size=9,143,72
+  Ground Entry handle [Mesh/CubeGeometry] 918af4e9-2288-476d-8186-d85a0348c7dd p=13,-43.95,359.5 size=3,32,5
+  Ground Entry sidelight [Mesh/CubeGeometry] 56e9c052-a327-40a2-834d-f87b5815fd07 p=34,-40.45,353.5 size=22,125,5
+  Ground Entry door [Mesh/CubeGeometry] 31900c70-8f17-4d29-a851-0dcd12b91d5b p=-11,-40.45,353.5 size=65,125,6
+  Ground Front mullion 247.0 [Mesh/CubeGeometry] 5487aa7e-c350-4910-824f-4f481d5e3757 p=247,-22.95,373.5 size=4,92,8
+  Ground Front mullion 153.0 [Mesh/CubeGeometry] d29a0b90-c501-4b75-ad69-12917094ae36 p=153,-22.95,373.5 size=4,92,8
+  Ground Front glazing 200 [Mesh/CubeGeometry] e77c5096-2a11-4841-91b5-d92e84c815d8 p=200,-23.45,369.5 size=100,91,5
+Runs of near-identical siblings above are folded into "+N more" lines to keep this small — their counts and coordinate spreads are exact. To get the folded objects individually, call get_scene with expand:['<parent id>'] (lists that parent's children in full); to act on a whole run without ids, target it by name in run_code, e.g. select(o => o.name.startsWith('Tree Canopy')).
+(+64 object(s) not listed — this scene is too large to list in full and had no repeated runs left to fold. What is listed is the earliest-created part of the scene, which is where the structure lives; reach the rest with get_scene expand:['<parent id>'] or by name in run_code.)
+Current view (the USER'S live viewport — their actual framing; if the subject is cropped, tiny, or missing here, fix the viewport framing with lookFrom/focus and re-check):
+IMAGE: /tmp/draftroom-spline-capture-1.png
+FRAMING CHECK: all major objects are in frame; the camera sits INSIDE the content cluster (interior composition) — fine for a room shot, just verify the focal furniture reads.
+HERO CHECK: no hero declared — re-run this live check with hero: [<the brief's main object names>] so the subject's framing is verified, not assumed.

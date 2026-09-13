@@ -1,0 +1,4136 @@
+{
+  "method": "Compare all actual final primitive transforms and dimensions against intended geometry, with documented stair guard correction; no screenshot measurements",
+  "toleranceWorldUnits": 0.025,
+  "primitiveCount": 172,
+  "failures": [],
+  "results": [
+    {
+      "name": "G_floor_south",
+      "status": "pass",
+      "actualPosition": [
+        0.0,
+        -5.0,
+        100.0
+      ],
+      "actualSize": [
+        600.0,
+        10.0,
+        600.0
+      ],
+      "expectedPosition": [
+        0.0,
+        -5.0,
+        100.0
+      ],
+      "expectedSize": [
+        600,
+        10.0,
+        600
+      ]
+    },
+    {
+      "name": "G_floor_rear",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        -5.0,
+        -275.0
+      ],
+      "actualSize": [
+        400.0,
+        10.0,
+        150.0
+      ],
+      "expectedPosition": [
+        100.0,
+        -5.0,
+        -275.0
+      ],
+      "expectedSize": [
+        400,
+        10.0,
+        150
+      ]
+    },
+    {
+      "name": "T_garden_threshold",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        -5.0,
+        -275.0
+      ],
+      "actualSize": [
+        200.0,
+        10.0,
+        150.0
+      ],
+      "expectedPosition": [
+        -200.0,
+        -5.0,
+        -275.0
+      ],
+      "expectedSize": [
+        200,
+        10.0,
+        150
+      ]
+    },
+    {
+      "name": "U_floor_west",
+      "status": "pass",
+      "actualPosition": [
+        -137.5,
+        155.0,
+        25.0
+      ],
+      "actualSize": [
+        325.0,
+        10.0,
+        750.0
+      ],
+      "expectedPosition": [
+        -137.5,
+        155.0,
+        25.0
+      ],
+      "expectedSize": [
+        325.0,
+        10.000000000000009,
+        750
+      ]
+    },
+    {
+      "name": "U_floor_east",
+      "status": "pass",
+      "actualPosition": [
+        165.0,
+        155.0,
+        25.0
+      ],
+      "actualSize": [
+        130.0,
+        10.0,
+        750.0
+      ],
+      "expectedPosition": [
+        165.00000000000003,
+        155.0,
+        25.0
+      ],
+      "expectedSize": [
+        129.99999999999997,
+        10.000000000000009,
+        750
+      ]
+    },
+    {
+      "name": "U_floor_south",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        155.0,
+        287.5
+      ],
+      "actualSize": [
+        75.0,
+        10.0,
+        225.0
+      ],
+      "expectedPosition": [
+        62.5,
+        155.0,
+        287.5
+      ],
+      "expectedSize": [
+        75.0,
+        10.000000000000009,
+        225.0
+      ]
+    },
+    {
+      "name": "U_floor_north",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        155.0,
+        -206.5
+      ],
+      "actualSize": [
+        75.0,
+        10.0,
+        287.0
+      ],
+      "expectedPosition": [
+        62.5,
+        155.0,
+        -206.5000000000001
+      ],
+      "expectedSize": [
+        75.0,
+        10.000000000000009,
+        286.99999999999994
+      ]
+    },
+    {
+      "name": "T_east_roof_deck",
+      "status": "pass",
+      "actualPosition": [
+        265.0,
+        155.0,
+        25.0
+      ],
+      "actualSize": [
+        70.0,
+        10.0,
+        750.0
+      ],
+      "expectedPosition": [
+        265.00000000000006,
+        155.0,
+        25.0
+      ],
+      "expectedSize": [
+        70.00000000000001,
+        10.000000000000009,
+        750
+      ]
+    },
+    {
+      "name": "G_west end",
+      "status": "pass",
+      "actualPosition": [
+        -295.0,
+        75.0,
+        95.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        590.0
+      ],
+      "expectedPosition": [
+        -295.0,
+        75.0,
+        95.00000000000001
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        590.0
+      ]
+    },
+    {
+      "name": "G_east end",
+      "status": "pass",
+      "actualPosition": [
+        295.0,
+        75.0,
+        25.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        730.0
+      ],
+      "expectedPosition": [
+        295.0,
+        75.0,
+        25.0
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        730.0000000000001
+      ]
+    },
+    {
+      "name": "G_threshold_return segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        75.0,
+        -220.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        30.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        75.0,
+        -219.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        29.999999999999893
+      ]
+    },
+    {
+      "name": "G_threshold_return lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        137.5,
+        -270.0
+      ],
+      "actualSize": [
+        8.0,
+        25.0,
+        70.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        137.5,
+        -269.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        25.0,
+        70.00000000000011
+      ]
+    },
+    {
+      "name": "G_threshold_return end",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        75.0,
+        -322.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        35.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        75.0,
+        -322.5000000000001
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        34.999999999999964
+      ]
+    },
+    {
+      "name": "G_threshold_slider segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -282.5,
+        75.0,
+        -200.0
+      ],
+      "actualSize": [
+        15.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -282.5,
+        75.0,
+        -200.0
+      ],
+      "expectedSize": [
+        14.999999999999991,
+        150,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "G_threshold_slider lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        141.25,
+        -200.0
+      ],
+      "actualSize": [
+        150.0,
+        17.5,
+        8.0
+      ],
+      "expectedPosition": [
+        -200.0,
+        141.25,
+        -200.0
+      ],
+      "expectedSize": [
+        150.0,
+        17.500000000000004,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "G_threshold_slider end",
+      "status": "pass",
+      "actualPosition": [
+        -110.5,
+        75.0,
+        -200.0
+      ],
+      "actualSize": [
+        29.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -110.5,
+        75.0,
+        -200.0
+      ],
+      "expectedSize": [
+        29.000000000000004,
+        150,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "T_threshold_column_4.1",
+      "status": "pass",
+      "actualPosition": [
+        -295.0,
+        75.0,
+        -344.0
+      ],
+      "actualSize": [
+        6.0,
+        150.0,
+        6.0
+      ],
+      "expectedPosition": [
+        -295.0,
+        75.0,
+        -344.0000000000001
+      ],
+      "expectedSize": [
+        5.999999999999961,
+        150,
+        6.00000000000005
+      ]
+    },
+    {
+      "name": "T_threshold_column_7.9",
+      "status": "pass",
+      "actualPosition": [
+        -105.0,
+        75.0,
+        -344.0
+      ],
+      "actualSize": [
+        6.0,
+        150.0,
+        6.0
+      ],
+      "expectedPosition": [
+        -104.99999999999999,
+        75.0,
+        -344.0000000000001
+      ],
+      "expectedSize": [
+        5.999999999999961,
+        150,
+        6.00000000000005
+      ]
+    },
+    {
+      "name": "G_south segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -282.5,
+        75.0,
+        395.0
+      ],
+      "actualSize": [
+        35.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -282.5,
+        75.0,
+        395.0
+      ],
+      "expectedSize": [
+        35.00000000000001,
+        150,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "G_south segment 1",
+      "status": "pass",
+      "actualPosition": [
+        -97.5,
+        75.0,
+        395.0
+      ],
+      "actualSize": [
+        75.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -97.49999999999997,
+        75.0,
+        395.0
+      ],
+      "expectedSize": [
+        75.00000000000004,
+        150,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "G_south lintel 1",
+      "status": "pass",
+      "actualPosition": [
+        -27.5,
+        135.0,
+        395.0
+      ],
+      "actualSize": [
+        65.0,
+        30.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -27.500000000000036,
+        135.0,
+        395.0
+      ],
+      "expectedSize": [
+        64.99999999999994,
+        30.000000000000004,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "G_south segment 2",
+      "status": "pass",
+      "actualPosition": [
+        67.5,
+        75.0,
+        395.0
+      ],
+      "actualSize": [
+        125.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        67.49999999999999,
+        75.0,
+        395.0
+      ],
+      "expectedSize": [
+        125.0,
+        150,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "G_south end",
+      "status": "pass",
+      "actualPosition": [
+        277.5,
+        75.0,
+        395.0
+      ],
+      "actualSize": [
+        45.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        277.50000000000006,
+        75.0,
+        395.0
+      ],
+      "expectedSize": [
+        45.000000000000014,
+        150,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "G_guest_window sill",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        20.0,
+        395.0
+      ],
+      "actualSize": [
+        130.0,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -200.0,
+        20.0,
+        395.0
+      ],
+      "expectedSize": [
+        129.99999999999997,
+        40.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_guest_window head",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        135.0,
+        395.0
+      ],
+      "actualSize": [
+        130.0,
+        30.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -200.0,
+        135.0,
+        395.0
+      ],
+      "expectedSize": [
+        129.99999999999997,
+        30.000000000000004,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_guest_window glass",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        126.5,
+        76.5,
+        2.5
+      ],
+      "expectedPosition": [
+        -200.0,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        126.49999999999997,
+        76.49999999999999,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_guest_window jamb 4.7175",
+      "status": "pass",
+      "actualPosition": [
+        -264.13,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        -264.125,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "G_guest_window jamb 7.2825",
+      "status": "pass",
+      "actualPosition": [
+        -135.88,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        -135.875,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "G_study_window sill",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        20.0,
+        395.0
+      ],
+      "actualSize": [
+        125.0,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        20.0,
+        395.0
+      ],
+      "expectedSize": [
+        125.0,
+        40.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_study_window head",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        135.0,
+        395.0
+      ],
+      "actualSize": [
+        125.0,
+        30.0,
+        8.0
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        135.0,
+        395.0
+      ],
+      "expectedSize": [
+        125.0,
+        30.000000000000004,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_study_window glass",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        121.5,
+        76.5,
+        2.5
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        121.49999999999999,
+        76.49999999999999,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_study_window jamb 12.6175",
+      "status": "pass",
+      "actualPosition": [
+        130.87,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        130.875,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "G_study_window jamb 15.0825",
+      "status": "pass",
+      "actualPosition": [
+        254.12,
+        80.0,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        254.12499999999997,
+        80.0,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "G_entry_open_leaf",
+      "status": "pass",
+      "actualPosition": [
+        3.0,
+        58.75,
+        362.5
+      ],
+      "actualSize": [
+        3.0,
+        117.5,
+        60.0
+      ],
+      "expectedPosition": [
+        2.999999999999936,
+        58.75,
+        362.5
+      ],
+      "expectedSize": [
+        3.000000000000025,
+        117.5,
+        59.999999999999964
+      ]
+    },
+    {
+      "name": "G_north segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -80.5,
+        75.0,
+        -345.0
+      ],
+      "actualSize": [
+        31.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -80.49999999999997,
+        75.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        30.99999999999996,
+        150,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "G_north lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        10.0,
+        141.25,
+        -345.0
+      ],
+      "actualSize": [
+        150.0,
+        17.5,
+        10.0
+      ],
+      "expectedPosition": [
+        9.999999999999964,
+        141.25,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        150.0,
+        17.500000000000004,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "G_north segment 1",
+      "status": "pass",
+      "actualPosition": [
+        105.0,
+        75.0,
+        -345.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        104.99999999999999,
+        75.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        40.000000000000036,
+        150,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "G_north end",
+      "status": "pass",
+      "actualPosition": [
+        280.0,
+        75.0,
+        -345.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        280.0,
+        75.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        40.000000000000036,
+        150,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "G_kitchen_north sill",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        20.0,
+        -345.0
+      ],
+      "actualSize": [
+        135.0,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        20.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        134.99999999999997,
+        40.0,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "G_kitchen_north head",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        135.0,
+        -345.0
+      ],
+      "actualSize": [
+        135.0,
+        30.0,
+        8.0
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        135.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        134.99999999999997,
+        30.000000000000004,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "G_kitchen_north glass",
+      "status": "pass",
+      "actualPosition": [
+        192.5,
+        80.0,
+        -345.0
+      ],
+      "actualSize": [
+        131.5,
+        76.5,
+        2.5
+      ],
+      "expectedPosition": [
+        192.49999999999997,
+        80.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        131.49999999999994,
+        76.49999999999999,
+        2.499999999999858
+      ]
+    },
+    {
+      "name": "G_kitchen_north jamb 12.5175",
+      "status": "pass",
+      "actualPosition": [
+        125.87,
+        80.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        125.875,
+        80.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "G_kitchen_north jamb 15.1825",
+      "status": "pass",
+      "actualPosition": [
+        259.12,
+        80.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        259.12499999999994,
+        80.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.0,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "G_guest_east segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        75.0,
+        362.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        55.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        75.0,
+        362.5
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        55.00000000000003
+      ]
+    },
+    {
+      "name": "G_guest_east lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        130.0,
+        310.0
+      ],
+      "actualSize": [
+        8.0,
+        40.0,
+        50.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        130.0,
+        309.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        39.99999999999999,
+        50.0
+      ]
+    },
+    {
+      "name": "G_guest_east end",
+      "status": "pass",
+      "actualPosition": [
+        -100.0,
+        75.0,
+        230.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        110.0
+      ],
+      "expectedPosition": [
+        -100.0,
+        75.0,
+        229.99999999999997
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        109.99999999999997
+      ]
+    },
+    {
+      "name": "G_guest_north end",
+      "status": "pass",
+      "actualPosition": [
+        -197.0,
+        75.0,
+        175.0
+      ],
+      "actualSize": [
+        186.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -196.99999999999997,
+        75.0,
+        175.0
+      ],
+      "expectedSize": [
+        186.0,
+        150,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_service_west segment 0",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        75.0,
+        370.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        40.0
+      ],
+      "expectedPosition": [
+        100.0,
+        75.0,
+        370.0
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        39.99999999999999
+      ]
+    },
+    {
+      "name": "G_service_west lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        130.0,
+        325.0
+      ],
+      "actualSize": [
+        8.0,
+        40.0,
+        50.0
+      ],
+      "expectedPosition": [
+        100.0,
+        130.0,
+        325.0
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        39.99999999999999,
+        50
+      ]
+    },
+    {
+      "name": "G_service_west segment 1",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        75.0,
+        267.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        65.0
+      ],
+      "expectedPosition": [
+        100.0,
+        75.0,
+        267.5
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        65.00000000000003
+      ]
+    },
+    {
+      "name": "G_service_west lintel 1",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        130.0,
+        210.0
+      ],
+      "actualSize": [
+        8.0,
+        40.0,
+        50.0
+      ],
+      "expectedPosition": [
+        100.0,
+        130.0,
+        209.99999999999997
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        39.99999999999999,
+        50.0
+      ]
+    },
+    {
+      "name": "G_service_west segment 2",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        75.0,
+        57.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        255.0
+      ],
+      "expectedPosition": [
+        100.0,
+        75.0,
+        57.500000000000014
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        254.9999999999999
+      ]
+    },
+    {
+      "name": "G_service_west lintel 2",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        141.25,
+        -127.5
+      ],
+      "actualSize": [
+        8.0,
+        17.5,
+        115.0
+      ],
+      "expectedPosition": [
+        100.0,
+        141.25,
+        -127.49999999999986
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        17.500000000000004,
+        115.00000000000003
+      ]
+    },
+    {
+      "name": "G_service_west end",
+      "status": "pass",
+      "actualPosition": [
+        100.0,
+        75.0,
+        -217.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        65.0
+      ],
+      "expectedPosition": [
+        100.0,
+        75.0,
+        -217.50000000000006
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150,
+        65.00000000000003
+      ]
+    },
+    {
+      "name": "G_study_north end",
+      "status": "pass",
+      "actualPosition": [
+        197.0,
+        75.0,
+        250.0
+      ],
+      "actualSize": [
+        186.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        197.00000000000006,
+        75.0,
+        250.0
+      ],
+      "expectedSize": [
+        186.00000000000003,
+        150,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_shower_north end",
+      "status": "pass",
+      "actualPosition": [
+        197.0,
+        75.0,
+        125.0
+      ],
+      "actualSize": [
+        186.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        197.00000000000006,
+        75.0,
+        125.0
+      ],
+      "expectedSize": [
+        186.00000000000003,
+        150,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_utility_north segment 0",
+      "status": "pass",
+      "actualPosition": [
+        134.5,
+        75.0,
+        0.0
+      ],
+      "actualSize": [
+        61.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        134.50000000000006,
+        75.0,
+        0.0
+      ],
+      "expectedSize": [
+        61.00000000000003,
+        150,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_utility_north lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        190.0,
+        130.0,
+        0.0
+      ],
+      "actualSize": [
+        50.0,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        190.00000000000003,
+        130.0,
+        0.0
+      ],
+      "expectedSize": [
+        50.0,
+        39.99999999999999,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_utility_north end",
+      "status": "pass",
+      "actualPosition": [
+        252.5,
+        75.0,
+        0.0
+      ],
+      "actualSize": [
+        75.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        252.50000000000003,
+        75.0,
+        0.0
+      ],
+      "expectedSize": [
+        75.0,
+        150,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_west_privacy end",
+      "status": "pass",
+      "actualPosition": [
+        -295.0,
+        236.5,
+        25.0
+      ],
+      "actualSize": [
+        10.0,
+        153.0,
+        730.0
+      ],
+      "expectedPosition": [
+        -295.0,
+        236.50000000000003,
+        25.0
+      ],
+      "expectedSize": [
+        9.999999999999986,
+        152.99999999999997,
+        730.0000000000001
+      ]
+    },
+    {
+      "name": "U_east_privacy segment 0",
+      "status": "pass",
+      "actualPosition": [
+        225.0,
+        243.25,
+        167.5
+      ],
+      "actualSize": [
+        10.0,
+        166.5,
+        445.0
+      ],
+      "expectedPosition": [
+        225.0,
+        243.25,
+        167.49999999999997
+      ],
+      "expectedSize": [
+        9.999999999999964,
+        166.5,
+        445.0000000000001
+      ]
+    },
+    {
+      "name": "U_east_privacy lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        225.0,
+        298.25,
+        -80.0
+      ],
+      "actualSize": [
+        10.0,
+        56.5,
+        50.0
+      ],
+      "expectedPosition": [
+        225.0,
+        298.25,
+        -80.00000000000007
+      ],
+      "expectedSize": [
+        9.999999999999964,
+        56.49999999999999,
+        50.0
+      ]
+    },
+    {
+      "name": "U_east_privacy end",
+      "status": "pass",
+      "actualPosition": [
+        225.0,
+        243.25,
+        -222.5
+      ],
+      "actualSize": [
+        10.0,
+        166.5,
+        235.0
+      ],
+      "expectedPosition": [
+        225.0,
+        243.25,
+        -222.50000000000014
+      ],
+      "expectedSize": [
+        9.999999999999964,
+        166.5,
+        234.99999999999997
+      ]
+    },
+    {
+      "name": "U_south segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -280.0,
+        235.0,
+        395.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -280.0,
+        235.0,
+        395.0
+      ],
+      "expectedSize": [
+        39.99999999999999,
+        150.0,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "U_south segment 1",
+      "status": "pass",
+      "actualPosition": [
+        -60.0,
+        235.0,
+        395.0
+      ],
+      "actualSize": [
+        60.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -59.999999999999964,
+        235.0,
+        395.0
+      ],
+      "expectedSize": [
+        60.00000000000006,
+        150.0,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "U_south end",
+      "status": "pass",
+      "actualPosition": [
+        210.0,
+        235.0,
+        395.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        209.99999999999997,
+        235.0,
+        395.0
+      ],
+      "expectedSize": [
+        39.99999999999994,
+        150.0,
+        9.999999999999964
+      ]
+    },
+    {
+      "name": "U_child_window sill",
+      "status": "pass",
+      "actualPosition": [
+        -175.0,
+        182.5,
+        395.0
+      ],
+      "actualSize": [
+        170.0,
+        45.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -175.0,
+        182.5,
+        395.0
+      ],
+      "expectedSize": [
+        169.99999999999997,
+        44.99999999999997,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_child_window head",
+      "status": "pass",
+      "actualPosition": [
+        -175.0,
+        296.25,
+        395.0
+      ],
+      "actualSize": [
+        170.0,
+        27.5,
+        8.0
+      ],
+      "expectedPosition": [
+        -175.0,
+        296.25000000000006,
+        395.0
+      ],
+      "expectedSize": [
+        169.99999999999997,
+        27.499999999999993,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_child_window glass",
+      "status": "pass",
+      "actualPosition": [
+        -175.0,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        166.5,
+        74.0,
+        2.5
+      ],
+      "expectedPosition": [
+        -175.0,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        166.49999999999997,
+        74.00000000000003,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "U_child_window jamb 4.8175",
+      "status": "pass",
+      "actualPosition": [
+        -259.13,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        77.5,
+        6.0
+      ],
+      "expectedPosition": [
+        -259.125,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        77.50000000000003,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "U_child_window jamb 8.1825",
+      "status": "pass",
+      "actualPosition": [
+        -90.88,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        77.5,
+        6.0
+      ],
+      "expectedPosition": [
+        -90.87500000000004,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        77.50000000000003,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "U_landing_window sill",
+      "status": "pass",
+      "actualPosition": [
+        80.0,
+        182.5,
+        395.0
+      ],
+      "actualSize": [
+        220.0,
+        45.0,
+        8.0
+      ],
+      "expectedPosition": [
+        80.00000000000007,
+        182.5,
+        395.0
+      ],
+      "expectedSize": [
+        220.00000000000003,
+        44.99999999999997,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_landing_window head",
+      "status": "pass",
+      "actualPosition": [
+        80.0,
+        296.25,
+        395.0
+      ],
+      "actualSize": [
+        220.0,
+        27.5,
+        8.0
+      ],
+      "expectedPosition": [
+        80.00000000000007,
+        296.25000000000006,
+        395.0
+      ],
+      "expectedSize": [
+        220.00000000000003,
+        27.499999999999993,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_landing_window glass",
+      "status": "pass",
+      "actualPosition": [
+        80.0,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        216.5,
+        74.0,
+        2.5
+      ],
+      "expectedPosition": [
+        80.00000000000007,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        216.5,
+        74.00000000000003,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "U_landing_window jamb 9.4175",
+      "status": "pass",
+      "actualPosition": [
+        -29.13,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        77.5,
+        6.0
+      ],
+      "expectedPosition": [
+        -29.12499999999998,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        77.50000000000003,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "U_landing_window jamb 13.7825",
+      "status": "pass",
+      "actualPosition": [
+        189.12,
+        243.75,
+        395.0
+      ],
+      "actualSize": [
+        1.75,
+        77.5,
+        6.0
+      ],
+      "expectedPosition": [
+        189.12500000000003,
+        243.75,
+        395.0
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        77.50000000000003,
+        5.999999999999961
+      ]
+    },
+    {
+      "name": "U_north segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -280.0,
+        235.0,
+        -345.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        -280.0,
+        235.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        39.99999999999999,
+        150.0,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "U_north segment 1",
+      "status": "pass",
+      "actualPosition": [
+        47.5,
+        235.0,
+        -345.0
+      ],
+      "actualSize": [
+        75.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        47.499999999999964,
+        235.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        75.0,
+        150.0,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "U_north end",
+      "status": "pass",
+      "actualPosition": [
+        210.0,
+        235.0,
+        -345.0
+      ],
+      "actualSize": [
+        40.0,
+        150.0,
+        10.0
+      ],
+      "expectedPosition": [
+        209.99999999999997,
+        235.0,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        39.99999999999994,
+        150.0,
+        10.000000000000142
+      ]
+    },
+    {
+      "name": "U_primary_window sill",
+      "status": "pass",
+      "actualPosition": [
+        -125.0,
+        182.5,
+        -345.0
+      ],
+      "actualSize": [
+        270.0,
+        45.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -125.0,
+        182.5,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        270.0,
+        44.99999999999997,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_primary_window head",
+      "status": "pass",
+      "actualPosition": [
+        -125.0,
+        297.5,
+        -345.0
+      ],
+      "actualSize": [
+        270.0,
+        25.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -125.0,
+        297.5,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        270.0,
+        25.0,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_primary_window glass",
+      "status": "pass",
+      "actualPosition": [
+        -125.0,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        266.5,
+        76.5,
+        2.5
+      ],
+      "expectedPosition": [
+        -125.0,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        266.49999999999994,
+        76.50000000000001,
+        2.499999999999858
+      ]
+    },
+    {
+      "name": "U_primary_window jamb 4.8175",
+      "status": "pass",
+      "actualPosition": [
+        -259.13,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        -259.125,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.00000000000003,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "U_primary_window jamb 10.1825",
+      "status": "pass",
+      "actualPosition": [
+        9.12,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        9.124999999999961,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.00000000000003,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "U_dressing_window sill",
+      "status": "pass",
+      "actualPosition": [
+        137.5,
+        182.5,
+        -345.0
+      ],
+      "actualSize": [
+        105.0,
+        45.0,
+        8.0
+      ],
+      "expectedPosition": [
+        137.5,
+        182.5,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        105.00000000000007,
+        44.99999999999997,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_dressing_window head",
+      "status": "pass",
+      "actualPosition": [
+        137.5,
+        297.5,
+        -345.0
+      ],
+      "actualSize": [
+        105.0,
+        25.0,
+        8.0
+      ],
+      "expectedPosition": [
+        137.5,
+        297.5,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        105.00000000000007,
+        25.0,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_dressing_window glass",
+      "status": "pass",
+      "actualPosition": [
+        137.5,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        101.5,
+        76.5,
+        2.5
+      ],
+      "expectedPosition": [
+        137.5,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        101.50000000000006,
+        76.50000000000001,
+        2.499999999999858
+      ]
+    },
+    {
+      "name": "U_dressing_window jamb 11.7175",
+      "status": "pass",
+      "actualPosition": [
+        85.87,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        85.87499999999997,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.00000000000003,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "U_dressing_window jamb 13.7825",
+      "status": "pass",
+      "actualPosition": [
+        189.12,
+        245.0,
+        -345.0
+      ],
+      "actualSize": [
+        1.75,
+        80.0,
+        6.0
+      ],
+      "expectedPosition": [
+        189.12500000000003,
+        245.00000000000003,
+        -344.99999999999994
+      ],
+      "expectedSize": [
+        1.750000000000007,
+        80.00000000000003,
+        5.999999999999872
+      ]
+    },
+    {
+      "name": "U_child_east segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -50.0,
+        235.0,
+        350.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        80.0
+      ],
+      "expectedPosition": [
+        -50.0,
+        235.0,
+        350.0
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150.0,
+        80.00000000000003
+      ]
+    },
+    {
+      "name": "U_child_east lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        -50.0,
+        290.0,
+        285.0
+      ],
+      "actualSize": [
+        8.0,
+        40.0,
+        50.0
+      ],
+      "expectedPosition": [
+        -50.0,
+        290.00000000000006,
+        284.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        39.99999999999999,
+        50.0
+      ]
+    },
+    {
+      "name": "U_child_east end",
+      "status": "pass",
+      "actualPosition": [
+        -50.0,
+        235.0,
+        230.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        60.0
+      ],
+      "expectedPosition": [
+        -50.0,
+        235.0,
+        229.99999999999997
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150.0,
+        59.999999999999964
+      ]
+    },
+    {
+      "name": "U_child_north end",
+      "status": "pass",
+      "actualPosition": [
+        -172.0,
+        235.0,
+        200.0
+      ],
+      "actualSize": [
+        236.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -171.99999999999997,
+        235.0,
+        200.0
+      ],
+      "expectedSize": [
+        236.0,
+        150.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_primary_south segment 0",
+      "status": "pass",
+      "actualPosition": [
+        -140.0,
+        235.0,
+        -150.0
+      ],
+      "actualSize": [
+        300.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        -140.00000000000003,
+        235.0,
+        -150.0
+      ],
+      "expectedSize": [
+        299.99999999999994,
+        150.0,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_primary_south lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        35.0,
+        290.0,
+        -150.0
+      ],
+      "actualSize": [
+        50.0,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        34.999999999999964,
+        290.00000000000006,
+        -150.0
+      ],
+      "expectedSize": [
+        50.0,
+        39.99999999999999,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_primary_south end",
+      "status": "pass",
+      "actualPosition": [
+        140.0,
+        235.0,
+        -150.0
+      ],
+      "actualSize": [
+        160.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        140.00000000000003,
+        235.0,
+        -150.0
+      ],
+      "expectedSize": [
+        160.00000000000006,
+        150.0,
+        7.9999999999998295
+      ]
+    },
+    {
+      "name": "U_primary_dressing segment 0",
+      "status": "pass",
+      "actualPosition": [
+        50.0,
+        235.0,
+        -177.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        46.0
+      ],
+      "expectedPosition": [
+        50.0,
+        235.0,
+        -176.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150.0,
+        46.000000000000085
+      ]
+    },
+    {
+      "name": "U_primary_dressing lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        50.0,
+        290.0,
+        -225.0
+      ],
+      "actualSize": [
+        8.0,
+        40.0,
+        50.0
+      ],
+      "expectedPosition": [
+        50.0,
+        290.00000000000006,
+        -225.0
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        39.99999999999999,
+        50
+      ]
+    },
+    {
+      "name": "U_primary_dressing end",
+      "status": "pass",
+      "actualPosition": [
+        50.0,
+        235.0,
+        -295.0
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        90.0
+      ],
+      "expectedPosition": [
+        50.0,
+        235.0,
+        -294.99999999999994
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150.0,
+        90.00000000000003
+      ]
+    },
+    {
+      "name": "U_bath_west end",
+      "status": "pass",
+      "actualPosition": [
+        104.0,
+        235.0,
+        77.5
+      ],
+      "actualSize": [
+        8.0,
+        150.0,
+        245.0
+      ],
+      "expectedPosition": [
+        104.0,
+        235.0,
+        77.50000000000003
+      ],
+      "expectedSize": [
+        8.000000000000007,
+        150.0,
+        245.00000000000003
+      ]
+    },
+    {
+      "name": "U_bath_south end",
+      "status": "pass",
+      "actualPosition": [
+        164.0,
+        235.0,
+        200.0
+      ],
+      "actualSize": [
+        112.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        164.00000000000006,
+        235.0,
+        200.0
+      ],
+      "expectedSize": [
+        112.00000000000001,
+        150.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_bath_north segment 0",
+      "status": "pass",
+      "actualPosition": [
+        121.5,
+        235.0,
+        -45.0
+      ],
+      "actualSize": [
+        27.0,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        121.49999999999999,
+        235.0,
+        -45.000000000000014
+      ],
+      "expectedSize": [
+        26.999999999999957,
+        150.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_bath_north lintel 0",
+      "status": "pass",
+      "actualPosition": [
+        158.75,
+        290.0,
+        -45.0
+      ],
+      "actualSize": [
+        47.5,
+        40.0,
+        8.0
+      ],
+      "expectedPosition": [
+        158.75000000000003,
+        290.00000000000006,
+        -45.000000000000014
+      ],
+      "expectedSize": [
+        47.50000000000006,
+        39.99999999999999,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "U_bath_north end",
+      "status": "pass",
+      "actualPosition": [
+        201.25,
+        235.0,
+        -45.0
+      ],
+      "actualSize": [
+        37.5,
+        150.0,
+        8.0
+      ],
+      "expectedPosition": [
+        201.25000000000003,
+        235.0,
+        -45.000000000000014
+      ],
+      "expectedSize": [
+        37.5,
+        150.0,
+        8.000000000000007
+      ]
+    },
+    {
+      "name": "G_stair_tread_1",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        4.44,
+        168.0
+      ],
+      "actualSize": [
+        60.0,
+        8.89,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        4.444444444444445,
+        167.99999999999997
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        8.88888888888889,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_2",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        8.89,
+        154.0
+      ],
+      "actualSize": [
+        60.0,
+        17.78,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        8.88888888888889,
+        154.0
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        17.77777777777778,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_3",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        13.33,
+        140.0
+      ],
+      "actualSize": [
+        60.0,
+        26.67,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        13.333333333333336,
+        140.00000000000003
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        26.66666666666667,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_4",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        17.77,
+        126.0
+      ],
+      "actualSize": [
+        60.0,
+        35.56,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        17.77777777777778,
+        125.99999999999997
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        35.55555555555556,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_5",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        22.22,
+        112.0
+      ],
+      "actualSize": [
+        60.0,
+        44.44,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        22.22222222222222,
+        111.99999999999991
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        44.44444444444444,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_6",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        26.66,
+        98.0
+      ],
+      "actualSize": [
+        60.0,
+        53.33,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        26.66666666666667,
+        98.00000000000004
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        53.33333333333334,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_7",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        31.11,
+        84.0
+      ],
+      "actualSize": [
+        60.0,
+        62.22,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        31.11111111111111,
+        83.99999999999999
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        62.22222222222222,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_8",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        35.55,
+        70.0
+      ],
+      "actualSize": [
+        60.0,
+        71.11,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        35.55555555555556,
+        69.99999999999993
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        71.11111111111111,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_9",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        40.0,
+        56.0
+      ],
+      "actualSize": [
+        60.0,
+        80.0,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        40.0,
+        56.00000000000005
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        80.0,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_10",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        44.44,
+        42.0
+      ],
+      "actualSize": [
+        60.0,
+        88.89,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        44.44444444444444,
+        41.99999999999999
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        88.88888888888889,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_11",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        48.89,
+        28.0
+      ],
+      "actualSize": [
+        60.0,
+        97.78,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        48.88888888888889,
+        27.999999999999936
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        97.77777777777779,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_12",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        53.33,
+        14.0
+      ],
+      "actualSize": [
+        60.0,
+        106.67,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        53.33333333333334,
+        14.000000000000057
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        106.66666666666669,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_13",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        57.77,
+        0.0
+      ],
+      "actualSize": [
+        60.0,
+        115.56,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        57.777777777777786,
+        0.0
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        115.55555555555557,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_14",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        62.22,
+        -14.0
+      ],
+      "actualSize": [
+        60.0,
+        124.44,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        62.22222222222222,
+        -14.000000000000057
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        124.44444444444444,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_15",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        66.66,
+        -28.0
+      ],
+      "actualSize": [
+        60.0,
+        133.33,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        66.66666666666666,
+        -27.999999999999936
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        133.33333333333331,
+        13.999999999999968
+      ]
+    },
+    {
+      "name": "G_stair_tread_16",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        71.11,
+        -42.0
+      ],
+      "actualSize": [
+        60.0,
+        142.22,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        71.11111111111111,
+        -41.99999999999999
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        142.22222222222223,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_tread_17",
+      "status": "pass",
+      "actualPosition": [
+        62.5,
+        75.55,
+        -56.0
+      ],
+      "actualSize": [
+        60.0,
+        151.11,
+        14.0
+      ],
+      "expectedPosition": [
+        62.5,
+        75.55555555555557,
+        -56.00000000000005
+      ],
+      "expectedSize": [
+        59.999999999999964,
+        151.11111111111114,
+        14.000000000000057
+      ]
+    },
+    {
+      "name": "G_stair_guard_0",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        25.0,
+        175.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        25.0,
+        175.0
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_1",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        33.89,
+        161.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        33.88888888888889,
+        161.00000000000003
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_2",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        42.77,
+        147.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        42.77777777777778,
+        146.99999999999997
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_3",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        51.66,
+        133.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        51.66666666666667,
+        133.0
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_4",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        60.55,
+        119.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        60.555555555555564,
+        118.99999999999994
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_5",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        69.44,
+        105.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        69.44444444444444,
+        104.99999999999999
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_6",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        78.33,
+        91.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        78.33333333333334,
+        91.00000000000001
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_7",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        87.22,
+        77.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        87.22222222222223,
+        76.99999999999996
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_8",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        96.11,
+        63.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        96.11111111111113,
+        62.999999999999986
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.000000000000014,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_9",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        105.0,
+        49.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        105.0,
+        49.00000000000002
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_10",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        113.89,
+        35.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        113.88888888888889,
+        34.999999999999964
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_11",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        122.77,
+        21.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        122.77777777777779,
+        20.999999999999996
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_12",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        131.66,
+        7.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        131.66666666666669,
+        7.000000000000028
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_13",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        140.55,
+        -7.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        140.55555555555557,
+        -7.000000000000028
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_14",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        149.44,
+        -21.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        149.44444444444446,
+        -20.999999999999996
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_15",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        158.33,
+        -35.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        158.33333333333331,
+        -34.999999999999964
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.5000000000000355
+      ]
+    },
+    {
+      "name": "G_stair_guard_16",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        167.22,
+        -49.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        167.22222222222223,
+        -49.00000000000002
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        50.0,
+        2.4999999999999467
+      ]
+    },
+    {
+      "name": "G_stair_guard_17",
+      "status": "pass",
+      "actualPosition": [
+        28.25,
+        176.11,
+        -63.0
+      ],
+      "actualSize": [
+        2.5,
+        50.0,
+        2.5
+      ],
+      "expectedPosition": [
+        28.249999999999975,
+        176.11111111111111,
+        -63.00000000000008
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        49.99999999999998,
+        2.499999999999858
+      ]
+    },
+    {
+      "name": "U_stair_west_guard",
+      "status": "pass",
+      "actualPosition": [
+        23.5,
+        185.0,
+        56.0
+      ],
+      "actualSize": [
+        3.0,
+        50.0,
+        238.0
+      ],
+      "expectedPosition": [
+        23.499999999999943,
+        185.0,
+        55.99999999999996
+      ],
+      "expectedSize": [
+        3.000000000000025,
+        50.0,
+        238.00000000000009
+      ]
+    },
+    {
+      "name": "U_stair_east_guard",
+      "status": "pass",
+      "actualPosition": [
+        101.5,
+        185.0,
+        -56.0
+      ],
+      "actualSize": [
+        3.0,
+        50.0,
+        14.0
+      ],
+      "expectedPosition": [
+        101.5,
+        185,
+        -56
+      ],
+      "expectedSize": [
+        3,
+        50,
+        14
+      ]
+    },
+    {
+      "name": "T_east_parapet",
+      "status": "pass",
+      "actualPosition": [
+        296.25,
+        186.25,
+        25.0
+      ],
+      "actualSize": [
+        7.5,
+        52.5,
+        750.0
+      ],
+      "expectedPosition": [
+        296.25000000000006,
+        186.25,
+        25.0
+      ],
+      "expectedSize": [
+        7.500000000000018,
+        52.49999999999999,
+        750
+      ]
+    },
+    {
+      "name": "T_south_parapet",
+      "status": "pass",
+      "actualPosition": [
+        261.25,
+        186.25,
+        396.25
+      ],
+      "actualSize": [
+        62.5,
+        52.5,
+        7.5
+      ],
+      "expectedPosition": [
+        261.25,
+        186.25,
+        396.25
+      ],
+      "expectedSize": [
+        62.5,
+        52.49999999999999,
+        7.500000000000018
+      ]
+    },
+    {
+      "name": "T_north_parapet",
+      "status": "pass",
+      "actualPosition": [
+        261.25,
+        186.25,
+        -346.25
+      ],
+      "actualSize": [
+        62.5,
+        52.5,
+        7.5
+      ],
+      "expectedPosition": [
+        261.25,
+        186.25,
+        -346.25000000000006
+      ],
+      "expectedSize": [
+        62.5,
+        52.49999999999999,
+        7.499999999999929
+      ]
+    },
+    {
+      "name": "G_entry_reveal",
+      "status": "pass",
+      "actualPosition": [
+        -75.5,
+        70.0,
+        345.0
+      ],
+      "actualSize": [
+        9.0,
+        140.0,
+        90.0
+      ],
+      "expectedPosition": [
+        -75.49999999999999,
+        70.0,
+        345.0
+      ],
+      "expectedSize": [
+        8.999999999999986,
+        140.0,
+        89.99999999999999
+      ]
+    },
+    {
+      "name": "G_entry_ceiling",
+      "status": "pass",
+      "actualPosition": [
+        -28.75,
+        143.75,
+        345.0
+      ],
+      "actualSize": [
+        102.5,
+        7.5,
+        90.0
+      ],
+      "expectedPosition": [
+        -28.749999999999964,
+        143.75,
+        345.0
+      ],
+      "expectedSize": [
+        102.49999999999994,
+        7.500000000000018,
+        89.99999999999999
+      ]
+    },
+    {
+      "name": "U_child_screen_0",
+      "status": "pass",
+      "actualPosition": [
+        -258.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -258.75000000000006,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_1",
+      "status": "pass",
+      "actualPosition": [
+        -244.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -244.74999999999997,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_2",
+      "status": "pass",
+      "actualPosition": [
+        -230.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -230.75,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_3",
+      "status": "pass",
+      "actualPosition": [
+        -216.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -216.75000000000006,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_4",
+      "status": "pass",
+      "actualPosition": [
+        -202.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -202.75,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_5",
+      "status": "pass",
+      "actualPosition": [
+        -188.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -188.75000000000003,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_6",
+      "status": "pass",
+      "actualPosition": [
+        -174.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -174.75,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.4999999999999467,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_7",
+      "status": "pass",
+      "actualPosition": [
+        -160.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -160.75,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_8",
+      "status": "pass",
+      "actualPosition": [
+        -146.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -146.75000000000003,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_9",
+      "status": "pass",
+      "actualPosition": [
+        -132.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -132.74999999999997,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_10",
+      "status": "pass",
+      "actualPosition": [
+        -118.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -118.75,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_11",
+      "status": "pass",
+      "actualPosition": [
+        -104.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -104.75000000000003,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.499999999999991,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "U_child_screen_12",
+      "status": "pass",
+      "actualPosition": [
+        -90.75,
+        248.75,
+        398.5
+      ],
+      "actualSize": [
+        2.5,
+        97.5,
+        3.0
+      ],
+      "expectedPosition": [
+        -90.74999999999997,
+        248.74999999999997,
+        398.50000000000006
+      ],
+      "expectedSize": [
+        2.5000000000000355,
+        97.50000000000001,
+        2.9999999999999805
+      ]
+    },
+    {
+      "name": "S_site",
+      "status": "pass",
+      "actualPosition": [
+        0.0,
+        -14.0,
+        0.0
+      ],
+      "actualSize": [
+        1000.0,
+        7.0,
+        1500.0
+      ],
+      "expectedPosition": [
+        0.0,
+        -13.999999999999998,
+        0.0
+      ],
+      "expectedSize": [
+        1000,
+        6.999999999999999,
+        1500
+      ]
+    },
+    {
+      "name": "S_parking",
+      "status": "pass",
+      "actualPosition": [
+        245.0,
+        -5.25,
+        575.0
+      ],
+      "actualSize": [
+        140.0,
+        10.5,
+        250.0
+      ],
+      "expectedPosition": [
+        245.00000000000003,
+        -5.25,
+        575.0
+      ],
+      "expectedSize": [
+        140.00000000000003,
+        10.5,
+        250
+      ]
+    },
+    {
+      "name": "S_entry_path",
+      "status": "pass",
+      "actualPosition": [
+        -25.0,
+        -5.25,
+        575.0
+      ],
+      "actualSize": [
+        80.0,
+        10.5,
+        350.0
+      ],
+      "expectedPosition": [
+        -25.0,
+        -5.25,
+        575.0
+      ],
+      "expectedSize": [
+        80.00000000000007,
+        10.5,
+        350
+      ]
+    },
+    {
+      "name": "S_rear_threshold_step",
+      "status": "pass",
+      "actualPosition": [
+        -200.0,
+        -6.5,
+        -365.0
+      ],
+      "actualSize": [
+        200.0,
+        8.0,
+        30.0
+      ],
+      "expectedPosition": [
+        -200.0,
+        -6.5,
+        -365.00000000000006
+      ],
+      "expectedSize": [
+        200,
+        7.999999999999999,
+        30.00000000000007
+      ]
+    },
+    {
+      "name": "G_guest_bed",
+      "status": "pass",
+      "actualPosition": [
+        -220.0,
+        11.25,
+        280.0
+      ],
+      "actualSize": [
+        80.0,
+        22.5,
+        100.0
+      ],
+      "expectedPosition": [
+        -220.00000000000003,
+        11.25,
+        280.0
+      ],
+      "expectedSize": [
+        80.00000000000003,
+        22.5,
+        100.0
+      ]
+    },
+    {
+      "name": "U_child_bed",
+      "status": "pass",
+      "actualPosition": [
+        -220.0,
+        171.25,
+        290.0
+      ],
+      "actualSize": [
+        60.0,
+        22.5,
+        100.0
+      ],
+      "expectedPosition": [
+        -220.00000000000003,
+        171.25,
+        290.00000000000006
+      ],
+      "expectedSize": [
+        60.00000000000001,
+        22.500000000000007,
+        100.0
+      ]
+    },
+    {
+      "name": "U_primary_bed",
+      "status": "pass",
+      "actualPosition": [
+        -195.0,
+        171.25,
+        -260.0
+      ],
+      "actualSize": [
+        90.0,
+        22.5,
+        100.0
+      ],
+      "expectedPosition": [
+        -195.00000000000003,
+        171.25,
+        -259.99999999999994
+      ],
+      "expectedSize": [
+        89.99999999999999,
+        22.500000000000007,
+        100.0
+      ]
+    },
+    {
+      "name": "G_shower_proxy",
+      "status": "pass",
+      "actualPosition": [
+        250.0,
+        1.25,
+        175.0
+      ],
+      "actualSize": [
+        50.0,
+        2.5,
+        50.0
+      ],
+      "expectedPosition": [
+        250.0,
+        1.25,
+        175.0
+      ],
+      "expectedSize": [
+        50.0,
+        2.5,
+        50
+      ]
+    },
+    {
+      "name": "U_shower_proxy",
+      "status": "pass",
+      "actualPosition": [
+        185.0,
+        161.25,
+        150.0
+      ],
+      "actualSize": [
+        50.0,
+        2.5,
+        50.0
+      ],
+      "expectedPosition": [
+        184.99999999999997,
+        161.25,
+        150.0
+      ],
+      "expectedSize": [
+        50.0,
+        2.499999999999991,
+        50.0
+      ]
+    },
+    {
+      "name": "G_kitchen_proxy",
+      "status": "pass",
+      "actualPosition": [
+        270.0,
+        22.5,
+        -125.0
+      ],
+      "actualSize": [
+        30.0,
+        45.0,
+        200.0
+      ],
+      "expectedPosition": [
+        269.99999999999994,
+        22.5,
+        -125.0
+      ],
+      "expectedSize": [
+        29.999999999999982,
+        45.0,
+        200.0
+      ]
+    },
+    {
+      "name": "G_living_proxy",
+      "status": "pass",
+      "actualPosition": [
+        -245.0,
+        17.5,
+        -15.0
+      ],
+      "actualSize": [
+        40.0,
+        35.0,
+        130.0
+      ],
+      "expectedPosition": [
+        -245.00000000000003,
+        17.5,
+        -15.000000000000036
+      ],
+      "expectedSize": [
+        39.99999999999999,
+        35.0,
+        130.00000000000006
+      ]
+    },
+    {
+      "name": "G_dining_proxy",
+      "status": "pass",
+      "actualPosition": [
+        -15.0,
+        18.75,
+        -252.5
+      ],
+      "actualSize": [
+        90.0,
+        37.5,
+        45.0
+      ],
+      "expectedPosition": [
+        -15.000000000000036,
+        18.75,
+        -252.50000000000003
+      ],
+      "expectedSize": [
+        89.99999999999994,
+        37.5,
+        44.99999999999993
+      ]
+    },
+    {
+      "name": "U_family_proxy",
+      "status": "pass",
+      "actualPosition": [
+        -187.5,
+        177.5,
+        30.0
+      ],
+      "actualSize": [
+        125.0,
+        35.0,
+        40.0
+      ],
+      "expectedPosition": [
+        -187.5,
+        177.5,
+        29.999999999999982
+      ],
+      "expectedSize": [
+        125.0,
+        34.999999999999986,
+        40.000000000000036
+      ]
+    }
+  ]
+}

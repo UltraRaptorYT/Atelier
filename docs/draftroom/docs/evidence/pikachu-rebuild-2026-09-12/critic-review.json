@@ -1,0 +1,310 @@
+{
+  "promptVersion": "1.1.0",
+  "role": "critic",
+  "context": {
+    "projectId": null,
+    "runId": null,
+    "projectRevision": null,
+    "iterationId": null,
+    "mode": null
+  },
+  "designCheckpoint": {
+    "stage": "shell",
+    "spatialModelRevision": "architect-shell-1",
+    "sceneRevision": null,
+    "authoringMethod": "mcp",
+    "assemblyStatus": "fail",
+    "assemblyEvidenceIds": [
+      "assembly-checks.json",
+      "geometry-readback.txt",
+      "scene-shell-readback.txt"
+    ]
+  },
+  "status": "completed",
+  "publicUpdate": "The folded roof, restrained palette, entry-level guest route and covered garden connection are worth preserving. Revise the open bands above the upper bedroom partitions before detail, then give the deep upper family lounge a deliberate source of light while protecting side privacy. This independent review is complete; the design is not presentation-ready.",
+  "deliverable": {
+    "reviewScope": {
+      "iterationId": null,
+      "spatialModelRevision": "architect-shell-1",
+      "sceneRevision": null,
+      "sceneId": "f2161163-3018-412c-8dfe-814898e9913d",
+      "inspectedViewIds": [
+        "south-elevation.png",
+        "east-elevation.png",
+        "north-elevation.png",
+        "west-elevation.png",
+        "upper-plan-ui.png",
+        "ground-plan-ui.png",
+        "stair-section-ui.png",
+        "stair-section-west-ui.png",
+        "final-street-perspective.png"
+      ],
+      "missingViews": [
+        "site plan",
+        "family-room-to-garden view",
+        "Roof-on detail through bedroom partition heads for final closure verification"
+      ],
+      "nonApplicableViewsWithReasons": []
+    },
+    "assemblyRead": {
+      "observedJunctionsAndRoutes": [
+        "Four exterior views show a continuous storey junction without an unexplained horizontal opening.",
+        "Actual upper slabs occupy y=150..160 world units; the east terrace deck closes the exposed lower-floor strip.",
+        "Upper plan shows openings to child bedroom, primary bedroom, bathroom and terrace; a complete stair route cannot be judged with the ground group hidden.",
+        "Internal upper partitions have top y=310 while the roof rises above this; the updated supplied assembly check acknowledges no ceiling or infill closes the bedroom bands.",
+        "Ground plan shows entry-level routes to the guest bedroom and nearby shower ahead of the stair start, with no obvious obstruction.",
+        "Ground living opens directly to the covered garden recess; dining reaches the garden and kitchen; utility access comes from the kitchen. These are visible conceptual routes, not verified maneuvering or door-operation clearances.",
+        "The verified angled cutaway stair-section-west-ui.png shows the stair arriving at the upper landing, physical room door openings, and an upper plate over lower rooms. Its suppressed roof/west slab do not by themselves prove roof closure or full headroom."
+      ],
+      "intentionalVoidsReviewed": [
+        "The rear garden recess is visibly roofed by the upper floor and intentionally open outdoors.",
+        "The east upper setback has a continuous deck over lower rooms.",
+        "The upper plan has an intentional stair void, supported by floor bounds."
+      ],
+      "conflictsWithAnalyst": [],
+      "unresolvedAssemblyCheckIds": [
+        "bedroom-wall-roof-closure",
+        "room-door-route-clearance",
+        "stair-guard-handrail",
+        "side-privacy-intent"
+      ],
+      "evidenceIds": [
+        "south-elevation.png",
+        "east-elevation.png",
+        "north-elevation.png",
+        "west-elevation.png",
+        "upper-plan-ui.png",
+        "spatial-model.json",
+        "actual-geometry-bounds.json",
+        "assembly-checks.json",
+        "geometry-readback.txt",
+        "scene-shell-readback.txt",
+        "organized-scene.txt",
+        "ground-plan-ui.png",
+        "stair-section-ui.png",
+        "stair-section-west-ui.png"
+      ]
+    },
+    "designRead": "The asymmetrical folded roof and selective yellow provide a restrained interpretation of the reference, while neutral bedroom fronts and the timber child-room screen avoid a costume. The covered rear recess promises a useful transition from family life to garden. The deep upper family lounge, however, has no direct external opening visible in the plan or side elevations, and the open bands above bedroom partitions undermine the separation of calm retreats from shared activity.",
+    "preserve": [
+      {
+        "elementOrQuality": "Asymmetrical folded roof and selective yellow",
+        "reason": "The silhouette carries the playful reference without literal ears, face, or signage.",
+        "evidenceIds": [
+          "south-elevation.png",
+          "north-elevation.png",
+          "west-elevation.png",
+          "final-street-perspective.png"
+        ]
+      },
+      {
+        "elementOrQuality": "Covered rear garden recess",
+        "reason": "A purposeful outdoor room gives the living space a sheltered garden edge, rather than leaving the upper setback unresolved.",
+        "evidenceIds": [
+          "north-elevation.png",
+          "west-elevation.png",
+          "actual-geometry-bounds.json"
+        ]
+      },
+      {
+        "elementOrQuality": "Neutral bedrooms and screened child-room frontage",
+        "reason": "Material restraint gives private rooms a calmer identity while retaining warmth.",
+        "evidenceIds": [
+          "south-elevation.png",
+          "upper-plan-ui.png"
+        ]
+      },
+      {
+        "elementOrQuality": "Entry-level guest and shower access, and direct living-to-garden route",
+        "reason": "The plan supports a guest who does not use the stairs and gives family activity a clear connection to sheltered outdoor space.",
+        "evidenceIds": [
+          "ground-plan-ui.png",
+          "north-elevation.png"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "priority": "high",
+        "criterion": "Assembly and private-room separation",
+        "elementOrRelationship": "Upper child and primary bedroom partitions to folded roof",
+        "observation": "Scene readback places the internal bedroom wall tops at 6.2 m. Roof geometry and elevations rise above this level, and the supplied assembly check and final Architect handoff confirm no separate ceiling or infill closes the bands. The angled cutaway shows the partitions but suppresses the roof, so it does not independently prove roof contact.",
+        "claimType": "inferred",
+        "userImpact": "The bedroom volumes remain connected above partitions to shared areas, weakening the intended calm separation. This is an assembly/privacy concern; no acoustic rating is claimed.",
+        "proposedRevision": "Close the child and primary bedroom volumes with roof-following partition infill or local bedroom ceilings, coordinating the dressing-room boundary. Preserve the external roof and keep shared-space height where useful.",
+        "acceptanceSignal": "A roof-on cutaway through both bedroom boundaries and actual mesh readback show continuous room enclosure up to the roof or independent ceiling, with no unexplained over-wall path into shared rooms.",
+        "evidenceIds": [
+          "scene-shell-readback.txt",
+          "geometry-readback.txt",
+          "assembly-checks.json",
+          "south-elevation.png",
+          "north-elevation.png",
+          "stair-section-west-ui.png",
+          "architect-handoff.md"
+        ]
+      },
+      {
+        "id": "F2",
+        "priority": "medium",
+        "criterion": "Spatial experience and client value",
+        "elementOrRelationship": "Upper family lounge between bedrooms, stair and solid west wall",
+        "observation": "The upper plan places the family lounge deep between private rooms, with a solid side wall and no direct window visible in the scene evidence. Light could arrive indirectly through the south landing, but the rendered roof-off plan does not demonstrate the roof-on experience.",
+        "claimType": "judgment",
+        "userImpact": "The main upstairs shared room risks feeling like residual circulation rather than a delightful family destination, weakening the brief's translation of energy into light and movement.",
+        "proposedRevision": "Give this lounge one deliberate source of daylight or outlook within the existing footprint: a rooflight coordinated with the folded roof, or a screened high-level opening with an explicit neighbor sightline study. Keep the calm bedroom boundaries intact.",
+        "acceptanceSignal": "Show a roof-on eye-level lounge view plus plan/section identifying the light path and demonstrating how side privacy is retained. No daylight performance number is required for this concept review.",
+        "evidenceIds": [
+          "upper-plan-ui.png",
+          "east-elevation.png",
+          "west-elevation.png",
+          "scene-shell-readback.txt"
+        ]
+      }
+    ],
+    "revisionReview": [],
+    "tradeoffsForDirector": [
+      {
+        "alternatives": [
+          "Roof-following bedroom infill retains tall private spaces.",
+          "Local bedroom ceilings create quieter-scale retreats while keeping the lounge roof volume."
+        ],
+        "clientPriorityAffected": "Calm bedrooms versus expressive internal height.",
+        "supportingEvidenceIds": [
+          "upper-plan-ui.png",
+          "assembly-checks.json"
+        ]
+      },
+      {
+        "alternatives": [
+          "Rooflight preserves solid side walls but requires a resolved roof opening.",
+          "Screened high-level side opening may offer outlook but needs privacy evidence."
+        ],
+        "clientPriorityAffected": "Lively shared light and privacy from side neighbors.",
+        "supportingEvidenceIds": [
+          "upper-plan-ui.png",
+          "east-elevation.png",
+          "west-elevation.png"
+        ]
+      }
+    ],
+    "recommendation": {
+      "value": "revise",
+      "reason": "The acknowledged and readback-supported bedroom-to-roof closure failure blocks readiness. The ground plan and angled cutaway support the main routes, but the upper lounge needs a more convincing light relationship and remaining evidence limitations prevent an unqualified presentation recommendation."
+    }
+  },
+  "evidenceIds": [
+    "south-elevation.png",
+    "east-elevation.png",
+    "north-elevation.png",
+    "west-elevation.png",
+    "upper-plan-ui.png",
+    "spatial-model.json",
+    "actual-geometry-bounds.json",
+    "assembly-checks.json",
+    "geometry-readback.txt",
+    "scene-shell-readback.txt",
+    "organized-scene.txt",
+    "ground-plan-ui.png",
+    "stair-section-ui.png",
+    "stair-section-west-ui.png",
+    "architect-handoff.md",
+    "final-street-perspective.png"
+  ],
+  "assumptions": [
+    "This is an independent Critic review of a manually coordinated real Spline MCP experiment, not an integrated Draftroom run. Mode and unavailable application/scene revision IDs remain null.",
+    "Named local evidence files are used as evidence IDs; no artifact service IDs were supplied.",
+    "Floor areas in supplied checks are concept accounting from geometry, not statutory or net usable areas.",
+    "No comparison to the previous house is made and no prior finding is assumed to persist.",
+    "architect-shell-1 is the manually frozen checkpoint label. Spline has not supplied an authoritative scene revision; sceneRevision remains null. Root confirms camera and visibility changes only during evidence capture.",
+    "stair-section-ui.png has partial roof/side visibility suppression and poor stair framing; it is a limited cutaway and does not prove stair clearance or complete roof junctions.",
+    "The inspected final stair-section-west-ui.png is the verified replacement showing Untitled and the Rebuild groups. An earlier wrong-file capture was excluded and was never used to support a finding.",
+    "Save/reopen, export freshness and scene naming are handled by root after review and are not claimed verified by the Critic."
+  ],
+  "blockers": [
+    {
+      "issue": "Upper bedroom volumes remain open above the partitions.",
+      "neededInput": "A bounded revision closing bedroom walls to the roof or independent ceilings, followed by roof-on cutaway/readback verification.",
+      "responsibleRole": "architect"
+    },
+    {
+      "issue": "Site plan, eye-level family-room-to-garden view, detailed roof-on bedroom junctions and full clearance/sightline evidence remain absent.",
+      "neededInput": "Same-checkpoint supporting views and scoped verification before final selection; existing north elevation and ground plan support only the conceptual garden relationship.",
+      "responsibleRole": "architect"
+    }
+  ],
+  "nextAction": {
+    "owner": "director",
+    "action": "Consider one bounded revision addressing F1 and F2 while preserving the roof, entry-level guest access and direct garden connection; this is a recommendation, not an issued task.",
+    "dependsOn": [
+      "this independent Critic review",
+      "client authorization for any next scene revision"
+    ]
+  },
+  "evidenceManifest": [
+    {
+      "id": "south-elevation.png",
+      "sha256": "7c0b151df9062331278aa8512cf18d0b98799d1a24c553660ff78ded817fe069"
+    },
+    {
+      "id": "east-elevation.png",
+      "sha256": "dd54afbc072e8ad47cef5cc14f29a354ccce2eba19ef07f25193e8cc302d45d9"
+    },
+    {
+      "id": "north-elevation.png",
+      "sha256": "732128595a02e7ba47c0551f1a5e65dc821567ca6c434effc641e42ff455c8d8"
+    },
+    {
+      "id": "west-elevation.png",
+      "sha256": "4537388ff150da37c147be96b007eccfee24c7df565eb74ad92d8631853b7d7d"
+    },
+    {
+      "id": "upper-plan-ui.png",
+      "sha256": "c2da08a1ab3a7edb7c5555064ba47d0c20fce154bb0f81a6687338c30ce5ad37"
+    },
+    {
+      "id": "spatial-model.json",
+      "sha256": "d9bdb65ee29851114102aa6e2ea14b625304e3c9fde7a636546661d237be45dd"
+    },
+    {
+      "id": "actual-geometry-bounds.json",
+      "sha256": "a0dc8179c4b7b925c8509c0ed5792c65ec0869a865cb16dcc69d079013840501"
+    },
+    {
+      "id": "assembly-checks.json",
+      "sha256": "6c8514daa66f11c73c625ba64887a87467c5b80df6079ba7cf1401f773fc2774"
+    },
+    {
+      "id": "geometry-readback.txt",
+      "sha256": "1eb1d372d69ae5aee2c31f4a06deffa33d398455f09f7be45b05da2cb1547a2b"
+    },
+    {
+      "id": "scene-shell-readback.txt",
+      "sha256": "c56c8006c2dc6c212c6ada4af04e39854b588ac12ef3089ab4e0988dd343ea27"
+    },
+    {
+      "id": "organized-scene.txt",
+      "sha256": "d895b48e4787c25bf8556aa858f9ae64833f50d77e6cab18b9b87cf02cf4867c"
+    },
+    {
+      "id": "ground-plan-ui.png",
+      "sha256": "067ed8dbdd0451bb94d559d42d5574205b3f3dc08eb0198ad22d1e7ccfb4fcb2"
+    },
+    {
+      "id": "stair-section-ui.png",
+      "sha256": "0fc44d86e809735466eea9be9bc7e6ec157f96499eb26cd841ac0d01e7f72bad"
+    },
+    {
+      "id": "stair-section-west-ui.png",
+      "sha256": "cca88f9a53222bcd4ac303150dbca0a4d62690ff94b54cc7e677f2348442f7bf"
+    },
+    {
+      "id": "architect-handoff.md",
+      "sha256": "a35835ee92af43dfff2ed14f80327f27ff33592b1c4d88b4b50c8725511de6cb"
+    },
+    {
+      "id": "final-street-perspective.png",
+      "sha256": "6fc6b8880b186f0ef6456780d32424f2265353df92edddd647a2ec936418cdf6"
+    }
+  ]
+}
