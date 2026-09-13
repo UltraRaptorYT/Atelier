@@ -10,11 +10,13 @@ The goal is NOT to create a collection of independent chatbots.
 
 The goal is to create the feeling of working inside a real AI-powered architecture company.
 
+This document combines product direction with implementation guidance. The current runtime uses a dependency graph: independent specialists can work concurrently, and dependent work waits for saved outputs. The [collaboration guide](docs/concurrent-agents.md) describes execution; the [readiness review](docs/agent-design-review.md) tracks remaining gaps. Product examples below are illustrative unless identified as runtime contracts.
+
 ---
 
 # 1. Core Experience
 
-The primary interaction loop is:
+The primary interaction loop describes the user experience, not a fixed agent execution order:
 
 1. User gives a natural-language brief
    - Voice
@@ -33,13 +35,13 @@ The primary interaction loop is:
 
 5. The Boss creates a structured project brief.
 
-6. The Boss delegates work to specialised agents.
+6. The Boss delegates a graph of tasks to the required specialists, with explicit dependencies and deliverables.
 
-7. Agents perform work inside their individual virtual rooms/workspaces.
+7. Independent agents work concurrently inside their individual virtual rooms/workspaces. Dependent tasks consume saved prerequisite outputs.
 
 8. The user can physically navigate to an agent's room and inspect:
    - Current task
-   - Thoughts/status
+   - Public progress and status explanations
    - Files
    - Tool activity
    - Computer screen
@@ -214,7 +216,7 @@ If the user requests a Pokémon-inspired building, this agent may translate that
 - Lighting
 - Interior styling
 
-It should avoid blindly changing architectural structure unless necessary.
+The Designer owns materials, material assignments, furniture and lights. It must escalate structural changes to the Architect through coordination; the current proposal merge rejects Designer edits to structural geometry, spaces, floors, spawn and metadata, including notes.
 
 ---
 
@@ -242,7 +244,7 @@ Agents must operate on shared persistent project state.
 
 Do NOT rely on chat history as the sole source of truth.
 
-Suggested structure:
+Conceptual state outline (actual contracts are in [shared/design.ts](shared/design.ts) and persistence is in [worker/src/store.ts](worker/src/store.ts)):
 
 ```json
 {
@@ -261,12 +263,9 @@ Suggested structure:
     "open_questions": []
   },
 
-  "design": {
-    "architecture": {},
-    "interior": {},
-    "materials": {},
-    "lighting": {},
-    "scene": {}
+  "design_reference": {
+    "path": "project/design.json",
+    "revision": 0
   },
 
   "tasks": [],
@@ -288,35 +287,28 @@ Suggested structure:
 
 Every meaningful unit of agent work should be represented as a task.
 
-Example:
+The Principal emits `PlanSchema` from [shared/collaboration.ts](shared/collaboration.ts). A planned task uses this runtime shape:
 
 ```json
 {
-  "id": "task_023",
+  "id": "visual_direction",
   "title": "Create exterior colour concept",
-  "owner": "interior_designer",
-  "status": "in_progress",
-  "priority": "high",
-
-  "objective": "Develop the exterior visual theme.",
-
-  "context": [
-    "Building should reference Pikachu.",
-    "User prefers playful rather than realistic styling."
-  ],
-
-  "dependencies": [
-    "task_012"
-  ],
-
+  "agent": "designer",
+  "kind": "visual_direction",
+  "objective": "Develop a playful Pikachu-inspired palette while architecture is being planned.",
+  "dependencies": [],
   "deliverables": [
     "Exterior palette",
-    "Material specification"
+    "Material and lighting direction"
   ]
 }
 ```
 
-Possible statuses:
+Task kinds are `architecture` (Architect), `interior` and `visual_direction` (Designer), and `review` (Critic). Plans contain 2–8 tasks with unique IDs, valid dependencies and no cycles. A final Critic task must depend transitively on every other task. For a new design, interior placement must depend on architecture; visual direction can start alongside architecture.
+
+Ready tasks run in batches of up to two distinct specialists. Tasks owned by the same specialist are serialized. Each batch reads a common saved design revision, completes its work, and integrates proposals before downstream tasks start. Do not assume that every request needs every specialist or a mandatory shell-review stage.
+
+Persisted tasks add run identity, status, detail, base revision and output artifact references. The Activity board exposes this real task state. Possible statuses:
 
 * queued
 * blocked
@@ -324,6 +316,7 @@ Possible statuses:
 * review
 * completed
 * cancelled
+* failed
 
 ---
 
@@ -333,28 +326,17 @@ User steering is a first-class feature.
 
 When a user enters an agent's room and gives feedback, do NOT treat it as a completely new project prompt.
 
-Create a change request.
+Create a contextual change request for an instruction to modify the design. Questions should be answered without starting design work; typed intent routing remains an implementation gap.
 
-Example:
+Example of the current `ChangeSchema` request shape:
 
 ```json
 {
-  "id": "change_017",
-
-  "source": "user",
-
-  "target_agent": "interior_designer",
-
   "instruction": "Make the exterior red instead of yellow.",
-
-  "context": {
-    "location": "designer_room",
-    "related_artifact": "exterior_model_v3"
-  },
-
-  "scope": "local",
-
-  "status": "pending"
+  "agent": "designer",
+  "elementId": null,
+  "baseRevision": 3,
+  "operationId": "9b2f01fe-bfe8-4cc0-8578-135b07815612"
 }
 ```
 
@@ -367,11 +349,13 @@ The responsible agent should:
 5. Update project state.
 6. Notify the Boss when the change has global implications.
 
+In the current runtime, steering received during an active run is queued for the next run. It does not interrupt an in-flight task or rewrite its graph. A selected room provides context; the validated task kind determines actual ownership.
+
 ---
 
 # 7. Local vs Global Steering
 
-Not every user request should go through the Boss.
+Local changes should stay with the relevant specialist. Principal coordination must not force unrelated specialists to redo their work.
 
 ## Local change
 
@@ -380,6 +364,8 @@ Example:
 > Make this sofa blue.
 
 Handle directly within the relevant agent.
+
+Currently, a selected single-element colour change uses a deterministic Designer patch followed by Critic review, without a Designer workstation. Other finishes-only changes can use a Principal-planned Designer/Critic graph without an Architect task.
 
 ---
 
@@ -407,7 +393,7 @@ Agents should NOT constantly hold meetings.
 
 Meetings should occur only when coordination creates value.
 
-Create a meeting when:
+Product-level reasons to call a meeting include:
 
 * Two agents disagree
 * A requirement affects multiple domains
@@ -416,7 +402,7 @@ Create a meeting when:
 * The user requests a review
 * A major change request affects multiple agents
 
-Meeting record example:
+Illustrative meeting record (not a separate runtime database schema):
 
 ```json
 {
@@ -442,6 +428,8 @@ Meetings must produce decisions or tasks.
 
 Avoid conversations that do not modify project state.
 
+The implemented meeting triggers are overlapping design proposals and findings from final review. The Principal produces a persisted decision or correction plan with meeting events. A conflicting task can be rerun once against the latest revision. Final review can trigger one correction round and another review; unresolved findings leave the project in `review`. General autonomous meeting requests and live graph replanning remain future work.
+
 ---
 
 # 9. Agent Communication
@@ -462,6 +450,8 @@ Better:
 Agent conversations exist to coordinate work.
 
 They are not the product themselves.
+
+Workstation tasks can call `report_coordination` to persist a handoff or cross-domain concern. Collected messages are saved with task results and supplied to downstream dependencies. Visual-direction tasks return a structured coordination field. These messages do not directly dispatch another agent, change ownership or mutate the running graph.
 
 ---
 
@@ -489,6 +479,7 @@ Useful event types:
 * task_created
 * task_started
 * task_completed
+* task_cancelled
 * agent_message
 * meeting_started
 * meeting_ended
@@ -499,6 +490,7 @@ Useful event types:
 * tool_started
 * tool_completed
 * error
+* review_required
 * final_design_ready
 
 The 3D frontend can use these events to animate the office.
@@ -509,11 +501,15 @@ Example:
 
 could cause the agent avatar to walk from the meeting room to its office.
 
+The current Activity board displays persisted tasks, dependencies, deliverables and active specialists. Any room animation should follow these actual events, including simultaneous activity, rather than implying a fixed turn-taking sequence.
+
 ---
 
 # 11. Tool / Computer Use
 
 Agents may receive access to isolated environments such as Docker containers.
+
+The current implementation uses E2B workstations for tool-backed design and review tasks. Visual-direction tasks produce a structured artifact without a workstation. Each task releases its own workstation when finished; saved files outlive the live computer session. The global limit remains two computers, with existing budget reservations and shutdown accounting enforced.
 
 Each agent workspace should ideally expose:
 
@@ -547,7 +543,7 @@ Examples:
 * Render configurations
 * Reports
 
-Artefact example:
+Illustrative artefact record (see `Artifact` in [shared/design.ts](shared/design.ts) for the current client contract):
 
 ```json
 {
@@ -576,17 +572,7 @@ Prefer versioned artefacts rather than destructive overwrites.
 
 # 13. Design Representation
 
-The architecture output should eventually be represented in a machine-editable format.
-
-Prefer structured scene data over generating only images.
-
-Possible representations include:
-
-* Three.js scene JSON
-* glTF / GLB
-* Procedural geometry definitions
-* Blender-generated models
-* Custom architecture JSON compiled into Three.js
+The architecture output is a machine-editable canonical JSON design, validated by `DesignSchema`. Three.js renders that design in the browser. Blender scenes, GLB exports, images and floor plans are derived artifacts; none replaces the canonical source of truth.
 
 For the hackathon MVP, optimise for:
 
@@ -595,7 +581,7 @@ For the hackathon MVP, optimise for:
 3. Browser rendering
 4. Incremental changes
 
-A structured JSON -> Three.js pipeline is likely preferable to attempting full professional CAD generation.
+Preserve the structured JSON → Three.js pipeline and stable element IDs so incremental changes and concurrent proposals remain mergeable. Generated canonical models can be explored through **Design → Walk inside**. The final presentation-room exhibit and Spline/imported-model walkthrough integration are separate unfinished work.
 
 ---
 
@@ -607,35 +593,22 @@ Example input:
 
 > Build me a futuristic Pikachu-themed house for four people. I want it colourful but still something that could plausibly exist.
 
-Example output:
+Example output matching the current `BriefSchema` (`request`, `summary`, `goals`, `constraints`, `questions`):
 
 ```json
 {
-  "project_type": "residential_house",
-
-  "occupants": 4,
-
-  "theme": "Pikachu-inspired",
-
-  "style": [
-    "futuristic",
-    "playful"
-  ],
-
-  "requirements": [
-    "Suitable for four occupants",
+  "request": "Build me a futuristic Pikachu-themed house for four people. I want it colourful but still something that could plausibly exist.",
+  "summary": "A colourful, futuristic Pikachu-inspired home for four people.",
+  "goals": [
     "Pikachu-inspired visual identity",
-    "Colourful",
+    "Colourful and playful futuristic design"
+  ],
+  "constraints": [
+    "Suitable for four occupants",
     "Plausible architectural design"
   ],
-
-  "preferences": {
-    "realism": "semi-realistic"
-  },
-
-  "unknowns": [
-    "Number of floors",
-    "Approximate site size"
+  "questions": [
+    "Would you prefer one or two floors?"
   ]
 }
 ```
@@ -660,6 +633,8 @@ Default philosophy:
 
 **Start quickly. Refine interactively.**
 
+The current brief schema allows at most three clarification questions. A clarification pauses design dispatch and ends that run; automatic answer-and-resume is not implemented. Keep this limitation explicit in demos and implementation plans.
+
 ---
 
 # 16. Agent Behaviour
@@ -672,6 +647,9 @@ All agents should:
 * Produce persistent outputs.
 * Record important decisions.
 * Respect dependencies.
+* Start independent work concurrently when the scheduler permits it.
+* Consume saved prerequisite results and coordination messages.
+* Submit proposals against the assigned base revision; preserve unrelated fields and stable IDs.
 * Keep actions explainable.
 * React to steering without unnecessarily restarting work.
 * Escalate cross-domain changes.
@@ -711,33 +689,21 @@ Whenever practical, yes.
 
 Avoid building a full architecture platform.
 
-The demo should prove one compelling interaction loop:
+The demo should show independent work, meaningful dependencies and visible saved changes. One possible initial plan is:
 
-```text
-USER BRIEFS TEAM
-        ↓
-BOSS UNDERSTANDS REQUEST
-        ↓
-SHORT AI TEAM MEETING
-        ↓
-TASKS DELEGATED
-        ↓
-AGENTS WALK TO ROOMS
-        ↓
-AGENTS PERFORM REAL TOOL WORK
-        ↓
-USER VISITS DESIGNER
-        ↓
-USER STEERS DESIGN
-        ↓
-DESIGN CHANGES LIVE
-        ↓
-FINAL MODEL GENERATED
-        ↓
-USER WALKS INSIDE RESULT
+```mermaid
+flowchart TD
+  U[User briefs team] --> P[Principal plans tasks]
+  P --> A[Architect develops layout]
+  P --> V[Designer develops visual direction]
+  A --> I[Designer places interiors]
+  V --> I
+  I --> R[Critic reviews combined design]
+  R --> F[Saved design ready when findings are resolved]
+  F --> W[User walks inside result]
 ```
 
-If this loop works well, the project is successful.
+During work, the user visits rooms and inspects real tasks and tools. Meetings happen when a conflict or review finding needs a decision. Demonstrate a contextual Designer change, its saved revision and the refreshed model. Steering submitted during work applies in the next run; it does not interrupt the current model call. Use the Design view for the current walkthrough while the final presentation-room exhibit remains unfinished.
 
 ---
 
@@ -763,7 +729,7 @@ Then demonstrate steering:
 
 > I don't like the yellow exterior. Make it red instead.
 
-The designer modifies the scene.
+The Designer proposes a material change to the canonical design. The coordinator validates and saves the revision, and the renderer refreshes from it.
 
 The updated building becomes visible in the final model.
 
@@ -803,15 +769,32 @@ The core pipeline is:
 Voice/text → Boss → tasks → agents → project/design.json → renderer → 3D world
 ```
 
+Here, tasks form a dependency graph and independent agents execute concurrently. They submit base-relative proposals; the coordinator integrates them into the canonical design through serialized, revision-checked commits. Merge non-overlapping fields by stable IDs. Never silently overwrite conflicting edits or let a cancelled run publish a revision.
+
 Steering should apply an incremental change to the canonical design, persist the updated artefact version, and refresh the renderer.
 
 Example:
 
 ```text
-"Make the roof red" → JSON patch → persisted design version → renderer refresh → roof changes
+"Make the roof red" → scoped material proposal → persisted design version → renderer refresh → roof changes
 ```
 
 Preserve unaffected design elements and record the change request, affected artefacts, and relevant events.
+
+If any task execution in a batch fails, wait for sibling executions to settle and publish none of that batch's proposals. Integration is not a multi-proposal transaction: if a later proposal cannot be reconciled, preserve earlier successful commits and the failed proposals for inspection.
+
+---
+
+# 22. Current Implementation Boundaries
+
+- At most one queued or in-progress run per user is allowed across projects. A design run executes a bounded graph with at most two distinct specialists per batch. Coordination messages do not dynamically replan it.
+- The initial concept or selected reference is frozen for a run and supplied to every dispatched specialist. Image concepts and Blender renders are separate artifact workflows.
+- Typed questions currently enter the change queue, and clarification answers do not automatically resume a blocked brief. These are routing gaps to fix, not desired interaction rules.
+- This run's instruction reaches its specialists and Critic. A durable effective brief that retains requirements from all previous steering rounds still needs refinement.
+- Review helpers check a small set of design conditions. Schema validity and safe-spawn controls do not prove room connectivity, usable stairs or complete geometric correctness.
+- Generation and rendering are disabled in the checked-in Worker configuration. Mocked tests do not establish paid-provider execution or live deployment quality.
+
+Keep [README.md](README.md), the [collaboration guide](docs/concurrent-agents.md), the [readiness review](docs/agent-design-review.md) and the [active prompt library](prompts/README.md) aligned when these contracts change. Preserve historical Draftroom documents as explicitly labeled references.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

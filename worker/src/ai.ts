@@ -6,6 +6,7 @@ import type { Bindings } from './types';
 import { credential, HttpError } from './security';
 import { emit, artifact } from './store';
 import { agentInstructions } from './prompts';
+import { modelResponseSchema } from './model-schema';
 const CoordinationSchema = z.object({ target: AgentIdSchema, message: z.string().trim().min(1).max(1000) }).strict();
 function modelSchema(schema: z.ZodType) {
   return z.toJSONSchema(schema, {
@@ -24,6 +25,7 @@ function modelSchema(schema: z.ZodType) {
   });
 }
 export async function modelJSON<T>(env: Bindings, owner: string, agent: AgentId, prompt: string, schema: z.ZodType<T>, context?: { desktop: Sandbox; projectId: string; taskId: string; design: Design | null; communications?: Array<{ target: AgentId; message: string }> }, images: string[] = []): Promise<T> {
+  const responseSchema = modelResponseSchema(schema);
   const client = new OpenAI({ apiKey: await credential(env, owner), maxRetries: 0, timeout: 120000 });
   const input: OpenAI.Responses.ResponseInput = [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images.map(image_url => ({ type: 'input_image' as const, image_url, detail: 'high' as const }))] }];
   const registered: Design['assets'] = [...(context?.design?.assets || [])];

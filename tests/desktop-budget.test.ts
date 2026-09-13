@@ -11,6 +11,7 @@ vi.mock('cloudflare:workers', () => ({ DurableObject: class {
 } }));
 vi.mock('@e2b/desktop', () => ({ Sandbox: { create: vi.fn(), connect: vi.fn(), kill: vi.fn() } }));
 vi.mock('../scripts/blender_compile.py', () => ({ default: '# Test compiler' }));
+vi.mock('../scripts/blender_asset.py', () => ({ default: '# Test asset compiler' }));
 vi.mock('../worker/src/store', () => ({ emit: vi.fn().mockResolvedValue(undefined), artifact: vi.fn() }));
 
 // Execute production SQL against actual SQLite. Only provider calls, the DO
@@ -30,7 +31,7 @@ function fixture(legacy = false) {
     first: async () => db.prepare(statement).get(...args) ?? null,
     run: async () => ({ meta: { changes: db.prepare(statement).run(...args).changes } }),
   });
-  const env = { E2B_API_KEY: 'test-key', E2B_TEMPLATE: 'test-desktop', DB: { prepare } } as unknown as Bindings;
+  const env = { GENERATION_ENABLED: 'true', E2B_API_KEY: 'test-key', E2B_TEMPLATE: 'test-desktop', DB: { prepare } } as unknown as Bindings;
   const budget = new ComputeBudget(ctx as unknown as DurableObjectState, env);
   env.BUDGET = { getByName: () => budget } as unknown as Bindings['BUDGET'];
   const lease = (id: string) => db.prepare('SELECT * FROM leases WHERE id = ?').get(id)!;

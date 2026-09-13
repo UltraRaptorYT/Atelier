@@ -2,6 +2,19 @@ import { auth } from '@clerk/nextjs/server';
 import type { NextRequest } from 'next/server';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+function matchesOrigin(request: NextRequest, origin: string): boolean {
+  if (process.env.NODE_ENV === 'development' && request.nextUrl.hostname === 'localhost') {
+    // Next normalizes loopback IPs in both nextUrl and request.url. Recover the
+    // browser's actual host without trusting forwarded headers or aliasing origins.
+    const host = request.headers.get('host');
+    if (!host || !/^(?:localhost|127\.0\.0\.1)(?::\d{1,5})?$/.test(host)) return false;
+    try {
+      const actual = new URL(`${request.nextUrl.protocol}//${host}`);
+      return actual.port === request.nextUrl.port && origin === actual.origin;
+    } catch { return false; }
+  }
+  return origin === request.nextUrl.origin;
+}
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const requestHost = request.headers.get('host') || '';
@@ -12,16 +25,19 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   else { const session = await auth(); const token = await session.getToken(); if (!token) return Response.json({ error: 'Sign in to use your studio.' }, { status: 401 }); headers.set('Authorization', `Bearer ${token}`); }
   if (!['GET', 'HEAD'].includes(request.method)) {
     const origin = request.headers.get('origin');
-    if (origin) { try { if (new URL(origin).host !== requestHost) return Response.json({ error: 'Invalid request origin.' }, { status: 403 }); } catch { return Response.json({error:'Invalid request origin.'},{status:403}); } }
+    if (origin && !matchesOrigin(request, origin)) return Response.json({ error: 'Invalid request origin.' }, { status: 403 });
   }
   for (const key of ['content-type', 'x-atelier-agent', 'x-atelier-element', 'last-event-id']) { const value = request.headers.get(key); if (value) headers.set(key, value); }
   const upstream = process.env.ATELIER_WORKER_URL || (local ? 'http://127.0.0.1:8787' : '');
   if (!upstream) return Response.json({ error: 'The studio backend is not connected yet.' }, { status: 503 });
   let payload:Uint8Array<ArrayBuffer>|undefined;
   if(!['GET','HEAD'].includes(request.method)) {
-    if(Number(request.headers.get('content-length')||0)>64000) return Response.json({error:'Request too large.'},{status:413});
+    // Captures carry a base64 raster image; match the Worker's bounded JSON
+    // allowance only for this exact upload route, leaving other requests small.
+    const bodyLimit = request.method === 'POST' && path.length === 3 && path[0] === 'projects' && Boolean(path[1]) && path[2] === 'captures' ? 12 * 1024 * 1024 : 64000;
+    if(Number(request.headers.get('content-length')||0)>bodyLimit) return Response.json({error:'Request too large.'},{status:413});
     const reader=request.body?.getReader(), chunks:Uint8Array[]=[]; let size=0;
-    if(reader) while(true) {const {done,value}=await reader.read();if(done) break;size+=value.length;if(size>64000){await reader.cancel();return Response.json({error:'Request too large.'},{status:413});}chunks.push(value);}
+    if(reader) while(true) {const {done,value}=await reader.read();if(done) break;size+=value.length;if(size>bodyLimit){await reader.cancel();return Response.json({error:'Request too large.'},{status:413});}chunks.push(value);}
     payload=new Uint8Array(size);let offset=0;for(const chunk of chunks){payload.set(chunk,offset);offset+=chunk.length;}
   }
   try {

@@ -189,12 +189,20 @@ describe('designer ownership', () => {
     { path: '/elements/new-wall', mutate: (d: Design) => { d.elements.push({ ...d.elements.find(e => e.kind === 'wall')!, id: 'new-wall' }); } },
     { path: '/elements/sofa/kind', mutate: (d: Design) => { d.elements.find(e => e.id === 'sofa')!.kind = 'wall'; } },
     { path: '/spaces', mutate: (d: Design) => { d.spaces[0].size[0] += 1; } },
-    { path: '/floors', mutate: (d: Design) => { d.floors = 2; } },
+    { path: '/floors', mutate: (d: Design) => {
+      d.floors = 2;
+      d.spaces.push({ id: 'upper-lounge', name: 'Upper lounge', floor: 1, position: [-3.5, 4.5, 0], size: [6.5, 3, 9] });
+    } },
     { path: '/spawn', mutate: (d: Design) => { d.spawn[0] += 1; } },
     { path: '/notes', mutate: (d: Design) => { d.notes.push('A different architectural direction.'); } },
   ])('rejects an out-of-role edit at $path', ({ path, mutate }) => {
     const base = exampleDesign(), proposal = structuredClone(base); mutate(proposal);
+    expect(() => DesignSchema.parse(proposal)).not.toThrow();
     try { mergeDesignProposal(base, base, proposal, 'designer'); throw new Error('Expected ownership enforcement.'); }
-    catch (error) { expect(error).toBeInstanceOf(DesignScopeError); expect((error as DesignScopeError).paths).toContain(path); }
+    catch (error) {
+      expect(error).toBeInstanceOf(DesignScopeError);
+      expect((error as DesignScopeError).paths).toContain(path);
+      if (path === '/floors') expect((error as DesignScopeError).paths).toContain('/spaces');
+    }
   });
 });

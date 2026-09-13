@@ -110,7 +110,14 @@ def compile_design(design, output, render=False, revision=0):
     scene.render.resolution_y = 960
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
-    scene.view_settings.view_transform = 'AgX' if bpy.app.version >= (4, 0, 0) else 'Filmic'
+    preferred_transform = 'AgX' if bpy.app.version >= (4, 0, 0) else 'Filmic'
+    try:
+        scene.view_settings.view_transform = preferred_transform
+    except TypeError:
+        # Preserve geometry export on builds without the preferred transform.
+        # The desktop template separately verifies OpenColorIO and PNG color.
+        scene.view_settings.view_transform = 'Standard'
+        print(json.dumps({'warning': 'Preferred color transform unavailable; rendering with Standard. Use a Blender build with OpenColorIO support and matching color profiles.', 'preferred_transform': preferred_transform, 'view_transform': 'Standard'}))
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(output/'design.blend'))

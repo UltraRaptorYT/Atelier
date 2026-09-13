@@ -1,171 +1,100 @@
-# Agent design and prompt review
+# Agent workflow readiness review
 
-Reviewed 2026-09-13. This is an audit of the existing agent workflow and active prompts, alongside the separate live voice integration. The numbered findings describe that review snapshot; the implementation update below records subsequent fixes. Source links identify the relevant code; line numbers describe the reviewed version.
+Updated 2026-09-13 from the current implementation. Atelier now runs a Principal-authored dependency graph with concurrent specialist work, persistent outputs and coordinated canonical commits. The remaining gaps concern interaction intent, durable requirements and design evidence, rather than a missing task scheduler or correction loop.
 
-## Concurrent-collaboration implementation update
+This review describes code and automated coverage. This documentation update did not run paid OpenAI/E2B generation, measure live latency or establish a live demo success rate. See the [collaboration contract](concurrent-agents.md), [image integration](image-generation-integration.md) and [walkthrough](walkthrough.md). The [original audit is archived](history/agent-design-review-before-concurrency.md); its fixed findings are historical.
 
-The runtime now uses a Principal-authored dependency graph instead of the fixed specialist sequence described in the original findings. Independent tasks run concurrently, saved dependency outputs reach later tasks, overlapping proposals trigger a Principal decision and targeted retry, and final-review findings can trigger one bounded correction plan. Activity exposes these tasks and prerequisites. See [the current collaboration contract](concurrent-agents.md).
+## Current execution model
 
-Finding 1's reservation-accounting blocker is addressed by refunding unused time only after confirmed workstation shutdown; caps are unchanged and actual long runs can still exhaust them. Finding 5's lack of any correction loop is addressed, although evidence-backed geometric review remains limited. Finding 6 is partly addressed: the Principal can delegate multi-element finish work directly to the Designer, and concurrent proposals receive field-aware merge and ownership checks. Typed intent, explicit clarification resume, durable effective requirements, rich workstation model views and the Presentation-room exhibit remain separate work.
+The Principal produces a validated plan of **2–8 tasks**. IDs, ownership, dependencies and cycles are checked before execution. Every plan includes canonical design work and a final Critic review that transitively depends on **every other task**, including visual studies and preliminary reviews. A first design requires architecture and interior tasks, with interior work depending transitively on architecture.
 
-## Image-integration implementation update
+| Task kind | Owner | Persistent output |
+| --- | --- | --- |
+| `architecture` | Architect | Complete design proposal against an identified base revision |
+| `interior` | Designer | Complete proposal limited to owned materials, finishes, furniture and lights |
+| `visual_direction` | Designer | Recommendations and coordination messages; no canonical mutation |
+| `review` | Critic | Findings and summary for the supplied brief, instruction, design and dependencies |
 
-The image-generation implementation addressed several adjacent issues from this audit:
+Ready tasks execute in batches of at most **two different specialists**, with one task per specialist at a time. Each batch reads the same immutable base revision. A new-house plan can develop architecture and visual direction together, then furnish the resulting shell. An existing-design plan can develop independent structural and finish proposals in the same batch. A finishes-only request can use Designer and Critic tasks without an Architect task.
 
-- Finding 3 is partly addressed: the Critic now receives the accepted instruction for the current run, including an applied concept's saved user direction. Durable effective requirements across future runs remain outstanding.
-- Finding 4 is addressed by status-aware duplicate handling and dispatch reconciliation: failed/cancelled runs no longer count as successful dispatch, and stopped requests expose an explicit retry path.
-- Finding 9 is partly addressed: snapshots include recent runs, queued work can be stopped, cancellation updates change status, and desktop releases are limited to the cancelled run. Changes/decisions still lack complete snapshot representation, and commit attribution remains a refinement.
-- The copied Designer prompt typo is fixed. Shared and specialist prompts now distinguish generated image intent from actual canonical geometry and observed evidence.
+This is bounded dependency scheduling. The plan determines which work may overlap; the scheduler waits for the current batch to settle before integrating its results and starting another batch. See [team.ts](../worker/src/team.ts) and [collaboration.ts](../shared/collaboration.ts).
 
-Image studies have a separate call allowance and do not reserve desktops. They do not resolve the existing end-to-end E2B budget, review-gate or renderer limits discussed below.
+## Canonical publication and coordination
 
-## Feasibility
+Workstation files and task outputs are proposals. The project’s canonical design is published through immutable revision objects and the coordinator; the Three.js viewer reads the accepted project snapshot. A task does not own the live scene.
 
-The four-role design is reasonable for a hackathon MVP. Principal → Architect → Interior Designer → Critic is a useful division of responsibility, and a serialized workflow is a sensible way to avoid competing scene edits. Cloudflare Workflows, D1 project state, immutable R2 design revisions, real E2B tools, and a JSON-to-Three.js compiler already form a credible foundation.
+For each proposal, the coordinator merges **base → current → proposed** values by stable material, space and element IDs, then validates the complete result. Disjoint field changes survive, including an Architect’s roof geometry and a Designer’s roof material. Identical changes are compatible. Competing values, deletion-versus-edit, invalid combined references and other incompatible results produce explicit conflict paths.
 
-The current implementation is a fixed sequence of specialist invocations, rather than a Principal that dynamically manages a task graph. That is an acceptable MVP simplification if the interface describes it accurately. It does not need more agents to become useful. It needs a reliable brief → generation → steering → review → presentation loop.
+Designer enforcement protects metadata, notes, spaces, floors, spawn and structural element fields other than `materialId`. The Designer may change materials and add, edit or remove furniture and light elements. The Architect establishes a first design; Principal and Critic tasks cannot publish geometry. See [merge and ownership checks](../shared/collaboration.ts) and [coordinator.ts](../worker/src/coordinator.ts).
 
-The complete advertised loop is not yet reliable: the default computer allowance cannot cover initial generation followed by even the smallest reviewed color change, ordinary typed questions start mutation workflows, accepted changes are absent from the critic's effective requirements, and review findings never cause an automatic correction.
+A publication conflict creates a saved Principal decision and **one targeted retry** of the affected task against the decision’s current design base. It does not restart successful sibling work. If that retry still conflicts, the run stops with saved work available for review.
 
-## What is already solid
+If any task execution in a batch fails, all sibling executions settle and none of that batch’s proposals are published. Publication itself proceeds serially: a later integration failure can leave an earlier successful commit saved. Completed revisions remain available in both cases.
 
-- **One authoritative design.** Workstation files are proposals; the coordinator validates and publishes an immutable object, revision record, project pointer, and event. Stale proposals and cancelled-run commits are fenced. See [coordinator.ts:110](../worker/src/coordinator.ts#L110) and the concurrency/cancellation integration checks in [backend.test.ts:61](../tests/backend.test.ts#L61).
-- **Real execution and persistent outputs.** Specialists can read files, execute bounded Python, and inspect an actual remote desktop. Design snapshots, reviews, and render outputs are saved. See [ai.ts:12](../worker/src/ai.ts#L12), [desktop.ts:39](../worker/src/desktop.ts#L39), and [store.ts:27](../worker/src/store.ts#L27).
-- **Useful role separation.** The Designer's candidate is checked against the existing structure before commit, and the Critic returns findings rather than committing geometry. See [workflow.ts:109](../worker/src/workflow.ts#L109).
-- **Prompt adaptation is active.** [prompts.ts:1](../worker/src/prompts.ts#L1) loads the repository's active Markdown prompts. [shared.md:12](../prompts/shared.md#L12) explicitly requires the supplied runtime schema, treats tool outputs as data, distinguishes proposals from commits, and rejects invented tool activity. These are useful safeguards against the older reference material's broader assumptions.
+Saved dependency results reach downstream tasks. Workstation agents can use `report_coordination` to record a concrete handoff or cross-domain issue; successful notes appear in activity and the saved result supplied downstream. Visual-direction tasks use their structured coordination field. These notes do not independently launch another task or expand field ownership. The Principal coordinates through the plan and the bounded conflict/review decisions. See [ai.ts](../worker/src/ai.ts).
 
-## Prioritized findings
+The final review can trigger **one correction plan**, followed by another final review. Empty final findings permit `ready`; remaining findings after the correction allowance leave the project in `review`. This correction loop exists, but its review schema is not yet an evidence-completeness gate.
 
-P1 means a correctness issue or blocker in the normal demo path. P2 means an important refinement to meet the intended experience.
+## Persistence, visibility and resource bounds
 
-### 1. P1 — The daily computer allowance prevents generation followed by reviewed steering
+Plans, proposals, reviews, visual directions, conflict decisions and workstation checkpoints are persistent artifacts. Task rows record their owner, kind, objective, prerequisites, deliverables, base revision and output references. Activity’s [TaskBoard](../components/TaskBoard.tsx) shows real task metadata, dependency waiting, computer waiting and completed work. Commit events identify the publishing specialist. Snapshots include recent runs, which keep Stop work available during queued work. See [store.ts](../worker/src/store.ts) and [Studio.tsx](../components/Studio.tsx).
 
-**Trigger:** From a fresh daily allowance, generate a design, then change one existing element's color.
+Replay uses durable steps and saved plans, task results and conflict resolutions. Indexed runtime task identities keep model-supplied names separate from retry identities. Within `runTeam`, cancellation fences prevent stopped runs from reviving graph-task statuses or publishing canonical revisions. Final readiness has a run/revision fence, and workstation release is scoped to the stopped run. The outer brief/clarification flow still has a status race described below. Dispatch reconciliation exposes failed requests instead of treating failed workflow creation as successful work. See [workflow.ts](../worker/src/workflow.ts), [team.ts](../worker/src/team.ts), [steering.ts](../worker/src/steering.ts) and [index.ts](../worker/src/index.ts).
 
-[shared/budget.ts:1](../shared/budget.ts#L1) allows 3,600 reserved seconds per user per day. Every specialist workstation reserves 900 seconds in [desktop.ts:21](../worker/src/desktop.ts#L21). Reservations remain charged after release because [budget.ts:16](../worker/src/budget.ts#L16) sums every lease for the day, while release only changes its status.
+Computer caps remain unchanged: two global desktops, 900 seconds per lease, 3,600 user seconds per day, and the configured global monthly allowance. Unused reserved time is refunded only after confirmed shutdown; uncertain or legacy usage retains its conservative charge. A deterministic single-element color patch needs no editing desktop, while its model review still uses the Critic workstation. Long work or retries can still exhaust the allowance. Image requests have a separate allowance and do not reserve desktops. See [budget limits](../shared/budget.ts), [budget accounting](../worker/src/budget.ts) and [desktop lifecycle](../worker/src/desktop.ts).
 
-Initial generation allocates Architect, Designer, and Critic workstations. A single-element recolor allocates another Designer workstation and another Critic workstation. See [workflow.ts:84](../worker/src/workflow.ts#L84), [workflow.ts:104](../worker/src/workflow.ts#L104), and [workflow.ts:119](../worker/src/workflow.ts#L119).
+Specialist artifact saves through `store.artifact()` atomically check the shared 250 MB project allowance. Duplicate saves preserve the registered artifact, and rejected concurrent uploads remove their own unregistered object. The per-artifact limit remains 25 MB. Image and capture saves use a separate precheck path that still has a concurrent-cap gap. These controls do not establish the duration or cost of a live end-to-end demo.
 
-| Stage | Reserved seconds after admission | Result |
-| --- | ---: | --- |
-| Generate: Architect | 900 | Admitted |
-| Generate: Designer | 1,800 | Admitted |
-| Generate: Critic | 2,700 | Admitted |
-| Recolor: Designer | 3,600 | Admitted |
-| Recolor: Critic | 3,600 | Rejected: daily allowance reached |
+## Remaining work
 
-This result was reproduced by executing the actual `admission()` helper with zero active machines between stages. Fast completion does not help. The recolor may commit, but the run then fails before review. Recoloring an entire exterior follows the more expensive global route.
+### Typed intent and clarification resume
 
-**Refinement:** Make the target demo fit a deliberate end-to-end budget. A deterministic material patch need not allocate a fresh computer; reuse a bounded project workstation where safe, or reconcile reserved usage against actual usage while retaining an upper spending bound. Adjusting the limit alone should use the measured total for generation, steering, review, and final render. Add a workflow-level test for that complete sequence.
+The normal text composer still submits a change request. A question such as “Why is the roof sloped?” has no explicit read-only text route and can enter a design workflow. The selected room supplies context and attribution; the Principal’s plan chooses actual ownership.
 
-### 2. P1 — Typed questions and clarification answers are treated as design changes
+A generation clarification completes the current run with a blocked Principal task. A normal typed answer does not identify and resume that question. Voice can append requirements to the brief before a first design exists and while work is idle, but a unified question/answer/resume lifecycle remains absent. Add explicit `ask`, `answer_clarification`, `change` and `start_work` intents with durable question IDs and brief updates. See [Studio.tsx](../components/Studio.tsx), [workflow.ts](../worker/src/workflow.ts) and [voice.ts](../worker/src/voice.ts).
 
-**Trigger:** Ask the Critic “Why is this roof sloped?” or answer a Principal clarification in the normal message composer.
+### Effective requirements across future runs
 
-The composer always posts a change request in [Studio.tsx:69](../components/Studio.tsx#L69), and `/messages` always calls `queueChange` in [index.ts:108](../worker/src/index.ts#L108). There is no read-only conversational intent. The routing prompt treats everything except a one-element color edit as global, leading to an Architect design proposal.
+Every current specialist task, including the Critic, receives the accepted instruction for its run. This fixes the earlier omission where a red-exterior change was reviewed only against the original yellow brief.
 
-When generation produces questions, [workflow.ts:70](../worker/src/workflow.ts#L70) completes the run and leaves a blocked Principal task. A normal typed answer creates a separate change run; it does not merge the answer into the brief or resume the clarification state. Manually editing the complete brief and starting generation again is available, but is a different interaction.
+The project still lacks a versioned effective-requirements model that records which earlier requirement an accepted change supersedes. Later work receives the stored brief and current geometry; it does not reconstruct authoritative amendments from the full change history. Preserve the original request and maintain accepted amendments separately, then supply that shared state to planning and review.
 
-**Impact:** A question can allocate computers and alter the design. A clarification answer has no explicit relationship to the outstanding question.
+### Required geometry evidence
 
-**Refinement:** Introduce a shared text/voice intent boundary: `ask`, `answer_clarification`, `change`, and `start_work`. Read-only questions should use a current project snapshot. Clarification answers should update an identified question and effective brief, then resume the dependent work. Neither path should silently become a redesign.
+[reviewDesign()](../shared/design.ts) checks a small set of omissions and narrow spaces. It does not establish supported spawn, room reachability, actual door openings, enclosure, stair headroom or image-to-model correspondence. The final review still returns string findings and a summary, without mandatory evidence coverage, severity, affected IDs or an explicit unknown verdict.
 
-### 3. P1 — Accepted steering is not included in the critic's effective requirements
+The walking controllers check real collision and floor support for navigation, but those runtime checks are not automatically used as a generation acceptance gate. Add revision-bound deterministic geometry checks and a small structured review contract. The existing correction loop can then act on supported failures and missing evidence. See [first-person.ts](../shared/first-person.ts), [navigation.ts](../shared/navigation.ts) and [team.ts](../worker/src/team.ts).
 
-**Trigger:** The brief says “yellow exterior”; the user later requests red.
+### Workstation views and presentation
 
-The change run keeps the original brief in [workflow.ts:62](../worker/src/workflow.ts#L62). Architect and Designer prompts receive the current instruction, but the Critic receives only the original brief and resulting design in [workflow.ts:124](../worker/src/workflow.ts#L124). The accepted change is persisted in `changes`, but the workflow never builds an effective requirements state from that history. Later generation also prepares its brief from the original request.
+The standard workstation opens a room table and JSON source. Its automatic screenshot shows that interface; it does not automatically provide floor plans, elevations, a stair section or a building viewport. Agents have real tools, but a source-table screenshot cannot substantiate an observed assembly review. Blender compilation and presentation rendering remain a separate requested workflow. See [desktop.ts](../worker/src/desktop.ts) and [workflow.ts](../worker/src/workflow.ts).
 
-**Impact:** The Critic is asked to evaluate red against an obsolete yellow requirement. Later work lacks an authoritative record that red supersedes yellow; preserving the current color is left to inference from the scene and general preservation instructions.
+The Presentation room still contains a fixed exhibit. The accepted building is explorable through **Design → Walk inside** or **Click to walk**; entering the office’s Presentation room does not yet open that design. Connect a revision-aware exhibit and an in-world walkthrough entry to complete the spatial handoff. Spline scenes and imported assets also need explicit viewer and collider integration; the local Blender/Spline authoring tools do not provide this automatically.
 
-**Refinement:** Preserve the original request, and separately maintain versioned effective requirements with accepted amendments and superseded values. Pass the same effective brief, relevant changes, and design revision to every specialist and review. Record which change a review verifies. This is a state-model change, not a prompt-only fix.
+### Smaller state and schema gaps
 
-### 4. P1 — A failed workflow dispatch can strand a change indefinitely
+- The outer Principal brief step can save a model response after cancellation without renewing its cancellation fence. Its clarification branch can also mark the run completed and wrapper task blocked after Stop work. Graph tasks, canonical publication and final readiness have stronger fences; the wrapper needs the same status-aware updates.
+- Image and browser-capture storage check the project allowance before insertion, without an atomic SQL capacity condition. Concurrent saves can therefore exceed the shared cap even though specialist artifact admission is atomic.
+- Changes and decisions are persisted and partly exposed through events/artifacts, but the project snapshot does not provide their complete structured history.
+- Semantic target selection still relies on planning a proposal. A typed set of affected IDs and scoped change operations would make multi-element steering more explicit.
+- `recolor()` prefixes an element ID with `custom_`; a permitted 80-character element ID therefore exceeds the material ID length bound. A bounded collision-safe identifier remains needed for that edge case.
 
-**Trigger:** A pending change reaches `begin()`, but `JOBS.create()` fails transiently.
+## Geometry contract
 
-[coordinator.ts:139](../worker/src/coordinator.ts#L139) marks the inserted run `failed` and returns an error; the change remains `pending`. On a later alarm retry, [coordinator.ts:131](../worker/src/coordinator.ts#L131) treats any existing run ID as an idempotent success, including that failed, never-started run. [steering.ts:24](../worker/src/steering.ts#L24) then changes the pending request to `in_progress`, without launching another workflow.
+The application schema supports 1–4 floors, up to 40 spaces and 1,200 elements, basic materials, yaw-rotated boxes and procedural stairs. Door/window elements do not subtract openings from walls. `asset` elements currently remain boxes, and the browser’s light elements do not provide an independently authored lighting rig. The Worker’s Blender compiler uses the same elementary geometry and adds its presentation lighting.
 
-**Impact:** A saved user instruction can appear to be running forever, with no job capable of completing it.
+Project-specific local Blender/Spline scripts may interpret extra authoring metadata. Those extensions are not part of the application’s validated geometry or its walkable scene. Any general extension needs coordinated schema, browser, export, validation and navigation changes. See [geometry.ts](../shared/geometry.ts), [blender_compile.py](../scripts/blender_compile.py), [Blender tooling](blender-mcp.md) and [walkthrough requirements](walkthrough.md).
 
-**Refinement:** Make dispatch recovery status-aware. Distinguish an inserted run from a successfully dispatched workflow; reconcile the workflow instance before declaring success. Retry an undispatched operation safely or expose an explicit failed/retryable change. Add fault-injection coverage for a failed first `JOBS.create()` and a subsequent alarm retry.
+## Verification and next checks
 
-### 5. P1 — “Ready” lacks an evidence gate, and findings do not trigger corrections
+Relevant automated suites are:
 
-**Trigger:** A generated model contains a disconnected entrance, unusable spawn, inaccessible room, or broken stair junction.
+- [collaboration.test.ts](../tests/collaboration.test.ts): graph validity, readiness, merge conflicts and ownership.
+- [image-workflow.test.ts](../tests/image-workflow.test.ts): concurrent execution, shared references, dependencies, conflict retries, review corrections, replay and cancellation with mocked paid services and real D1/R2 storage.
+- [backend.test.ts](../tests/backend.test.ts), [desktop-budget.test.ts](../tests/desktop-budget.test.ts) and [artifact-storage.test.ts](../tests/artifact-storage.test.ts): revision/cancellation fences, resource accounting and concurrent storage admission.
+- [agent-tools.test.ts](../tests/agent-tools.test.ts): recorded coordination messages and tool argument validation.
+- [first-person.test.ts](../tests/first-person.test.ts) and [navigation.test.ts](../tests/navigation.test.ts): actual Rapier movement and geometry-based click navigation.
 
-[reviewDesign():78](../shared/design.ts#L78) only checks whether any door, window, or staircase exists, plus very narrow spaces. It does not verify connectivity, opening placement, enclosure, floor support, stair headroom, or spawn safety. Executing the helper on the sample with its door moved to `[400, 1, 400]` and spawn moved to `[400, 40, 400]` produced a schema-valid design and **zero deterministic findings**. This demonstrates missing validation, not that the model reviewer would necessarily overlook the problem.
+Run `npm test` and `npm run typecheck` for the repository’s current checks. Automated storage, scheduling and physics coverage does not verify live provider availability, architectural quality, complete evidence capture or the final Presentation-room experience.
 
-The review schema is only `{ findings: string[], summary: string }`, and [workflow.ts:125](../worker/src/workflow.ts#L125) chooses `ready` whenever the combined findings array is empty. There is no required evidence coverage or structured `unknown`/blocking verdict. If findings do exist, the workflow saves them, sets `review`, and completes; it never calls the Principal again to assign a bounded correction. Interior detail also happens before this review.
-
-**Impact:** Completion depends on a model choosing to mention every missing check. Detected defects become reports for the user to act on, rather than work the team resolves internally.
-
-**Refinement:** Introduce a small, enforceable concept review contract: checked revision, severity, affected IDs, evidence, acceptance condition, and `pass`/`revise`/`needs_evidence`. Add deterministic supported-spawn and reachable-route checks first, then key stair/opening/enclosure checks. Run a shell gate before detailed interiors. Give the Principal one bounded correction pass, followed by review of affected checks. Preserve useful previews while clearly recording unresolved blockers.
-
-### 6. P2 — Local steering is narrower than the demo, and the selected specialist does not control routing
-
-**Trigger:** In the Designer room, request “Make the exterior red” when the exterior contains several wall elements, or “Move this sofa slightly left.”
-
-[workflow.ts:78](../worker/src/workflow.ts#L78) defines local as color-only on exactly one existing element. All other requests involve a Principal meeting, a complete Architect design response, and a complete Designer response. [workflow.ts:84](../worker/src/workflow.ts#L84) chooses Designer or Architect from this binary rule; the selected `p.agent` does not determine the worker performing the edit. Unrelated architecture is protected by prompting for global changes, not by a patch scope check.
-
-**Impact:** A routine material or furniture edit becomes a broad, expensive workflow. The office specialist selection mostly changes attribution. The default whole-exterior yellow-to-red demo does not use the precise local path unless the exterior is represented by one element.
-
-**Refinement:** Resolve semantic selections to explicit affected IDs. Let Designer-owned changes cover finishes, furniture, and lights, including multiple elements, using validated operations. Let Architect own bounded geometry operations. Escalate changes based on domain/dependency impact. Enforce unchanged fields and accepted scope at commit; keep full-model replacement for initial generation or explicitly broad redesigns.
-
-### 7. P2 — The automatic workstation checkpoint shows JSON, not the generated building
-
-**Trigger:** Open a normal generation/review workstation or inspect its automatically saved desktop preview.
-
-[desktop.ts:33](../worker/src/desktop.ts#L33) opens an HTML room table and JSON source. [desktop.ts:39](../worker/src/desktop.ts#L39) screenshots that desktop. The model has tools that could generate other evidence, but the normal pipeline does not automatically compile and provide floor plans, elevations, or a stair section before the Critic reviews. Blender compilation/rendering is a separate requested render workflow in [workflow.ts:39](../worker/src/workflow.ts#L39).
-
-**Impact:** The execution is real, but the default visible evidence does not substantiate the visual review requested by the prompts. A screenshot of a JSON table is not evidence of building assembly.
-
-**Refinement:** Serve a model viewport derived from the same canonical revision inside the workstation. Automatically capture a small relevant view set and store its revision and view type. Feed those images to the Critic. Use quick procedural renders or browser captures before allocating expensive presentation renders.
-
-### 8. P2 — The Presentation room does not present the saved design
-
-**Trigger:** Generate a model, then select or walk into the Presentation room.
-
-The room's exhibit consists of fixed boxes in [World.tsx:67](../components/World.tsx#L67). The `Office` component does not receive design data. The generated building is rendered only in the separate `model` mode at [World.tsx:169](../components/World.tsx#L169). Room-strip navigation explicitly selects `office` mode in [Studio.tsx:92](../components/Studio.tsx#L92).
-
-**Impact:** The final building is explorable through the Design view, but the spatial interaction “enter the presentation room to inspect the result” is not connected.
-
-**Refinement:** Put the current revision's scaled model on the presentation table and provide an in-world action to enter its full-scale walkthrough. Associate previous/current comparisons and the selected review with that exhibit.
-
-### 9. P2 — Cancellation and observable state need a consistent run lifecycle
-
-[index.ts:100](../worker/src/index.ts#L100) cancels runs and tasks, then terminates the workflow, but does not cancel the associated `changes` row. A terminated workflow cannot be relied on to run its catch/finally handlers, so an in-progress change may stay in that state. The cancellation endpoint also releases every project desktop even when the requested run was already completed; a delayed cancellation for an old run can interfere with a newer run's workstations.
-
-The snapshot in [store.ts:14](../worker/src/store.ts#L14) omits runs, changes, and decisions. The UI infers active work from tasks; during a queued workstation wait after the Principal completes, it may show no active specialist and no Stop work button. In addition, every commit event is attributed to `architect` at [coordinator.ts:121](../worker/src/coordinator.ts#L121), including Designer changes.
-
-**Refinement:** Cancel a run and its active change atomically; release only workstations leased to that run. Return current run, queue state, change status, and decision references in the snapshot. Keep Stop work available for queued and running jobs. Pass the actual owner/task into commit events.
-
-## Prompt refinements
-
-The strongest parts of the prompts are the canonical-state rule, role ownership, short clarification policy, evidence discipline, and explicit warning against invented tool activity. Keep those.
-
-The active instructions have already qualified older Draftroom concepts as optional when unsupported, so unavailable Spline APIs or an Analyst worker are not mandatory runtime dependencies. Nevertheless, the role documents still spend substantial space discussing Analyst handoffs, protected requirement records, concurrent reviews, and pre-detail gates that this runtime does not dispatch. See [director.md:16](../prompts/agents/director.md#L16), [director.md:25](../prompts/agents/director.md#L25), and [interior-designer.md:37](../prompts/agents/interior-designer.md#L37).
-
-Refine each active invocation around what it can actually accomplish: exact inputs, owned fields, available tools, deliverable schema, verification required, and supported escalation result. Retain richer architectural methods in reference guidance. Add runtime fields and behavior before asking models to maintain records that cannot be represented. Fix the small copied-text typo “Kai Chenpt” in [interior-designer.md:25](../prompts/agents/interior-designer.md#L25).
-
-Do not try to implement workflow gates, durable amendments, or patch ownership through longer instructions alone. The current prompts already ask for these behaviors; the missing enforcement belongs in schemas and orchestration.
-
-## Geometry and model limits
-
-The supported output is a useful conceptual massing and layout model: 1–4 floors, up to 40 spaces, materials, rectangular elements, Y-axis rotations, and procedural stairs. See [DesignSchema:23](../shared/design.ts#L23) and [geometry.ts:4](../shared/geometry.ts#L4).
-
-Door/window boxes do not cut holes in walls. All non-stair elements compile to boxes; `assetId` is present in the schema but is not loaded by these geometry renderers. Lights are represented as boxes in the browser; Blender additionally creates fixed area lights. These limitations matter for the requested futuristic or character-inspired architecture: the agents can compose supported forms, but the schema does not yet support arbitrary meshes, curved forms, pitched rotations, material textures, or detailed controllable lighting.
-
-Keep the MVP promise at conceptual architecture and incremental styling. Extend the geometry contract only when a demonstrated design needs it, and update browser rendering, Blender export, validation, and navigation together.
-
-One smaller correctness issue: `recolor()` derives a material ID by prepending `custom_` to a permitted 80-character element ID. The resulting ID exceeds the same 80-character schema limit, so a valid design can reject a legitimate recolor. This was reproduced with the actual helper. Use a bounded collision-safe ID and test boundary-length IDs; see [design.ts:65](../shared/design.ts#L65).
-
-## Recommended implementation order
-
-1. Make the fresh-project generation → whole-exterior recolor → review → optional render sequence fit the budget; add integration coverage with mocked paid services.
-2. Unify text and voice intent handling, clarification resume, and effective requirement amendments. Keep accepted language and selected element/domain context.
-3. Implement validated local changes and affected-scope checks. Repair dispatch retries and cancellation lifecycle in the same state path.
-4. Add a small evidence-backed review gate and one bounded correction pass; make the real model visible on workstations.
-5. Connect the Presentation room to the current canonical revision and its walkthrough.
-
-The existing integration suite verifies owner isolation, revision races, cancellation commit fencing, and budget admission. Its Worker is configured with generation disabled, so it does not exercise live design/steering workflows; see [backend.test.ts:30](../tests/backend.test.ts#L30). This audit ran the pure budget and geometry helpers described above and reviewed source paths. It did not run paid OpenAI/E2B generation or establish the latency, visual quality, or success rate of a live demo.
+The next product priorities are a shared intent/clarification/effective-requirements path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should then measure generation, whole-exterior steering, review and optional rendering within the unchanged allowances.

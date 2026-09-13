@@ -18,15 +18,19 @@ Configuration lives in `worker/wrangler.jsonc` and can be overridden by local Wo
 | `OPENAI_IMAGE_CONCEPT_MODEL` | `gpt-image-2.5-flare` |
 | `OPENAI_IMAGE_EDIT_MODEL` | `gpt-image-2.5-sunburst` |
 
-For deployment, apply `0003_image_studies.sql` through the normal D1 migration command, configure the server secret and enable the image flag in the target environment. Image generation itself does not enable 3D generation or Blender rendering.
+For deployment, apply pending D1 migrations through the normal migration command, including `0003_image_studies.sql` for image state and `0004_task_dependencies.sql` for the current team workflow. Configure the server secret and enable the image flag in the target environment. Image generation itself does not enable 3D generation or Blender rendering.
 
 The documented model IDs are Flare and Sunburst, including dated `-2026-09-08` snapshots. There is no configured bare `gpt-image-2.5` alias. [Flare model](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare), [Sunburst model](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst).
 
 ## Agent workflow and persistence
 
-The four-agent team remains unchanged. The Designer's image tool produces one medium-quality 1536 × 1024 PNG per request. The first design run automatically creates one concept after the Principal prepares the brief, if image generation is enabled and no current concept is selected. Later ordinary steering does not regenerate images automatically.
+The four primary roles remain Principal, Architect, Designer and Critic. The image-study workflow is attributed to the Designer and produces one medium-quality 1536 × 1024 PNG per request. The first design run automatically creates one concept after the Principal prepares the brief, if image generation is enabled and no current concept is selected. Later ordinary steering does not regenerate images automatically.
 
-The selected artifact is frozen for the run and supplied as actual `input_image` content to the Architect, Designer and Critic. The Architect translates feasible visual intent into the canonical design. The Designer interprets finishes while the existing structural-preservation check protects the shell. The Critic receives the same visual reference and the current change instruction, with explicit guidance to distinguish visual correspondence from model correctness.
+Design work follows the [Principal's dependency graph](concurrent-agents.md). Plans contain 2–8 tasks, with up to two different specialists executing together. A new house can develop architecture and a visual-direction specification in parallel, then apply the specification to its committed shell. For an existing model, the Principal selects only the needed owners: a finish-focused image change can use Designer and Critic tasks, while a structural change needs the Architect. Selecting an image does not impose a fixed Architect → Designer → Critic sequence.
+
+The selected artifact is frozen for the run and supplied as actual `input_image` content to every model-backed specialist task that is dispatched, including visual direction, design proposals, reviews, a conflict retry or the bounded correction round. The Principal's planning/decision calls receive their supplied project context; they are not described as having inspected an image unless that evidence was actually supplied. Dependent tasks also receive saved outputs and coordination notes from their prerequisites.
+
+Each parallel batch reads one immutable canonical revision. The coordinator merges compatible proposals by stable IDs and fields before publication. The Designer may change materials, assignments, furniture and lights while preserving metadata, notes, spaces, floors, spawn and structural geometry. Overlapping changes require a saved Principal decision and one targeted task retry. The final Critic reviews the combined design, the same frozen reference and the accepted instruction, distinguishing visual correspondence from model correctness. Findings can trigger one correction plan and a further review; unresolved findings leave the model in `review`.
 
 `project/design.json` remains authoritative. Generating, editing or selecting an image alone does not modify geometry, revision or design-review status. Applying a direction to an existing model uses the persistent change-request queue. The image's original revision is retained; a queued visual change fails with a refresh explanation if the design advances before it starts.
 
@@ -38,16 +42,19 @@ New persistence includes:
 - `image_attempts`: one reserved provider attempt per run stage; a separate allowance of 12 requests per account per UTC day, including failed or interrupted attempts.
 - Project selection and per-run/per-change reference IDs; selection events and an initial Principal decision.
 - Real image-tool task and progress events. Image runs have no E2B leases or desktop cleanup.
+- The specialist plan, dependency links, proposal bases, output references and coordination notes used when a visual direction is translated into the editable model. Activity shows this real task state.
 
 ## Failure handling and limits
 
 Image output and metadata publish together only while the run is active and its source revision is still current. Cancelled or stale output cannot become a new successful study. Completed work is reusable without another provider request. Provider and workflow retries are disabled for image generation, and a reservation prevents automatic reissue after an ambiguous interruption. An interrupted provider request can still have incurred usage; an explicit new request is required to retry.
 
-References must be saved PNG artifacts from the same project and current source revision. Browser captures are bounded to 8 MB, and provider/reference images to 12 MB, with PNG-header and dimension checks. Project artifacts share the existing 250 MB allowance. Large design data is summarized for image prompting; requests beyond the prompt limit fail before a paid call.
+References must be saved PNG artifacts from the same project and current source revision. Browser captures are bounded to 8 MB, and provider/reference images to 12 MB, with PNG-header and dimension checks. Project artifacts share the existing 250 MB allowance. Specialist artifact admission is checked atomically, but image and capture inserts still rely on a precheck and can exceed that cap under concurrent saves. Large design data is summarized for image prompting; requests beyond the prompt limit fail before a paid call.
 
-The UI refuses to capture the office, sample design or previous revision. Captures retain revision, dimensions and a user-supplied viewport label. They include the current cutaway appearance; full camera transforms and cutaway metadata are not yet persisted. Earlier concepts remain viewable as history, but the current UI requires a fresh image to edit or apply against a newer revision.
+The UI refuses to capture the office, sample design or previous revision. Captures retain a fixed purpose, revision and dimensions. They include the current cutaway appearance; full camera transforms and cutaway metadata are not yet persisted. Earlier concepts remain viewable as history, but the current UI requires a fresh image to edit or apply against a newer revision.
 
 The API returns base64 image data; the Worker saves it before returning artifact identity. No client key, arbitrary remote reference URL, desktop credential or ephemeral provider image URL is exposed. [Image generation guide](https://developers.openai.com/api/docs/guides/image-generation).
+
+The [image-workflow tests](../tests/image-workflow.test.ts) exercise frozen references across concurrent tasks, dependency handoffs, conflict retry and review correction using mocked paid providers and real D1/R2 storage. [Image storage tests](../tests/images.test.ts) cover image-specific persistence, limits and cancellation. This documentation update did not rerun live image or workstation generation.
 
 ## Creative boundary
 
