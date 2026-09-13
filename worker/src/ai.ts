@@ -39,7 +39,9 @@ export async function modelJSON<T>(
   const responseSchema = modelResponseSchema(schema);
   const client = new OpenAI({
     apiKey: await credential(env, owner),
-    maxRetries: 0,
+    // Retry only the API request on transient transport/server failures; local
+    // tool execution happens after a response and is never replayed here.
+    maxRetries: 1,
     timeout: 120000,
   });
   const input: OpenAI.Responses.ResponseInput = [
@@ -90,7 +92,7 @@ export async function modelJSON<T>(
           type: "function",
           name: "execute_python",
           description:
-            "Run bounded Python in your isolated Linux workstation. Use /home/user/project for files. No credentials are available. Do not start persistent servers or download executable software.",
+            "Run bounded Python in your isolated Linux workstation. Use /home/user/project for files. For bpy, write a script and invoke the installed blender --background --python-exit-code 1 --python script.py through subprocess; ordinary python3 cannot import bpy. No credentials are available. Do not start persistent servers or download executable software.",
           parameters: {
             type: "object",
             properties: { code: { type: "string" } },
@@ -335,7 +337,7 @@ export async function modelJSON<T>(
           const args2=z.object({blendFile:z.string().regex(/^[a-zA-Z0-9_-]+\.blend$/),name:z.string().min(1).max(100)}).parse(args);
           const assetId=`asset_${crypto.randomUUID().replaceAll('-','')}`;
           const compiled = await runVisible(context.desktop, `blender --background --python-exit-code 1 --python /home/user/project/blender_asset.py -- --input /home/user/project/${args2.blendFile} --output /home/user/project/output/${assetId}.glb`, 90000);
-          if (compiled.exitCode !== 0) throw new Error('Blender asset compilation failed.');
+          if (compiled.exitCode !== 0) throw Object.assign(new Error('Blender asset compilation failed.'), {stderr: compiled.stderr || compiled.stdout});
           await context.desktop.open(`/home/user/project/${args2.blendFile}`);
           const revision=(await env.DB.prepare('SELECT revision FROM projects WHERE id = ?').bind(context.projectId).first<{revision:number}>())?.revision || 0;
           const artifactId=await artifact(env,context.projectId,context.taskId,`${assetId}.glb`,'model-asset',revision,await context.desktop.files.read(`/home/user/project/output/${assetId}.glb`,{format:'bytes'}),'model/gltf-binary');
