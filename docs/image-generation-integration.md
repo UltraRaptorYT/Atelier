@@ -18,13 +18,13 @@ Configuration lives in `worker/wrangler.jsonc` and can be overridden by local Wo
 | `OPENAI_IMAGE_CONCEPT_MODEL` | `gpt-image-2.5-flare` |
 | `OPENAI_IMAGE_EDIT_MODEL` | `gpt-image-2.5-sunburst` |
 
-For deployment, apply pending D1 migrations through the normal migration command, including `0003_image_studies.sql` for image state and `0004_task_dependencies.sql` for the current team workflow. Configure the server secret and enable the image flag in the target environment. Image generation itself does not enable 3D generation or Blender rendering.
+For deployment, apply pending D1 migrations through the normal migration command, including `0003_image_studies.sql` for image state, `0004_task_dependencies.sql` for the team workflow and `0005_concept_context.sql` for frozen background concepts. Configure the server secret and enable the image flag in the target environment. Image generation itself does not enable 3D generation or Blender rendering.
 
 The documented model IDs are Flare and Sunburst, including dated `-2026-09-08` snapshots. There is no configured bare `gpt-image-2.5` alias. [Flare model](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare), [Sunburst model](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst).
 
 ## Agent workflow and persistence
 
-The four primary roles remain Principal, Architect, Designer and Critic. The image-study workflow is attributed to the Designer and produces one medium-quality 1536 × 1024 PNG per request. The first design run automatically creates one concept after the Principal prepares the brief, if image generation is enabled and no current concept is selected. Later ordinary steering does not regenerate images automatically.
+The four primary roles remain Principal, Architect, Designer and Critic. Design runs generate the editable 3D model directly from the brief, without an automatic image step. The optional image-study workflow is attributed to the Designer and produces one medium-quality 1536 × 1024 PNG only when explicitly requested. Ordinary generation and steering never purchase image generation.
 
 Design work follows the [Principal's dependency graph](concurrent-agents.md). Plans contain 2–8 tasks, with up to two different specialists executing together. A new house can develop architecture and a visual-direction specification in parallel, then apply the specification to its committed shell. For an existing model, the Principal selects only the needed owners: a finish-focused image change can use Designer and Critic tasks, while a structural change needs the Architect. Selecting an image does not impose a fixed Architect → Designer → Critic sequence.
 
@@ -32,7 +32,7 @@ The selected artifact is frozen for the run and supplied as actual `input_image`
 
 Each parallel batch reads one immutable canonical revision. The coordinator merges compatible proposals by stable IDs and fields before publication. The Designer may change materials, assignments, furniture and lights while preserving metadata, notes, spaces, floors, spawn and structural geometry. Overlapping changes require a saved Principal decision and one targeted task retry. The final Critic reviews the combined design, the same frozen reference and the accepted instruction, distinguishing visual correspondence from model correctness. Findings can trigger one correction plan and a further review; unresolved findings leave the model in `review`.
 
-`project/design.json` remains authoritative. Generating, editing or selecting an image alone does not modify geometry, revision or design-review status. Applying a direction to an existing model uses the persistent change-request queue. The image's original revision is retained; a queued visual change fails with a refresh explanation if the design advances before it starts.
+`project/design.json` remains authoritative. Generating, editing or selecting an image alone does not modify geometry, revision or design-review status. Applying a direction to an existing model uses the persistent change-request queue. Explicit image applications retain their revision checks; a queued visual change fails with a refresh explanation if the design advances before it starts. Separately, an already selected original generated concept from the same project can remain background direction on later runs. Its ID is frozen at run creation in `runs.context_artifact_id`; edited images and captures are never reused implicitly. Accepted user changes take priority over older concept colours or features.
 
 New persistence includes:
 

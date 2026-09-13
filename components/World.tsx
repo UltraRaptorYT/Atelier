@@ -7,6 +7,7 @@ import { Vector3, Group, PCFShadowMap, Mesh, MeshStandardMaterial, SRGBColorSpac
 import { agents, type AgentId, type Design, type Task } from '@/shared/design';
 import { geometryParts } from '@/shared/geometry';
 import { meetingSeats, workSeats, officeRoute } from '@/shared/office';
+import { modelOrbitCamera, type ModelCamera } from '@/shared/model-camera';
 import ClickNavigation from './ClickNavigation';
 import FirstPersonNavigation from './FirstPersonNavigation';
 
@@ -127,15 +128,19 @@ function Building({ design, selected, onSelect, cutaway, projectId, clickToWalk 
     return collision ? <RigidBody key={geometryKey} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
   })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision surface /></group>;
 }
-function CameraRig({ walking, mode, captureRef }: Pick<Props, 'walking' | 'mode' | 'captureRef'>) {
+function CameraRig({ walking, mode, captureRef, projectId, framing, hasDesign }: Pick<Props, 'walking' | 'mode' | 'captureRef' | 'projectId'> & { framing: ModelCamera; hasDesign: boolean }) {
   const { camera, gl, scene } = useThree();
-  useEffect(() => { if (!walking) { camera.position.set(...(mode === 'office' ? [24, 26, 30] : [18, 15, 20]) as [number, number, number]); camera.lookAt(0, 0, 0); } }, [walking, mode, camera]);
+  const latestFraming = useRef(framing); latestFraming.current = framing;
+  const modelAvailable = mode === 'model' && hasDesign;
+  // Snapshot refreshes must not reset a user's orbit or walkthrough orientation.
+  useEffect(() => { if (!walking) { camera.position.set(...(mode === 'office' ? [24, 26, 30] : latestFraming.current.position) as [number, number, number]); camera.lookAt(...(mode === 'office' ? [0, 0, 0] : latestFraming.current.target) as [number, number, number]); } }, [walking, mode, camera, projectId, modelAvailable]);
   useEffect(() => { captureRef.current = () => { gl.render(scene, camera); return gl.domElement.toDataURL('image/png'); }; return () => { captureRef.current = null; }; }, [gl, scene, camera, captureRef]);
   return null;
 }
 export default function World(props: Props) {
   const [quality, setQuality] = useState(1.5);
   const positions = useRef<Partial<Record<RoomId, [number, number, number]>>>({});
+  const framing = useMemo(() => modelOrbitCamera(props.design), [props.design]);
   useEffect(()=>{if(!props.walking && document.pointerLockElement) document.exitPointerLock();},[props.walking]);
   const target = props.mode === 'model' && props.design ? props.design.spawn : rooms.find(r => r.id === props.room)!.camera;
   const geometry = props.mode === 'office'
@@ -149,10 +154,10 @@ export default function World(props: Props) {
     <FrameRate onMeasure={props.onFrameRate}/>
     <Suspense fallback={<Html center><div className="scene-loading">Opening the studio…</div></Html>}><Physics gravity={[0, -20, 0]}>
       {props.clickToWalk ? <ClickNavigation key={`${props.mode}-${props.revision}-${props.cutaway}`} spawn={target} paused={props.paused} onStatus={props.onWalkStatus}>{geometry}</ClickNavigation> : geometry}
-      {props.walking && <FirstPersonNavigation key={props.mode} target={target} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} positions={positions} meeting={props.meeting} onProximity={props.onProximity} onRoom={id => { if (id in agents) props.onWorkstation(id as AgentId); else props.onRoom(id); }} onExit={props.onUnlock} office={props.mode === 'office'} />}
+      {props.walking && <FirstPersonNavigation key={props.mode} target={target} design={props.design} rooms={rooms} revision={`${props.revision}-${props.cutaway}`} paused={props.paused} positions={positions} meeting={props.meeting} onProximity={props.onProximity} onRoom={id => { if (id in agents) props.onWorkstation(id as AgentId); else props.onRoom(id); }} onExit={props.onUnlock} office={props.mode === 'office'} />}
     </Physics></Suspense>
     <ContactShadows position={[0, -.5, 0]} opacity={.3} scale={65} blur={2} far={20} resolution={256} />
-    {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={65} maxPolarAngle={Math.PI / 2.1} target={[0, 0, 0]} />}
-    <CameraRig walking={props.walking} mode={props.mode} captureRef={props.captureRef} />
+    {!props.walking && <OrbitControls makeDefault minDistance={8} maxDistance={props.mode === 'model' ? Math.max(65, framing.radius * 6) : 65} maxPolarAngle={Math.PI / 2.1} target={props.mode === 'model' ? framing.target : [0, 0, 0]} />}
+    <CameraRig walking={props.walking} mode={props.mode} captureRef={props.captureRef} projectId={props.projectId} framing={framing} hasDesign={Boolean(props.design)} />
   </Canvas>;
 }

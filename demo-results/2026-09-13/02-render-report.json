@@ -1,0 +1,23 @@
+{
+  "revision": 2,
+  "startedAt": "2026-09-13T05:38:06.245Z",
+  "success": true,
+  "exitCode": 0,
+  "log": "NFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.101\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.102\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.103\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.104\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.105\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.106\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.107\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.108\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.109\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.110\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.111\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Extracting primitive: Cube.112\n05:39:08 | INFO: Primitives created: 1\n05:39:08 | INFO: Finished glTF 2.0 export in 0.14991974830627441 s\n\n{\"ok\": true, \"elements\": 95, \"rendered\": true}\n\nBlender quit\n",
+  "files": [
+    {
+      "name": "design.blend",
+      "bytes": 1864604
+    },
+    {
+      "name": "design.glb",
+      "bytes": 177816
+    },
+    {
+      "name": "presentation.png",
+      "bytes": 1240769
+    }
+  ],
+  "sandboxStopped": true,
+  "elapsedSeconds": 87.077
+}

@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { RapierContext } from '@react-three/rapier';
-import { BODY_HEIGHT_FROM_FEET, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_HEIGHT, EYE_OFFSET, MAX_TIMESTEP, WALK_SPEED, clearWalkPosition, createWalkController, stepWalk, type WalkDirection } from '../shared/first-person';
+import { BODY_HEIGHT_FROM_FEET, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_HEIGHT, EYE_OFFSET, MAX_TIMESTEP, WALK_SPEED, clearWalkPosition, createWalkController, initialWalkLookTarget, stepWalk, type WalkDirection } from '../shared/first-person';
 import { exampleDesign } from '../shared/example';
 import { geometryParts } from '../shared/geometry';
 
@@ -30,6 +30,33 @@ function fixture(position = { x: 0, y: BODY_HEIGHT_FROM_FEET, z: 0 }) {
   const clear = (nominal = body.translation()) => clearWalkPosition(world, RAPIER, body, collider, nominal);
   return { world, body, collider, controller, addBox, step, run, clear, velocity: () => velocity };
 }
+
+describe('initial walkthrough facing', () => {
+  const wall = exampleDesign().elements.find(element => element.kind === 'wall')!;
+  const centered = { elements: [{ ...wall, position: [0, 1.5, 0] as [number, number, number], size: [14, 3, 10] as [number, number, number] }] };
+
+  it('faces inward from the live demo’s north-side spawn instead of looking farther away', () => {
+    expect(initialWalkLookTarget([1, .3, -6.2], centered)).toEqual([0, .3, 0]);
+    expect(initialWalkLookTarget([1, 1.7, 6.2], centered)).toEqual([0, 1.7, 0]);
+  });
+
+  it('uses translated, rotated shell bounds without letting remote decorations redirect the camera', () => {
+    const model = { elements: [
+      { ...wall, position: [14, 1.5, 12] as [number, number, number], size: [10, 3, 2] as [number, number, number], rotation: Math.PI / 2 },
+      { ...wall, id: 'second-wall', position: [26, 1.5, 12] as [number, number, number], size: [2, 3, 2] as [number, number, number] },
+      { ...wall, id: 'distant-light', kind: 'light' as const, position: [200, 3, 200] as [number, number, number] },
+    ] };
+    const facing = initialWalkLookTarget([20, 1.7, 0], model);
+    expect(facing[0]).toBeCloseTo(20); expect(facing[1]).toBe(1.7); expect(facing[2]).toBeCloseTo(12);
+  });
+
+  it('preserves office bearing and a defined direction when standing at the model center', () => {
+    const office = initialWalkLookTarget([-7.5, 1.7, 6.8]);
+    expect(office.slice(0, 2)).toEqual([-7.5, 1.7]); expect(office[2]).toBeCloseTo(1.8);
+    expect(initialWalkLookTarget([0, 1.7, 0], centered)).toEqual([0, 1.7, -5]);
+    expect(initialWalkLookTarget([1, 1.7, 2], { elements: [] })).toEqual([1, 1.7, -3]);
+  });
+});
 
 describe('first-person character physics', () => {
   it('settles with a 1.7m eye height and keeps gravity stable while idle', () => {

@@ -120,7 +120,13 @@ const ownsElement = (element: DesignElement) => element.kind === 'furniture' || 
 function assertDesignerScope(base: Design, proposal: Design) {
   const forbidden: string[] = [];
   for (const key of Object.keys(base) as (keyof Design)[]) {
-    if (key !== 'materials' && key !== 'elements' && !equal(base[key], proposal[key])) forbidden.push(`/${key}`);
+    if (key !== 'materials' && key !== 'elements' && key !== 'assets' && !equal(base[key], proposal[key])) forbidden.push(`/${key}`);
+  }
+  // Asset entries originate from server registration tools. Designers may add
+  // references for their furniture/lights, but cannot rewrite the old registry.
+  if (!equal(base.assets, proposal.assets.slice(0, base.assets.length))) forbidden.push('/assets');
+  for (const asset of proposal.assets.slice(base.assets.length)) {
+    if (!proposal.elements.some(element => ownsElement(element) && element.assetId === asset.id)) forbidden.push(`/assets/${asset.id}`);
   }
   const before = new Map(base.elements.map(element => [element.id, element]));
   const after = new Map(proposal.elements.map(element => [element.id, element]));

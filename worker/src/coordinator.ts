@@ -6,6 +6,8 @@ import { emit } from './store';
 import { dispatchPending } from './steering';
 import { executeVoiceTool, hangupVoice, LiveResponseTools } from './voice';
 import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collaboration';
+import { originalConceptId } from './images';
+import { changeFailedStatement } from './changes';
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private voiceTargets = new Map<string, { agent: AgentId; elementId: string | null; meeting: boolean }>();
@@ -196,12 +198,23 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
     if (!row) throw new HttpError(404, 'Project not found.');
     if (row.revision !== params.baseRevision) throw new HttpError(409, 'Refresh the project before starting work on a previous revision.');
     const selected = params.kind === 'generate' && row.concept_artifact_id ? await this.env.DB.prepare('SELECT id FROM image_studies WHERE id = ? AND project_id = ? AND revision = ?').bind(row.concept_artifact_id, params.projectId, params.baseRevision).first<{id:string}>() : null;
-    const frozen = { ...params, referenceArtifactId: params.kind === 'generate' ? selected?.id || null : params.referenceArtifactId || null };
+    const referenceArtifactId = params.referenceArtifactId || (params.kind === 'generate' ? selected?.id || null : null);
+    const contextArtifactId = !referenceArtifactId && (params.kind === 'generate' || params.kind === 'change')
+      ? await originalConceptId(this.env, params.projectId, row.concept_artifact_id) : null;
+    // Persist the selected background concept at run creation. A later selection
+    // cannot retarget an accepted run or its replayed Workflow checkpoints.
+    const frozen = { ...params, referenceArtifactId, contextArtifactId };
     try {
-      await this.env.DB.prepare('INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,reference_artifact_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(params.runId, params.projectId, params.userId, params.kind, 'queued', params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, frozen.referenceArtifactId, new Date().toISOString()).run();
+      await this.env.DB.prepare('INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,instruction,agent,element_id,reference_artifact_id,context_artifact_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(params.runId, params.projectId, params.userId, params.kind, 'queued', params.baseRevision, params.instruction || null, params.agent || 'principal', params.elementId || null, frozen.referenceArtifactId, frozen.contextArtifactId, new Date().toISOString()).run();
     } catch { throw new HttpError(409, 'You already have an active run. Stop it before starting another.'); }
     try { await this.env.JOBS.create({ id: params.runId, params: frozen }); }
-    catch { await this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ?").bind(params.runId).run(); throw new HttpError(503, 'The job could not be queued. Retry with a new request.'); }
+    catch {
+      await this.env.DB.batch([
+        this.env.DB.prepare("UPDATE runs SET status = 'failed' WHERE id = ? AND project_id = ? AND owner_id = ? AND status = 'queued'").bind(params.runId, params.projectId, params.userId),
+        changeFailedStatement(this.env, params, 'failed', 'The job could not be queued. Retry with a new request.'),
+      ]);
+      throw new HttpError(503, 'The job could not be queued. Retry with a new request.');
+    }
     await emit(this.env, params.projectId, 'task_created', `${params.kind === 'image' ? 'Visual concept' : params.kind === 'render' ? 'Presentation render' : 'Design work'} queued.`, params.agent || 'principal');
     return { runId: params.runId };
   }

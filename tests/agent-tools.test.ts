@@ -97,6 +97,7 @@ describe('bounded operational agent tools', () => {
     mocks.create.mockImplementation(async () => round(call(`invalid-${mocks.create.mock.calls.length}`, { target: 'unknown', message: 'Escalate.' })));
     await expect(modelJSON(env, 'owner', 'designer', 'Develop interiors.', schema, ctx as never)).rejects.toMatchObject({ status: 422, message: expect.stringMatching(/tool limit/) });
     expect(mocks.create).toHaveBeenCalledTimes(12);
+    expect(mocks.create.mock.calls.at(-1)![0].tool_choice).toBe('none');
     expect(mocks.constructor).toHaveBeenCalledWith({ apiKey: 'test-key', maxRetries: 0, timeout: 120000 });
     expect(ctx.communications).toEqual([]); expect(notes()).toHaveLength(0);
   });

@@ -5,7 +5,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CapsuleCollider, RigidBody, useBeforePhysicsStep, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { Euler, Vector3 } from 'three';
-import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, clearWalkPosition, createWalkController, stepWalk, type WalkController } from '@/shared/first-person';
+import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET, clearWalkPosition, createWalkController, initialWalkLookTarget, stepWalk, type WalkController } from '@/shared/first-person';
+import type { Design } from '@/shared/design';
 import type { RoomId } from './World';
 import styles from './FirstPersonNavigation.module.css';
 
@@ -13,6 +14,7 @@ type Point = { x: number; y: number; z: number };
 type Room = { id: RoomId; label: string; position: [number, number, number]; camera: [number, number, number] };
 type Props = {
   target: [number, number, number];
+  design?: Design | null;
   rooms: Room[];
   office: boolean;
   revision: string;
@@ -31,7 +33,7 @@ function editing(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('input, textarea, select, [role="textbox"]')));
 }
 
-export default function FirstPersonNavigation({ target, rooms, office, revision, paused, onRoom, onExit, positions, meeting, onProximity }: Props) {
+export default function FirstPersonNavigation({ target, design, rooms, office, revision, paused, onRoom, onExit, positions, meeting, onProximity }: Props) {
   const body = useRef<RapierRigidBody>(null);
   const collider = useRef<RapierCollider>(null);
   const controller = useRef<WalkController | null>(null);
@@ -49,6 +51,9 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
   const forward = useRef(new Vector3());
   const right = useRef(new Vector3());
   const direction = useRef(new Vector3());
+  // Read the latest bounds only when entering/teleporting, so design updates do not turn the user's camera.
+  const facingDesign = useRef(design);
+  facingDesign.current = design;
 
   function teleport(position: Point) {
     if (!body.current) return;
@@ -72,11 +77,11 @@ export default function FirstPersonNavigation({ target, rooms, office, revision,
 
   useEffect(() => {
     teleport(spawn);
-    camera.lookAt(target[0], target[1], target[2] - 5);
+    camera.lookAt(...initialWalkLookTarget(target, office ? null : facingDesign.current));
     geometryCheck.current = 2;
     blocked.current = false;
     setUnavailable(false);
-  }, [target[0], target[1], target[2], camera]);
+  }, [target[0], target[1], target[2], camera, office]);
 
   useEffect(() => { geometryCheck.current = 2; }, [revision]);
   useEffect(() => { if (paused) { keys.current.clear(); if (document.pointerLockElement) document.exitPointerLock(); } }, [paused]);

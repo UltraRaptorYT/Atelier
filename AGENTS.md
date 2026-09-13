@@ -351,6 +351,12 @@ The responsible agent should:
 
 In the current runtime, steering received during an active run is queued for the next run. It does not interrupt an in-flight task or rewrite its graph. A selected room provides context; the validated task kind determines actual ownership.
 
+The project snapshot exposes the complete saved change history. Activity's dedicated tracker shows **Queued → Working → Applied → Reviewed**, with persisted milestone timestamps, instruction/scope, revision references, review findings and errors. “Applied” means all planned canonical writes have integrated, before final Critic review; “Reviewed” can still include findings needing attention. A failed or stopped run retains the milestones it reached. Earlier task commits can remain saved after a later integration failure without the request reaching “Applied”.
+
+Effective requirements preserve the stored brief plus ordered applied user amendments, including original instruction, specialist/element scope, optional reference image and applied revision/time. Later amendments supersede earlier wording only where their subject and scope overlap; the current instruction takes priority within its scope. Preserve unrelated requirements and keep selected-element requests scoped. Queued and never-applied failed/cancelled requests are excluded from applied amendments. A request that reached “Applied” remains an amendment if review later fails or the run is stopped.
+
+Every team run freezes the stored brief and applied amendments in a persistent `effective-requirements.json` artifact. Supply the shared record alongside the persisted current instruction to Principal planning, all specialists, visual-requirement analysis, conflict decisions, correction plans and Critic review. Voice and project context expose the requirements record as well. Requested image concepts receive the requirements and preserve them in artifact metadata. This is an ordered record of client wording and application evidence, not an extracted semantic ontology or proof that all requirements were implemented. See [shared requirements](shared/requirements.ts), [run requirements](worker/src/requirements.ts) and [change lifecycle](worker/src/changes.ts).
+
 ---
 
 # 7. Local vs Global Steering
@@ -501,7 +507,7 @@ Example:
 
 could cause the agent avatar to walk from the meeting room to its office.
 
-The current Activity board displays persisted tasks, dependencies, deliverables and active specialists. Any room animation should follow these actual events, including simultaneous activity, rather than implying a fixed turn-taking sequence.
+The current Activity board displays persisted tasks, dependencies, deliverables and active specialists, plus a dedicated tracker of each change request's saved milestones and review outcome. Any room animation should follow these actual events, including simultaneous activity, rather than implying a fixed turn-taking sequence.
 
 ---
 
@@ -643,7 +649,7 @@ All agents should:
 
 * Maintain awareness of their role.
 * Avoid duplicating another agent's responsibilities.
-* Read project state before acting.
+* Read project state and the run's frozen effective requirements before acting. Preserve unrelated applied amendments when following the current instruction.
 * Produce persistent outputs.
 * Record important decisions.
 * Respect dependencies.
@@ -790,7 +796,7 @@ If any task execution in a batch fails, wait for sibling executions to settle an
 - At most one queued or in-progress run per user is allowed across projects. A design run executes a bounded graph with at most two distinct specialists per batch. Coordination messages do not dynamically replan it.
 - The initial concept or selected reference is frozen for a run and supplied to every dispatched specialist. Image concepts and Blender renders are separate artifact workflows.
 - Typed questions currently enter the change queue, and clarification answers do not automatically resume a blocked brief. These are routing gaps to fix, not desired interaction rules.
-- This run's instruction reaches its specialists and Critic. A durable effective brief that retains requirements from all previous steering rounds still needs refinement.
+- Each team run freezes the stored brief and ordered previously applied user amendments into `effective-requirements.json` and supplies the persisted current instruction alongside it for planning, specialists, coordination and review. Changes have full snapshot history and persisted progress milestones. Semantic interpretation of overlapping natural-language requirements still depends on the model; the record does not prove complete compliance.
 - Review helpers check a small set of design conditions. Schema validity and safe-spawn controls do not prove room connectivity, usable stairs or complete geometric correctness.
 - Generation and rendering are disabled in the checked-in Worker configuration. Mocked tests do not establish paid-provider execution or live deployment quality.
 

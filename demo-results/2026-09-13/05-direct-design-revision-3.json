@@ -1,0 +1,2677 @@
+{
+  "schemaVersion": 1,
+  "units": "meters",
+  "title": "Yellow Aperture House",
+  "buildingType": "Two-floor futuristic family home",
+  "floors": 2,
+  "materials": [
+    {
+      "id": "mat-yellow",
+      "name": "Playful bright yellow cladding",
+      "color": "#F6D332",
+      "roughness": 0.48,
+      "metalness": 0
+    },
+    {
+      "id": "mat-black",
+      "name": "Matte black trim",
+      "color": "#15171A",
+      "roughness": 0.35,
+      "metalness": 0
+    },
+    {
+      "id": "mat-red",
+      "name": "Restrained red entry accent",
+      "color": "#C92D32",
+      "roughness": 0.42,
+      "metalness": 0
+    },
+    {
+      "id": "mat-glass",
+      "name": "Warm clear glazing",
+      "color": "#77BBD0",
+      "roughness": 0.12,
+      "metalness": 0.05
+    },
+    {
+      "id": "mat-concrete",
+      "name": "Charcoal structural slab",
+      "color": "#3E444A",
+      "roughness": 0.72,
+      "metalness": 0
+    },
+    {
+      "id": "mat-white",
+      "name": "Interior pale wall",
+      "color": "#E9E6DC",
+      "roughness": 0.65,
+      "metalness": 0
+    },
+    {
+      "id": "mat-terrace",
+      "name": "Terrace deck",
+      "color": "#7C7162",
+      "roughness": 0.7,
+      "metalness": 0
+    },
+    {
+      "id": "mat-timber",
+      "name": "Pale timber interior finish",
+      "color": "#B58A5C",
+      "roughness": 0.58,
+      "metalness": 0
+    },
+    {
+      "id": "mat-fabric",
+      "name": "Warm graphite durable upholstery",
+      "color": "#596068",
+      "roughness": 0.82,
+      "metalness": 0
+    },
+    {
+      "id": "mat-display",
+      "name": "Black framed collectible display glazing",
+      "color": "#202833",
+      "roughness": 0.2,
+      "metalness": 0.12
+    },
+    {
+      "id": "mat-yellow-interior",
+      "name": "Soft yellow interior and planter accent",
+      "color": "#E6BC2B",
+      "roughness": 0.52,
+      "metalness": 0
+    }
+  ],
+  "assets": [],
+  "spaces": [
+    {
+      "id": "space-entry",
+      "name": "Southwest entry vestibule",
+      "floor": 0,
+      "position": [
+        0,
+        0.25,
+        -6.5
+      ],
+      "size": [
+        4,
+        3.25,
+        3
+      ]
+    },
+    {
+      "id": "space-living",
+      "name": "Large living room",
+      "floor": 0,
+      "position": [
+        -4,
+        0.25,
+        1
+      ],
+      "size": [
+        10,
+        3.25,
+        13
+      ]
+    },
+    {
+      "id": "space-gaming",
+      "name": "Gaming room",
+      "floor": 0,
+      "position": [
+        5.5,
+        0.25,
+        3.5
+      ],
+      "size": [
+        8.5,
+        3.25,
+        8
+      ]
+    },
+    {
+      "id": "space-display",
+      "name": "Collectible display area",
+      "floor": 0,
+      "position": [
+        5.5,
+        0.25,
+        -4
+      ],
+      "size": [
+        8.5,
+        3.25,
+        6
+      ]
+    },
+    {
+      "id": "space-bath-gf",
+      "name": "Ground-floor bathroom",
+      "floor": 0,
+      "position": [
+        -7,
+        0.25,
+        4
+      ],
+      "size": [
+        3,
+        3.25,
+        4
+      ]
+    },
+    {
+      "id": "space-stair",
+      "name": "Open stair and circulation",
+      "floor": 0,
+      "position": [
+        0.5,
+        0.25,
+        0
+      ],
+      "size": [
+        3,
+        3.25,
+        4
+      ]
+    },
+    {
+      "id": "space-bed1",
+      "name": "Bedroom 1",
+      "floor": 1,
+      "position": [
+        -4,
+        3.75,
+        1.5
+      ],
+      "size": [
+        8,
+        3.25,
+        5
+      ]
+    },
+    {
+      "id": "space-bed2",
+      "name": "Bedroom 2",
+      "floor": 1,
+      "position": [
+        4,
+        3.75,
+        1.5
+      ],
+      "size": [
+        8,
+        3.25,
+        5
+      ]
+    },
+    {
+      "id": "space-bed3",
+      "name": "Bedroom 3",
+      "floor": 1,
+      "position": [
+        -4,
+        3.75,
+        6.25
+      ],
+      "size": [
+        8,
+        3.25,
+        3.5
+      ]
+    },
+    {
+      "id": "space-bed4",
+      "name": "Bedroom 4",
+      "floor": 1,
+      "position": [
+        4,
+        3.75,
+        6.25
+      ],
+      "size": [
+        8,
+        3.25,
+        3.5
+      ]
+    },
+    {
+      "id": "space-bath-upper",
+      "name": "Upper bathroom",
+      "floor": 1,
+      "position": [
+        2,
+        3.75,
+        1.2
+      ],
+      "size": [
+        3.5,
+        3.25,
+        2.5
+      ]
+    },
+    {
+      "id": "space-upper-hall",
+      "name": "Upper circulation and stair landing",
+      "floor": 1,
+      "position": [
+        0.5,
+        3.75,
+        3
+      ],
+      "size": [
+        3,
+        3.25,
+        4
+      ]
+    },
+    {
+      "id": "space-terrace",
+      "name": "Open upper terrace",
+      "floor": 1,
+      "position": [
+        0,
+        3.75,
+        -4.75
+      ],
+      "size": [
+        16,
+        2.5,
+        7.5
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "id": "slab-ground",
+      "kind": "slab",
+      "name": "Ground floor plate",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        20,
+        0.25,
+        16
+      ],
+      "rotation": 0,
+      "materialId": "mat-concrete",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "slab-upper-west",
+      "kind": "slab",
+      "name": "Upper floor west plate",
+      "position": [
+        -4.5,
+        3.5,
+        3
+      ],
+      "size": [
+        7,
+        0.25,
+        10
+      ],
+      "rotation": 0,
+      "materialId": "mat-concrete",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "slab-upper-east",
+      "kind": "slab",
+      "name": "Upper floor east plate",
+      "position": [
+        5,
+        3.5,
+        3
+      ],
+      "size": [
+        6,
+        0.25,
+        10
+      ],
+      "rotation": 0,
+      "materialId": "mat-concrete",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "slab-upper-north",
+      "kind": "slab",
+      "name": "Upper floor north bridge beyond stair landing",
+      "position": [
+        0.5,
+        3.5,
+        5.5
+      ],
+      "size": [
+        3,
+        0.25,
+        5
+      ],
+      "rotation": 0,
+      "materialId": "mat-concrete",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "slab-terrace",
+      "kind": "slab",
+      "name": "Open upper terrace deck west of stair void",
+      "position": [
+        -4.5,
+        3.5,
+        -4.75
+      ],
+      "size": [
+        7,
+        0.25,
+        7.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-terrace",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "gfw-s1",
+      "kind": "wall",
+      "name": "South wall west pier clear of panoramic glazing",
+      "position": [
+        -8.675,
+        1.75,
+        -8
+      ],
+      "size": [
+        2.65,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-s2",
+      "kind": "wall",
+      "name": "South wall living east pier clear of panoramic glazing",
+      "position": [
+        -2.825,
+        1.75,
+        -8
+      ],
+      "size": [
+        1.65,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-s3",
+      "kind": "wall",
+      "name": "South wall display west pier clear of glazing",
+      "position": [
+        2.95,
+        1.75,
+        -8
+      ],
+      "size": [
+        1.9,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-s4",
+      "kind": "wall",
+      "name": "South wall display east pier clear of glazing",
+      "position": [
+        9.05,
+        1.75,
+        -8
+      ],
+      "size": [
+        1.9,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-west1",
+      "kind": "wall",
+      "name": "West exterior wall",
+      "position": [
+        -10,
+        1.75,
+        -4
+      ],
+      "size": [
+        0.3,
+        3.5,
+        8
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-west2",
+      "kind": "wall",
+      "name": "West exterior wall north",
+      "position": [
+        -10,
+        1.75,
+        5
+      ],
+      "size": [
+        0.3,
+        3.5,
+        6
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-east1",
+      "kind": "wall",
+      "name": "East exterior wall south",
+      "position": [
+        10,
+        1.75,
+        -5
+      ],
+      "size": [
+        0.3,
+        3.5,
+        6
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-east2",
+      "kind": "wall",
+      "name": "East exterior wall north",
+      "position": [
+        10,
+        1.75,
+        6.5
+      ],
+      "size": [
+        0.3,
+        3.5,
+        3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-n1",
+      "kind": "wall",
+      "name": "North exterior west",
+      "position": [
+        -7.5,
+        1.75,
+        8
+      ],
+      "size": [
+        5,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-n2",
+      "kind": "wall",
+      "name": "North exterior east",
+      "position": [
+        6.5,
+        1.75,
+        8
+      ],
+      "size": [
+        7,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "win-living-south",
+      "kind": "window",
+      "name": "Living room panoramic south glazing",
+      "position": [
+        -5.5,
+        1.8,
+        -8
+      ],
+      "size": [
+        3.5,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "win-entry-canopy",
+      "kind": "window",
+      "name": "Entry sidelights",
+      "position": [
+        0,
+        1.8,
+        -8
+      ],
+      "size": [
+        4,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "win-display-south",
+      "kind": "window",
+      "name": "Display south glazing",
+      "position": [
+        6,
+        1.8,
+        -8
+      ],
+      "size": [
+        4,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "win-gaming-east",
+      "kind": "window",
+      "name": "Gaming east glazing",
+      "position": [
+        10,
+        1.8,
+        2
+      ],
+      "size": [
+        0.16,
+        2.2,
+        4
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "win-living-north",
+      "kind": "window",
+      "name": "Living north clerestory",
+      "position": [
+        -1,
+        1.8,
+        8
+      ],
+      "size": [
+        3,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-living-game-n",
+      "kind": "wall",
+      "name": "Living/gaming partition north",
+      "position": [
+        1,
+        1.75,
+        5
+      ],
+      "size": [
+        0.22,
+        3.5,
+        6
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-living-display-a",
+      "kind": "wall",
+      "name": "Living/display partition south segment",
+      "position": [
+        1,
+        1.75,
+        -5.5
+      ],
+      "size": [
+        0.22,
+        3.5,
+        3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-living-display-b",
+      "kind": "wall",
+      "name": "Living/display partition north segment",
+      "position": [
+        1,
+        1.75,
+        -1.5
+      ],
+      "size": [
+        0.22,
+        3.5,
+        2
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-entry-west",
+      "kind": "wall",
+      "name": "Entry vestibule west wall",
+      "position": [
+        -2,
+        1.75,
+        -6.5
+      ],
+      "size": [
+        0.22,
+        3.5,
+        3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-entry-east",
+      "kind": "wall",
+      "name": "Entry vestibule east wall",
+      "position": [
+        2,
+        1.75,
+        -6.5
+      ],
+      "size": [
+        0.22,
+        3.5,
+        3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-entry-north-left",
+      "kind": "wall",
+      "name": "Entry north wall left",
+      "position": [
+        -1.2,
+        1.75,
+        -5
+      ],
+      "size": [
+        0.8,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-entry-north-right",
+      "kind": "wall",
+      "name": "Entry north wall right",
+      "position": [
+        1.2,
+        1.75,
+        -5
+      ],
+      "size": [
+        0.8,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-bath-w",
+      "kind": "wall",
+      "name": "Ground bath west wall",
+      "position": [
+        -8.5,
+        1.75,
+        4
+      ],
+      "size": [
+        0.22,
+        3.5,
+        4
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-bath-n",
+      "kind": "wall",
+      "name": "Ground bath north wall",
+      "position": [
+        -7,
+        1.75,
+        6
+      ],
+      "size": [
+        0.22,
+        3.5,
+        3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-bath-s1",
+      "kind": "wall",
+      "name": "Ground bath south wall left of clear door gap",
+      "position": [
+        -8.125,
+        1.75,
+        2
+      ],
+      "size": [
+        0.75,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "gfw-bath-s2",
+      "kind": "wall",
+      "name": "Ground bath south wall right of clear door gap",
+      "position": [
+        -5.625,
+        1.75,
+        2
+      ],
+      "size": [
+        1.25,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "stair-main",
+      "kind": "stair",
+      "name": "Fourteen-riser straight stair flight to upper landing",
+      "position": [
+        0.5,
+        1.75,
+        -0.1
+      ],
+      "size": [
+        2.6,
+        3.5,
+        4.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "slab-stair-landing",
+      "kind": "slab",
+      "name": "Upper stair landing at flight termination",
+      "position": [
+        0.5,
+        3.5,
+        2.5
+      ],
+      "size": [
+        3,
+        0.25,
+        1
+      ],
+      "rotation": 0,
+      "materialId": "mat-concrete",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "entry-portal",
+      "kind": "asset",
+      "name": "Red articulated entry portal",
+      "position": [
+        0,
+        2,
+        -8.35
+      ],
+      "size": [
+        4.8,
+        4,
+        0.45
+      ],
+      "rotation": 0,
+      "materialId": "mat-red",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "door-entry",
+      "kind": "door",
+      "name": "Southwest front entry door",
+      "position": [
+        0,
+        1.25,
+        -8
+      ],
+      "size": [
+        1.8,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-red",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "door-entry-living",
+      "kind": "door",
+      "name": "Entry to living opening",
+      "position": [
+        0,
+        1.25,
+        -5
+      ],
+      "size": [
+        1.6,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "door-display",
+      "kind": "door",
+      "name": "Living to collectible display opening",
+      "position": [
+        1,
+        1.25,
+        -3.5
+      ],
+      "size": [
+        0.18,
+        2.5,
+        1.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "door-bath-gf",
+      "kind": "door",
+      "name": "Ground bath opening",
+      "position": [
+        -7,
+        1.25,
+        2
+      ],
+      "size": [
+        1.4,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "roof-entry-canopy",
+      "kind": "roof",
+      "name": "Sheltering angled entry canopy",
+      "position": [
+        0,
+        3.3,
+        -8.4
+      ],
+      "size": [
+        5.5,
+        0.28,
+        2.2
+      ],
+      "rotation": 0.12,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "ufw-s1",
+      "kind": "wall",
+      "name": "Upper south terrace edge west",
+      "position": [
+        -6.5,
+        5.25,
+        -1
+      ],
+      "size": [
+        3,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-s2",
+      "kind": "wall",
+      "name": "Upper south terrace edge center",
+      "position": [
+        -0.5,
+        5.25,
+        -1
+      ],
+      "size": [
+        5,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-s3",
+      "kind": "wall",
+      "name": "Upper south terrace edge east",
+      "position": [
+        6.5,
+        5.25,
+        -1
+      ],
+      "size": [
+        3,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-west1",
+      "kind": "wall",
+      "name": "Upper west wall south",
+      "position": [
+        -8,
+        5.25,
+        1
+      ],
+      "size": [
+        0.3,
+        3.5,
+        4
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-west2",
+      "kind": "wall",
+      "name": "Upper west wall north clear of bedroom glazing",
+      "position": [
+        -8,
+        5.25,
+        6.55
+      ],
+      "size": [
+        0.3,
+        3.5,
+        2.9
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-east1",
+      "kind": "wall",
+      "name": "Upper east wall south",
+      "position": [
+        8,
+        5.25,
+        1
+      ],
+      "size": [
+        0.3,
+        3.5,
+        4
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-east2",
+      "kind": "wall",
+      "name": "Upper east wall north clear of bedroom glazing",
+      "position": [
+        8,
+        5.25,
+        6.55
+      ],
+      "size": [
+        0.3,
+        3.5,
+        2.9
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-n1",
+      "kind": "wall",
+      "name": "Upper north wall west",
+      "position": [
+        -6,
+        5.25,
+        8
+      ],
+      "size": [
+        4,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-n2",
+      "kind": "wall",
+      "name": "Upper north wall east",
+      "position": [
+        5,
+        5.25,
+        8
+      ],
+      "size": [
+        6,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "win-upper-west",
+      "kind": "window",
+      "name": "Upper bedroom west glazing",
+      "position": [
+        -8,
+        5.3,
+        4.8
+      ],
+      "size": [
+        0.16,
+        2.2,
+        2.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "win-upper-east",
+      "kind": "window",
+      "name": "Upper bedroom east glazing",
+      "position": [
+        8,
+        5.3,
+        4.8
+      ],
+      "size": [
+        0.16,
+        2.2,
+        2.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "win-upper-north",
+      "kind": "window",
+      "name": "Upper north glazing",
+      "position": [
+        -0.5,
+        5.3,
+        8
+      ],
+      "size": [
+        3,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "win-terrace-door-glass",
+      "kind": "window",
+      "name": "Terrace access glazed opening",
+      "position": [
+        -4,
+        5.3,
+        -1
+      ],
+      "size": [
+        1.8,
+        2.2,
+        0.16
+      ],
+      "rotation": 0,
+      "materialId": "mat-glass",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-terrace",
+      "kind": "door",
+      "name": "Upper hall to terrace door",
+      "position": [
+        -4,
+        4.95,
+        -1
+      ],
+      "size": [
+        1.6,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-div-north",
+      "kind": "wall",
+      "name": "Bedroom divider north",
+      "position": [
+        0,
+        5.25,
+        5.8
+      ],
+      "size": [
+        0.22,
+        3.5,
+        4.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-west-mid-a",
+      "kind": "wall",
+      "name": "West bedroom divider west segment",
+      "position": [
+        -4,
+        5.25,
+        4
+      ],
+      "size": [
+        0.22,
+        3.5,
+        2.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-west-mid-b",
+      "kind": "wall",
+      "name": "West bedroom divider north of Bedroom 3 opening",
+      "position": [
+        -4,
+        5.25,
+        7.35
+      ],
+      "size": [
+        0.22,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-east-mid-a",
+      "kind": "wall",
+      "name": "East bedroom divider west segment",
+      "position": [
+        4,
+        5.25,
+        4
+      ],
+      "size": [
+        0.22,
+        3.5,
+        2.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-east-mid-b",
+      "kind": "wall",
+      "name": "East bedroom divider north of Bedroom 4 opening",
+      "position": [
+        4,
+        5.25,
+        7.35
+      ],
+      "size": [
+        0.22,
+        3.5,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bath-n",
+      "kind": "wall",
+      "name": "Upper bath north wall",
+      "position": [
+        2,
+        5.25,
+        2.5
+      ],
+      "size": [
+        3.5,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bath-e",
+      "kind": "wall",
+      "name": "Upper bath east wall",
+      "position": [
+        3.75,
+        5.25,
+        1.2
+      ],
+      "size": [
+        0.22,
+        3.5,
+        2.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bath-w1",
+      "kind": "wall",
+      "name": "Upper bath west wall south of clear door gap",
+      "position": [
+        2.1,
+        5.25,
+        0.25
+      ],
+      "size": [
+        0.22,
+        3.5,
+        0.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bath-w2",
+      "kind": "wall",
+      "name": "Upper bath west wall north of clear door gap",
+      "position": [
+        2.1,
+        5.25,
+        2.15
+      ],
+      "size": [
+        0.22,
+        3.5,
+        0.6
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-bed1",
+      "kind": "door",
+      "name": "Bedroom 1 hall opening",
+      "position": [
+        -5.5,
+        4.95,
+        1.4
+      ],
+      "size": [
+        1.4,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-bed2",
+      "kind": "door",
+      "name": "Bedroom 2 hall opening",
+      "position": [
+        5.5,
+        4.95,
+        1.4
+      ],
+      "size": [
+        1.4,
+        2.5,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-bed3",
+      "kind": "door",
+      "name": "Bedroom 3 hall opening",
+      "position": [
+        -4,
+        4.95,
+        6.4
+      ],
+      "size": [
+        0.18,
+        2.5,
+        1.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-bed4",
+      "kind": "door",
+      "name": "Bedroom 4 hall opening",
+      "position": [
+        4,
+        4.95,
+        6.4
+      ],
+      "size": [
+        0.18,
+        2.5,
+        1.4
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "door-bath-upper",
+      "kind": "door",
+      "name": "Upper bath opening",
+      "position": [
+        2.1,
+        4.95,
+        1.2
+      ],
+      "size": [
+        0.18,
+        2.5,
+        1.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "roof-upper",
+      "kind": "roof",
+      "name": "Floating black-trimmed upper roof",
+      "position": [
+        0,
+        7.05,
+        3.8
+      ],
+      "size": [
+        16.8,
+        0.3,
+        8.8
+      ],
+      "rotation": 0.03,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "rail-south",
+      "kind": "wall",
+      "name": "Black terrace guardrail",
+      "position": [
+        0,
+        4.25,
+        -8.35
+      ],
+      "size": [
+        16,
+        0.9,
+        0.15
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "rail-west",
+      "kind": "wall",
+      "name": "Black terrace guardrail",
+      "position": [
+        -8.1,
+        4.25,
+        -4.7
+      ],
+      "size": [
+        0.15,
+        0.9,
+        7.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "rail-east",
+      "kind": "wall",
+      "name": "Black terrace guardrail",
+      "position": [
+        8.1,
+        4.25,
+        -4.7
+      ],
+      "size": [
+        0.15,
+        0.9,
+        7.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-entry-bench",
+      "kind": "furniture",
+      "name": "Entry slim shoe bench",
+      "position": [
+        -1.35,
+        0.55,
+        -6.35
+      ],
+      "size": [
+        0.45,
+        0.6,
+        1.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-living-sofa",
+      "kind": "furniture",
+      "name": "Living room modular sofa",
+      "position": [
+        -5.3,
+        0.72,
+        3.8
+      ],
+      "size": [
+        3.4,
+        0.94,
+        1.05
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-living-chair-west",
+      "kind": "furniture",
+      "name": "Living room lounge chair west",
+      "position": [
+        -7.1,
+        0.65,
+        1.8
+      ],
+      "size": [
+        0.82,
+        0.8,
+        0.82
+      ],
+      "rotation": 0.35,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-living-chair-east",
+      "kind": "furniture",
+      "name": "Living room lounge chair east",
+      "position": [
+        -3.2,
+        0.65,
+        1.65
+      ],
+      "size": [
+        0.82,
+        0.8,
+        0.82
+      ],
+      "rotation": -0.35,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-living-coffee-table",
+      "kind": "furniture",
+      "name": "Living room rounded low table",
+      "position": [
+        -5.15,
+        0.5,
+        2.25
+      ],
+      "size": [
+        1.45,
+        0.5,
+        0.82
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-living-media-storage",
+      "kind": "furniture",
+      "name": "Living room low media storage",
+      "position": [
+        -9.2,
+        0.68,
+        1.8
+      ],
+      "size": [
+        0.5,
+        0.86,
+        2.8
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-desk",
+      "kind": "furniture",
+      "name": "Gaming console desk",
+      "position": [
+        6.2,
+        0.72,
+        6.8
+      ],
+      "size": [
+        3.1,
+        0.94,
+        0.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-screen-console",
+      "kind": "furniture",
+      "name": "Gaming screen and console wall",
+      "position": [
+        6.2,
+        1.12,
+        7.62
+      ],
+      "size": [
+        3.2,
+        1.35,
+        0.28
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-chair-west",
+      "kind": "furniture",
+      "name": "Gaming ergonomic chair west",
+      "position": [
+        5.15,
+        0.68,
+        5.75
+      ],
+      "size": [
+        0.7,
+        0.86,
+        0.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-chair-east",
+      "kind": "furniture",
+      "name": "Gaming ergonomic chair east",
+      "position": [
+        7.25,
+        0.68,
+        5.75
+      ],
+      "size": [
+        0.7,
+        0.86,
+        0.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-spectator-bench",
+      "kind": "furniture",
+      "name": "Gaming spectator bench",
+      "position": [
+        8.55,
+        0.62,
+        4.1
+      ],
+      "size": [
+        0.72,
+        0.74,
+        1.8
+      ],
+      "rotation": 1.5708,
+      "materialId": "mat-fabric",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-gaming-low-storage",
+      "kind": "furniture",
+      "name": "Gaming cable-managed low storage",
+      "position": [
+        8.7,
+        0.55,
+        6.75
+      ],
+      "size": [
+        0.62,
+        0.62,
+        1.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-display-cabinet-east-south",
+      "kind": "furniture",
+      "name": "Collectible display cabinet south",
+      "position": [
+        8.85,
+        1.35,
+        -5.65
+      ],
+      "size": [
+        0.55,
+        2.2,
+        1.8
+      ],
+      "rotation": 0,
+      "materialId": "mat-display",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-display-cabinet-east-center",
+      "kind": "furniture",
+      "name": "Collectible display cabinet center",
+      "position": [
+        8.85,
+        1.35,
+        -3.5
+      ],
+      "size": [
+        0.55,
+        2.2,
+        1.8
+      ],
+      "rotation": 0,
+      "materialId": "mat-display",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-display-cabinet-east-north",
+      "kind": "furniture",
+      "name": "Collectible display cabinet north",
+      "position": [
+        8.85,
+        1.35,
+        -1.55
+      ],
+      "size": [
+        0.55,
+        2.2,
+        1.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-display",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-display-plinth",
+      "kind": "furniture",
+      "name": "Collectible feature plinth",
+      "position": [
+        5.6,
+        0.7,
+        -5.25
+      ],
+      "size": [
+        1.25,
+        0.9,
+        0.9
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-bath-gf-vanity",
+      "kind": "furniture",
+      "name": "Ground bathroom vanity",
+      "position": [
+        -7,
+        0.78,
+        5.5
+      ],
+      "size": [
+        1.45,
+        1.05,
+        0.48
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed1",
+      "kind": "furniture",
+      "name": "Bedroom 1 double bed",
+      "position": [
+        -5.8,
+        4.08,
+        2.55
+      ],
+      "size": [
+        2,
+        0.9,
+        1.6
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed1-wardrobe",
+      "kind": "furniture",
+      "name": "Bedroom 1 closed wardrobe",
+      "position": [
+        -7.25,
+        4.48,
+        -0.25
+      ],
+      "size": [
+        0.6,
+        1.7,
+        1.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed2",
+      "kind": "furniture",
+      "name": "Bedroom 2 double bed",
+      "position": [
+        5.7,
+        4.08,
+        2.55
+      ],
+      "size": [
+        2,
+        0.9,
+        1.6
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed2-wardrobe",
+      "kind": "furniture",
+      "name": "Bedroom 2 closed wardrobe",
+      "position": [
+        7.25,
+        4.48,
+        -0.25
+      ],
+      "size": [
+        0.6,
+        1.7,
+        1.7
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed3",
+      "kind": "furniture",
+      "name": "Bedroom 3 single bed",
+      "position": [
+        -6.25,
+        4.03,
+        6.25
+      ],
+      "size": [
+        2,
+        0.8,
+        1.15
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed3-wardrobe",
+      "kind": "furniture",
+      "name": "Bedroom 3 closed wardrobe",
+      "position": [
+        -7.35,
+        4.43,
+        7.35
+      ],
+      "size": [
+        0.58,
+        1.6,
+        1.15
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed4",
+      "kind": "furniture",
+      "name": "Bedroom 4 single bed",
+      "position": [
+        6.2,
+        4.03,
+        6.25
+      ],
+      "size": [
+        2,
+        0.8,
+        1.15
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bed4-wardrobe",
+      "kind": "furniture",
+      "name": "Bedroom 4 closed wardrobe",
+      "position": [
+        7.35,
+        4.43,
+        7.35
+      ],
+      "size": [
+        0.58,
+        1.6,
+        1.15
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-bath-upper-vanity",
+      "kind": "furniture",
+      "name": "Upper bathroom vanity",
+      "position": [
+        3.15,
+        4.4,
+        2.1
+      ],
+      "size": [
+        0.48,
+        1.05,
+        1.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-lounge",
+      "kind": "furniture",
+      "name": "Terrace compact lounge sofa",
+      "position": [
+        3.65,
+        4.08,
+        -5.8
+      ],
+      "size": [
+        2.2,
+        0.9,
+        0.85
+      ],
+      "rotation": 0,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-chair-west",
+      "kind": "furniture",
+      "name": "Terrace lounge chair west",
+      "position": [
+        1.8,
+        4,
+        -4.5
+      ],
+      "size": [
+        0.76,
+        0.75,
+        0.76
+      ],
+      "rotation": 0.45,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-chair-east",
+      "kind": "furniture",
+      "name": "Terrace lounge chair east",
+      "position": [
+        5.5,
+        4,
+        -4.5
+      ],
+      "size": [
+        0.76,
+        0.75,
+        0.76
+      ],
+      "rotation": -0.45,
+      "materialId": "mat-fabric",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-table",
+      "kind": "furniture",
+      "name": "Terrace low table",
+      "position": [
+        3.65,
+        3.95,
+        -4.65
+      ],
+      "size": [
+        1.1,
+        0.65,
+        0.72
+      ],
+      "rotation": 0,
+      "materialId": "mat-timber",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-planter-west",
+      "kind": "furniture",
+      "name": "Terrace low planter west",
+      "position": [
+        -6.7,
+        4.02,
+        -6.3
+      ],
+      "size": [
+        1.6,
+        0.78,
+        0.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow-interior",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "furn-terrace-planter-east",
+      "kind": "furniture",
+      "name": "Terrace low planter east",
+      "position": [
+        6.7,
+        4.02,
+        -6.3
+      ],
+      "size": [
+        1.6,
+        0.78,
+        0.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow-interior",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-entry-recess",
+      "kind": "light",
+      "name": "Entry warm recessed downlight",
+      "position": [
+        0,
+        3.05,
+        -6.8
+      ],
+      "size": [
+        0.34,
+        0.12,
+        0.34
+      ],
+      "rotation": 0,
+      "materialId": "mat-red",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-living-ambient",
+      "kind": "light",
+      "name": "Living room warm ambient pendant",
+      "position": [
+        -5,
+        3.05,
+        2.6
+      ],
+      "size": [
+        0.62,
+        0.18,
+        0.62
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-living-reading",
+      "kind": "light",
+      "name": "Living room reading light",
+      "position": [
+        -7.55,
+        2.05,
+        1.85
+      ],
+      "size": [
+        0.3,
+        1.8,
+        0.3
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-gaming-ambient",
+      "kind": "light",
+      "name": "Gaming dimmable ambient light",
+      "position": [
+        5.9,
+        3.05,
+        4.25
+      ],
+      "size": [
+        1.8,
+        0.12,
+        0.35
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-gaming-task",
+      "kind": "light",
+      "name": "Gaming desk task light",
+      "position": [
+        6.2,
+        1.32,
+        6.28
+      ],
+      "size": [
+        1.25,
+        0.12,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-red",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-display-track-east",
+      "kind": "light",
+      "name": "Collectible display shielded track east",
+      "position": [
+        8.25,
+        3.02,
+        -3.6
+      ],
+      "size": [
+        0.28,
+        0.14,
+        4.8
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-display-plinth",
+      "kind": "light",
+      "name": "Collectible feature plinth light",
+      "position": [
+        5.6,
+        1.3,
+        -5.25
+      ],
+      "size": [
+        0.85,
+        0.12,
+        0.25
+      ],
+      "rotation": 0,
+      "materialId": "mat-yellow-interior",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-bath-gf-mirror",
+      "kind": "light",
+      "name": "Ground bathroom diffuse mirror light",
+      "position": [
+        -7,
+        2.15,
+        5.22
+      ],
+      "size": [
+        1.1,
+        0.18,
+        0.12
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-stair-circulation",
+      "kind": "light",
+      "name": "Stair circulation light",
+      "position": [
+        -0.75,
+        3.02,
+        0
+      ],
+      "size": [
+        0.3,
+        0.12,
+        1.6
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 0,
+      "assetId": null
+    },
+    {
+      "id": "light-bed1-reading",
+      "kind": "light",
+      "name": "Bedroom 1 warm reading light",
+      "position": [
+        -5.8,
+        5.08,
+        3.25
+      ],
+      "size": [
+        1.2,
+        0.14,
+        0.24
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-bed2-reading",
+      "kind": "light",
+      "name": "Bedroom 2 warm reading light",
+      "position": [
+        5.7,
+        5.08,
+        3.25
+      ],
+      "size": [
+        1.2,
+        0.14,
+        0.24
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-bed3-reading",
+      "kind": "light",
+      "name": "Bedroom 3 warm reading light",
+      "position": [
+        -6.25,
+        5.05,
+        6.85
+      ],
+      "size": [
+        1.2,
+        0.14,
+        0.24
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-bed4-reading",
+      "kind": "light",
+      "name": "Bedroom 4 warm reading light",
+      "position": [
+        6.2,
+        5.05,
+        6.85
+      ],
+      "size": [
+        1.2,
+        0.14,
+        0.24
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-bath-upper-mirror",
+      "kind": "light",
+      "name": "Upper bathroom diffuse mirror light",
+      "position": [
+        2.88,
+        5.65,
+        2.1
+      ],
+      "size": [
+        0.12,
+        0.2,
+        0.9
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-upper-hall",
+      "kind": "light",
+      "name": "Upper hall circulation light",
+      "position": [
+        -0.8,
+        6.55,
+        3
+      ],
+      "size": [
+        0.3,
+        0.12,
+        1.2
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-terrace-west",
+      "kind": "light",
+      "name": "Terrace low-glare edge light west",
+      "position": [
+        -6.5,
+        4.45,
+        -5.8
+      ],
+      "size": [
+        1.2,
+        0.18,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "light-terrace-east",
+      "kind": "light",
+      "name": "Terrace low-glare edge light east",
+      "position": [
+        6.5,
+        4.45,
+        -5.8
+      ],
+      "size": [
+        1.2,
+        0.18,
+        0.18
+      ],
+      "rotation": 0,
+      "materialId": "mat-black",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "slab-terrace-east",
+      "kind": "slab",
+      "name": "Open upper terrace deck east of stair void",
+      "position": [
+        5,
+        3.5,
+        -4.75
+      ],
+      "size": [
+        6,
+        0.25,
+        7.5
+      ],
+      "rotation": 0,
+      "materialId": "mat-terrace",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bed1-hall-west",
+      "kind": "wall",
+      "name": "Bedroom 1 hall partition west of clear opening",
+      "position": [
+        -7.075,
+        5.25,
+        1.4
+      ],
+      "size": [
+        1.55,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bed1-hall-east",
+      "kind": "wall",
+      "name": "Bedroom 1 hall partition east of clear opening",
+      "position": [
+        -2.9,
+        5.25,
+        1.4
+      ],
+      "size": [
+        3.6,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bed2-hall-west",
+      "kind": "wall",
+      "name": "Bedroom 2 hall partition west of clear opening",
+      "position": [
+        4.3,
+        5.25,
+        1.4
+      ],
+      "size": [
+        0.8,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    },
+    {
+      "id": "ufw-bed2-hall-east",
+      "kind": "wall",
+      "name": "Bedroom 2 hall partition east of clear opening",
+      "position": [
+        7.075,
+        5.25,
+        1.4
+      ],
+      "size": [
+        1.55,
+        3.5,
+        0.22
+      ],
+      "rotation": 0,
+      "materialId": "mat-white",
+      "floor": 1,
+      "assetId": null
+    }
+  ],
+  "spawn": [
+    -1,
+    1.95,
+    -6.4
+  ],
+  "notes": [
+    "Conceptual coordinate mapping: centred building coordinates use +X east, +Z north and +Y up; the southwest/front approach is the negative-X/negative-Z side.",
+    "Articulated composition: a broad glazed social plinth supports a set-back upper sleeping bar and a deliberately open terrace; black roof/rails frame bright-yellow cladding and the red portal marks arrival.",
+    "Opening-host repair: the ground bath south wall now leaves x=-7.75..-6.25 for door-bath-gf; the panoramic living glazing has facade gap x=-7.35..-3.65; and display glazing has facade gap x=3.90..8.10. The entry and gaming glazing retain their existing clear facade gaps.",
+    "Opening-host repair: Bedroom 1 and Bedroom 2 now have added hall-partition wall segments around their repositioned 1.40 m openings at x=-5.50 and x=5.50 respectively; Bedroom 3 and Bedroom 4 divider gaps extend z=5.20..7.20; the upper bath west partition leaves z=0.50..1.90 around its moved opening at x=2.10. Upper west/east exterior glazing is clear of the shortened north wall segments.",
+    "Stair coordination repair: stair-main is a 2.60 m-wide, 4.20 m-run conceptual fourteen-riser flight from z=-2.20 to 2.00, terminating at the 3.00 m-wide landing z=2.00..3.00. The upper north bridge begins at z=3.00; terrace decking is split into west x=-8..-1 and east x=2..8 segments, preserving the x=-1..2 stair void without slab overlap.",
+    "Deterministic interval check executed against this proposed geometry in metres: ground-bath and upper-bath door clearances are 0.05 m; panoramic and display south-glazing clearances are 0.10 m; Bedroom 3/4 door clearances are 0.10 m. The stair void meets, without positive-volume overlap, the split terrace-deck edges; the flight meets the landing at z=2.00 and the landing meets the north bridge at z=3.00; the north bridge is 1.00 m beyond the flight termination. These are axis-aligned record/AABB",
+    "checks only.",
+    "Basic deterministic record check: all 13 named program spaces are within coordinate bounds; 2 floors are indexed 0 and 1; procedural elements reference listed materials; spawn is at 1.95 m, about 1.7 m above the ground slab top, inside the entry and clear of the portal. Geometry has not been renderer-inspected.",
+    "Limitations: no plan, cutaway, rendered inspection, or walkthrough evidence was available for this proposal. The stated fourteen-riser arrangement is conceptual only; actual riser/tread geometry, handrails, headroom, structural support, fire/life safety, accessibility, egress, weatherproofing/drainage, glazing specification, and all code/regulatory compliance remain unverified."
+  ]
+}

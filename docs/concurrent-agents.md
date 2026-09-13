@@ -59,6 +59,16 @@ If a task execution fails, sibling executions settle before the failure is handl
 
 The scheduler uses awaited parallel workflow steps and persisted results, following [Cloudflare's workflow and idempotency rules](https://developers.cloudflare.com/workflows/build/rules-of-workflows/).
 
+## Steering progress and effective requirements
+
+The project snapshot exposes the full saved change-request history, independently of the recent event feed. Activity's [ChangeTracker](../components/ChangeTracker.tsx) shows **Queued → Working → Applied → Reviewed** using persisted milestone evidence, with the submitted instruction, selected specialist/element, base and saved revisions, review findings and errors. A change reaches “Applied” after all planned canonical writes have integrated, before final Critic review. Review is a separate outcome and can report unresolved findings. Stopping or failing a run does not erase milestones or revisions already reached.
+
+Feedback submitted during active work still queues for the next run. It does not interrupt an in-flight task or change that run's plan. Once a subsequent run starts, it freezes a persistent `effective-requirements.json` artifact from the stored brief and ordered previously applied user amendments. The same record, alongside the persisted current run instruction, reaches Principal planning, specialists, visual-requirement analysis, conflict decisions, correction plans and Critic review. Project and voice context also expose the effective requirements. Requested image concepts receive the requirements too and preserve them in artifact metadata.
+
+Apply amendments in order: later instructions supersede earlier instructions or the stored brief only where their subject and scope overlap. A selected-element request remains scoped to that element; it does not recolor every element with a similar material. The current run instruction has priority within its scope, and unrelated requirements remain in force. For example, after “make the exterior red” is applied, “add a balcony” retains the red-exterior amendment even if the original brief requested yellow.
+
+Queued changes and requests that fail or are cancelled before reaching the applied milestone are excluded from the applied amendment history. An applied amendment and its revision evidence remain recorded if review subsequently fails or the run is stopped. An earlier commit can survive a later integration failure without the request reaching “Applied”; inspect task revision artifacts for that partial work. The record preserves client wording and scope; it is not a semantic property map or a guarantee that every requested detail was implemented. Critic findings and partial-work status remain necessary evidence.
+
 ## Compute limits
 
 The global limit is two computers. Existing daily/monthly caps remain in force, including 3,600 desktop seconds per user per UTC day and a maximum 900-second lease. Each workstation reserves its maximum lease up front. After confirmed shutdown, unused reservation time is returned and elapsed time is rounded up to whole seconds for charging. Failed shutdown retains its reservation and slot while cleanup retries. Legacy leases without a trustworthy start time retain the conservative full charge.
@@ -67,7 +77,7 @@ Tasks release their own workstation when done instead of leaving completed machi
 
 ## Setup and verification
 
-Apply [0004_task_dependencies.sql](../worker/migrations/0004_task_dependencies.sql) with the existing migration command (`npm run db:local` for local development). Deployments must apply the migration before running this Worker version. No new external service is required. Generation and rendering remain disabled in the checked-in [Worker configuration](../worker/wrangler.jsonc).
+Apply all pending migrations, including [0004_task_dependencies.sql](../worker/migrations/0004_task_dependencies.sql) and [0006_change_tracking.sql](../worker/migrations/0006_change_tracking.sql), with the existing migration command (`npm run db:local` for local development). Deployments must apply them before running this Worker version. No new external service is required. Generation and rendering remain disabled in the checked-in [Worker configuration](../worker/wrangler.jsonc).
 
 Run `npm run typecheck`, `npm test`, `npm run build` and `npm run worker:check`. Targeted suites include `collaboration.test.ts`, `image-workflow.test.ts`, `backend.test.ts`, `desktop-budget.test.ts`, `artifact-storage.test.ts` and `agent-tools.test.ts` in [tests](../tests/).
 
@@ -77,7 +87,7 @@ Tests exercise overlapping task execution, dependency handoffs, same-base merges
 
 This is a bounded task graph within a design run. At most one queued or in-progress run per user is allowed across projects. Steering received during work remains queued for the next run; tasks are not interrupted and dynamically replaced midway through a model call. Meetings currently occur for conflicting proposals and final-review corrections. A coordination message alone does not rewrite the running graph.
 
-The graph uses the current brief and this run's instruction; durable effective requirements across many steering rounds still need refinement. Typed messages currently enter the change queue even when they are questions or clarification answers. These routing gaps and automatic clarification resume remain separate work.
+Effective requirements preserve the stored brief and applied amendments across runs, with a frozen record for each team run. Interpreting overlapping natural-language requirements still depends on the model; the application does not extract a semantic ontology or prove complete compliance. Typed messages currently enter the change queue even when they are questions or clarification answers. These routing gaps and automatic clarification resume remain separate work.
 
 Saved canonical models are walkable through **Design → Walk inside**. The final presentation-room exhibit, Spline/imported-model integration and comprehensive geometric review remain unfinished. See the [readiness review](agent-design-review.md) and [walkthrough guide](walkthrough.md).
 
@@ -87,6 +97,8 @@ Saved canonical models are walkable through **Design → Walk inside**. The fina
 - [worker/src/team.ts](../worker/src/team.ts): scheduling, persisted dependency results, meetings, retries and correction plans.
 - [worker/src/workflow.ts](../worker/src/workflow.ts): briefing, reference selection, change routing and run orchestration.
 - [worker/src/coordinator.ts](../worker/src/coordinator.ts): canonical revision commits and cancellation fences.
+- [shared/requirements.ts](../shared/requirements.ts) and [worker/src/requirements.ts](../worker/src/requirements.ts): ordered scoped amendments and frozen run requirements.
+- [worker/src/changes.ts](../worker/src/changes.ts) and [components/ChangeTracker.tsx](../components/ChangeTracker.tsx): persisted change milestones and their Activity presentation.
 - [worker/src/budget.ts](../worker/src/budget.ts), [shared/budget.ts](../shared/budget.ts) and [worker/src/desktop.ts](../worker/src/desktop.ts): resource limits, lease accounting and workstation lifecycle.
 - [components/TaskBoard.tsx](../components/TaskBoard.tsx): visible task dependencies and current specialist activity.
 - [prompts/README.md](../prompts/README.md): active Markdown role instructions and runtime output contracts.

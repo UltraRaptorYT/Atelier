@@ -1,6 +1,6 @@
 # Agent workflow readiness review
 
-Updated 2026-09-13 from the current implementation. Atelier now runs a Principal-authored dependency graph with concurrent specialist work, persistent outputs and coordinated canonical commits. The remaining gaps concern interaction intent, durable requirements and design evidence, rather than a missing task scheduler or correction loop.
+Updated 2026-09-13 from the current implementation. Atelier now runs a Principal-authored dependency graph with concurrent specialist work, persistent outputs and coordinated canonical commits. Steering has a dedicated progress tracker and a durable record of applied requirement amendments. The remaining gaps concern interaction intent, requirement interpretation and design evidence.
 
 This review describes code and automated coverage. This documentation update did not run paid OpenAI/E2B generation, measure live latency or establish a live demo success rate. See the [collaboration contract](concurrent-agents.md), [image integration](image-generation-integration.md) and [walkthrough](walkthrough.md). The [original audit is archived](history/agent-design-review-before-concurrency.md); its fixed findings are historical.
 
@@ -39,11 +39,21 @@ The final review can trigger **one correction plan**, followed by another final 
 
 Plans, proposals, reviews, visual directions, conflict decisions and workstation checkpoints are persistent artifacts. Task rows record their owner, kind, objective, prerequisites, deliverables, base revision and output references. Activity’s [TaskBoard](../components/TaskBoard.tsx) shows real task metadata, dependency waiting, computer waiting and completed work. Commit events identify the publishing specialist. Snapshots include recent runs, which keep Stop work available during queued work. See [store.ts](../worker/src/store.ts) and [Studio.tsx](../components/Studio.tsx).
 
+Snapshots also expose complete structured change history. Activity's [ChangeTracker](../components/ChangeTracker.tsx) shows **Queued → Working → Applied → Reviewed** from persisted milestone timestamps, rather than inferring progress from the latest event. Each request retains its scope, revision references, review findings and failure details. Review with findings needs attention; reaching “Applied” is not proof of a clean review. A stopped or failed run retains evidence of milestones already reached. See [change lifecycle](../worker/src/changes.ts) and [0006_change_tracking.sql](../worker/migrations/0006_change_tracking.sql).
+
 Replay uses durable steps and saved plans, task results and conflict resolutions. Indexed runtime task identities keep model-supplied names separate from retry identities. Within `runTeam`, cancellation fences prevent stopped runs from reviving graph-task statuses or publishing canonical revisions. Final readiness has a run/revision fence, and workstation release is scoped to the stopped run. The outer brief/clarification flow still has a status race described below. Dispatch reconciliation exposes failed requests instead of treating failed workflow creation as successful work. See [workflow.ts](../worker/src/workflow.ts), [team.ts](../worker/src/team.ts), [steering.ts](../worker/src/steering.ts) and [index.ts](../worker/src/index.ts).
 
 Computer caps remain unchanged: two global desktops, 900 seconds per lease, 3,600 user seconds per day, and the configured global monthly allowance. Unused reserved time is refunded only after confirmed shutdown; uncertain or legacy usage retains its conservative charge. A deterministic single-element color patch needs no editing desktop, while its model review still uses the Critic workstation. Long work or retries can still exhaust the allowance. Image requests have a separate allowance and do not reserve desktops. See [budget limits](../shared/budget.ts), [budget accounting](../worker/src/budget.ts) and [desktop lifecycle](../worker/src/desktop.ts).
 
 Specialist artifact saves through `store.artifact()` atomically check the shared 250 MB project allowance. Duplicate saves preserve the registered artifact, and rejected concurrent uploads remove their own unregistered object. The per-artifact limit remains 25 MB. Image and capture saves use a separate precheck path that still has a concurrent-cap gap. These controls do not establish the duration or cost of a live end-to-end demo.
+
+## Effective requirements across future runs
+
+The project exposes a structured requirements record containing the stored brief and ordered applied user amendments. Each amendment preserves its instruction, specialist/element scope, optional reference image, and applied revision/time. Each team run freezes that historical record in an `effective-requirements.json` artifact and supplies it alongside the persisted current instruction to Principal planning, specialists, visual-requirement analysis, conflict decisions, corrections and Critic review. Project and voice context expose the record as well. Requested image concepts receive the requirements and save them in artifact metadata. See [shared requirements](../shared/requirements.ts) and [run requirements](../worker/src/requirements.ts).
+
+Later amendments supersede earlier wording only where their subject and scope overlap; the current instruction has priority within its scope. A red-exterior amendment therefore remains part of a later balcony task even when the original brief requested yellow. A selected-element amendment remains limited to that target. Unapplied queued, failed and cancelled requests are excluded, while a request that reached the applied milestone remains recorded if its run later fails or is stopped.
+
+This closes the missing-history/context gap without creating an extracted semantic property map. The record preserves original client wording, scope and application evidence. Models still interpret overlapping natural-language requirements, and an applied amendment is not proof of complete compliance. Failed review, partial-work evidence and unknown geometry conditions must remain visible.
 
 ## Remaining work
 
@@ -52,12 +62,6 @@ Specialist artifact saves through `store.artifact()` atomically check the shared
 The normal text composer still submits a change request. A question such as “Why is the roof sloped?” has no explicit read-only text route and can enter a design workflow. The selected room supplies context and attribution; the Principal’s plan chooses actual ownership.
 
 A generation clarification completes the current run with a blocked Principal task. A normal typed answer does not identify and resume that question. Voice can append requirements to the brief before a first design exists and while work is idle, but a unified question/answer/resume lifecycle remains absent. Add explicit `ask`, `answer_clarification`, `change` and `start_work` intents with durable question IDs and brief updates. See [Studio.tsx](../components/Studio.tsx), [workflow.ts](../worker/src/workflow.ts) and [voice.ts](../worker/src/voice.ts).
-
-### Effective requirements across future runs
-
-Every current specialist task, including the Critic, receives the accepted instruction for its run. This fixes the earlier omission where a red-exterior change was reviewed only against the original yellow brief.
-
-The project still lacks a versioned effective-requirements model that records which earlier requirement an accepted change supersedes. Later work receives the stored brief and current geometry; it does not reconstruct authoritative amendments from the full change history. Preserve the original request and maintain accepted amendments separately, then supply that shared state to planning and review.
 
 ### Required geometry evidence
 
@@ -75,7 +79,7 @@ The Presentation room still contains a fixed exhibit. The accepted building is e
 
 - The outer Principal brief step can save a model response after cancellation without renewing its cancellation fence. Its clarification branch can also mark the run completed and wrapper task blocked after Stop work. Graph tasks, canonical publication and final readiness have stronger fences; the wrapper needs the same status-aware updates.
 - Image and browser-capture storage check the project allowance before insertion, without an atomic SQL capacity condition. Concurrent saves can therefore exceed the shared cap even though specialist artifact admission is atomic.
-- Changes and decisions are persisted and partly exposed through events/artifacts, but the project snapshot does not provide their complete structured history.
+- Decisions remain exposed through events/artifacts rather than a complete dedicated decision-history view. Changes now have full structured snapshot history and their own tracker.
 - Semantic target selection still relies on planning a proposal. A typed set of affected IDs and scoped change operations would make multi-element steering more explicit.
 - `recolor()` prefixes an element ID with `custom_`; a permitted 80-character element ID therefore exceeds the material ID length bound. A bounded collision-safe identifier remains needed for that edge case.
 
@@ -93,8 +97,9 @@ Relevant automated suites are:
 - [image-workflow.test.ts](../tests/image-workflow.test.ts): concurrent execution, shared references, dependencies, conflict retries, review corrections, replay and cancellation with mocked paid services and real D1/R2 storage.
 - [backend.test.ts](../tests/backend.test.ts), [desktop-budget.test.ts](../tests/desktop-budget.test.ts) and [artifact-storage.test.ts](../tests/artifact-storage.test.ts): revision/cancellation fences, resource accounting and concurrent storage admission.
 - [agent-tools.test.ts](../tests/agent-tools.test.ts): recorded coordination messages and tool argument validation.
+- [change-tracking.test.ts](../tests/change-tracking.test.ts) and [change-tracker.test.ts](../tests/change-tracker.test.ts): saved change milestones, history and rendered tracker states, with mocked provider calls where execution is involved.
 - [first-person.test.ts](../tests/first-person.test.ts) and [navigation.test.ts](../tests/navigation.test.ts): actual Rapier movement and geometry-based click navigation.
 
 Run `npm test` and `npm run typecheck` for the repository’s current checks. Automated storage, scheduling and physics coverage does not verify live provider availability, architectural quality, complete evidence capture or the final Presentation-room experience.
 
-The next product priorities are a shared intent/clarification/effective-requirements path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should then measure generation, whole-exterior steering, review and optional rendering within the unchanged allowances.
+The next product priorities are a shared intent/clarification path, an evidence-backed geometry review contract, and the workstation-to-presentation handoff. A paid demo should then measure generation, repeated scoped steering against the saved requirements record, review and optional rendering within the unchanged allowances. Mocked execution tests can verify persistence and context propagation; they do not establish that live models consistently preserve every prior requirement.

@@ -1,0 +1,19 @@
+{
+  "projectId": "801c6eaf-2371-499c-89f7-1136a3a4f675",
+  "requestedRevision": 3,
+  "testedRevision": 3,
+  "pointerLock": true,
+  "movementObserved": true,
+  "escaped": true,
+  "pageErrors": [],
+  "mutations": [],
+  "elements": 125,
+  "floors": 2,
+  "spawn": [
+    -1,
+    1.95,
+    -6.4
+  ],
+  "cutaway": false,
+  "movementInput": "W held750ms, D held350ms"
+}

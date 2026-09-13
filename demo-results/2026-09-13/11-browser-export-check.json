@@ -1,0 +1,22 @@
+{
+  "projectId": "801c6eaf-2371-499c-89f7-1136a3a4f675",
+  "pageErrors": [],
+  "mutations": [],
+  "revision": 3,
+  "elements": 125,
+  "title": "Yellow Aperture House",
+  "screenshot": {
+    "path": "/tmp/atelier-direct-demo/final-browser.png",
+    "width": 1920,
+    "height": 1440,
+    "cutaway": false
+  },
+  "selectedProject": "Live demo · Direct 3D home",
+  "downloadMethod": "Exact native GLB Blob captured from the actual UI export",
+  "glb": {
+    "path": "/tmp/atelier-direct-demo/design.glb",
+    "bytes": 293592,
+    "elementIds": 125,
+    "revisionMetadata": 3
+  }
+}

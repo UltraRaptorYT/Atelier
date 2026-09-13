@@ -1,0 +1,78 @@
+{
+  "projectId": "801c6eaf-2371-499c-89f7-1136a3a4f675",
+  "name": "Live demo \u00b7 Direct 3D home",
+  "title": "Yellow Aperture House",
+  "revision": 3,
+  "elements": 125,
+  "floors": 2,
+  "spaces": 13,
+  "generationModel": "gpt-5.6-terra",
+  "imageGenerationCalls": 0,
+  "generationRun": "bece103e-5066-411c-b87b-5bc19a65f365",
+  "generationRunStatus": "cancelled during stalled final Critic request, after saving revision 3",
+  "renderRun": "b8d4fd63-efe0-4922-88d3-b076bb0b6a19",
+  "renderRunStatus": "completed",
+  "walkthrough": "Basic entry, WASD movement, pointer lock and Escape passed; this does not establish every room or stair is traversable.",
+  "preservationCheck": "All revision-2 furniture and lights retained unchanged after the architectural correction.",
+  "tests": "383 tests and typecheck passed after the integration merge; further concurrent workspace merges were checked separately.",
+  "limitations": [
+    "Coarse geometry, incomplete enclosure and opening details remain visible.",
+    "Final Critic review did not finish; project remains in review.",
+    "The requested direct-generation attempt did not include an exterior-red steering run.",
+    "Visible remote workstation playback was not verified reliably; actual tool execution and canonical renders were verified."
+  ],
+  "artifacts": {
+    "08-direct-3d-render.png": {
+      "bytes": 1328051,
+      "sha256": "64e3904d6662b7ab8205eb0743fbdb0c38841cc546e16636868e593b8016fe5a"
+    },
+    "09-direct-3d-model.glb": {
+      "bytes": 227736,
+      "sha256": "f3177d87855063fd457df8c52b3ea85c0569447fdb2879c57df7d856576296b8"
+    },
+    "10-direct-3d-source.blend": {
+      "bytes": 2255516,
+      "sha256": "a27d45a9532e7628c1ebfd84dfd4cd27e8ab491f2b68c12ec98eb6f04bbd8e1c"
+    },
+    "11-direct-3d-browser.png": {
+      "bytes": 133282,
+      "sha256": "b7d2b35083e809bc450f6ecef45801496836bf7535e26d3853b698c4c624ba02"
+    },
+    "05-direct-design-revision-3.json": {
+      "bytes": 50145,
+      "sha256": "bd0dc3ecd5c13be03c3337bca656f08309f8d7ba732dfd5c627967c8d3167430"
+    }
+  },
+  "computeLeases": [
+    {
+      "id": "bece103e-5066-411c-b87b-5bc19a65f365-team-0-task-0-0",
+      "trackedSeconds": 87,
+      "released": true
+    },
+    {
+      "id": "bece103e-5066-411c-b87b-5bc19a65f365-team-0-task-2-0",
+      "trackedSeconds": 48,
+      "released": true
+    },
+    {
+      "id": "bece103e-5066-411c-b87b-5bc19a65f365-team-0-task-3-0",
+      "trackedSeconds": 55,
+      "released": true
+    },
+    {
+      "id": "bece103e-5066-411c-b87b-5bc19a65f365-team-1-task-0-0",
+      "trackedSeconds": 76,
+      "released": true
+    },
+    {
+      "id": "bece103e-5066-411c-b87b-5bc19a65f365-team-1-task-1-0",
+      "trackedSeconds": 451,
+      "released": true
+    },
+    {
+      "id": "b8d4fd63-efe0-4922-88d3-b076bb0b6a19-render-0",
+      "trackedSeconds": 181,
+      "released": true
+    }
+  ]
+}

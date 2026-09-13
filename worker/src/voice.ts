@@ -6,6 +6,7 @@ import { bodyText, credential, HttpError, ownedProject } from './security';
 import { designFromRow, emit } from './store';
 import { queueChange } from './steering';
 import { reviewMeeting } from './meeting';
+import { readEffectiveRequirements } from './requirements';
 
 export function voiceSessionConfig(env: Pick<Bindings, 'VOICE_MODEL' | 'OPENAI_MODEL'>, agent: AgentId, meeting = false): MediaSessionConfig {
   return {
@@ -29,6 +30,7 @@ Do not delegate to the backend when: Greeting the user or asking a short clarifi
       max_output_tokens: 1800,
       instructions: `You route voice input to Atelier's existing project system, speaking for the currentAgent returned by get_project_context. You do not own or directly regenerate the design.
 Use get_project_context before answering project questions or choosing a mutation. Read the latest brief, revision, selection, pending work and accepted changes. User speech can contain unfinished phrases and corrections; clarify ambiguous targets.
+The effectiveRequirements record contains every applied amendment in order. Later amendments replace earlier requirements only on overlapping subject and scope; preserve unrelated requirements. Never restore an original brief choice superseded by applied feedback. Use application and review milestones separately when reporting progress.
 Before a first design exists, use save_brief for the user's new requirements or clarification answers. Supply only new details; the server appends them without deleting earlier requirements. Do not save speculation, questions, or assistant suggestions as requirements.
 After a design exists, use request_change for explicit changes. Use baseRevision from your latest context. Use the selected element only when the user refers to it; use null for a whole-building request. Never infer an element ID that is absent from context. Scope and work ownership are resolved by the existing project workflow.
 Answer questions without queuing changes. Check tool results. Report saved or queued work precisely; never claim the model changed until current project state confirms it. Do not retry an action with altered parameters just to bypass a conflict. If generation is paused, explain that the brief can still be saved and voice can continue. At the meeting table use review_team after saving a substantive brief. Present actual specialist perspectives and unanswered high-impact questions. Only when the user explicitly says start or proceed, call finish_meeting with confirmed=true. Never start merely because requirements were mentioned. Return concise facts for the voice model.`,
@@ -144,13 +146,14 @@ export async function executeVoiceTool(env: Bindings, projectId: string, owner: 
     const args = JSON.parse(call.arguments);
     if (call.name === 'get_project_context') {
       const design = await designFromRow(env, project);
-      const [tasks, changes] = await Promise.all([
+      const [tasks, changes, effectiveRequirements] = await Promise.all([
         env.DB.prepare('SELECT agent,title,status,detail FROM tasks WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
-        env.DB.prepare('SELECT instruction,status,base_revision FROM changes WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
+        env.DB.prepare('SELECT instruction,status,base_revision,started_at,applied_at,applied_revision,reviewed_at,reviewed_revision,review_summary,review_findings,failure_detail FROM changes WHERE project_id = ? ORDER BY rowid DESC LIMIT 12').bind(projectId).all(),
+        readEffectiveRequirements(env, projectId, BriefSchema.parse(JSON.parse(project.brief)), project.revision),
       ]);
       return { currentAgent: agents[agent], location: meeting ? 'meeting room (whole team)' : agents[agent].role + ' workstation', brief: JSON.parse(project.brief), revision: project.revision, status: project.status, generationEnabled: String(env.GENERATION_ENABLED) === 'true', selectedElementId: selected,
         design: design ? { title: design.title, floors: design.floors, spaces: design.spaces, elements: design.elements.map(({ id, name, materialId }) => ({ id, name, materialId })), materials: design.materials } : null,
-        tasks: tasks.results, changes: changes.results };
+        tasks: tasks.results, changes: changes.results, effectiveRequirements };
     }
     let result: unknown;
     if (call.name === 'review_team') {
