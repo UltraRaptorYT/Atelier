@@ -19,6 +19,7 @@ type Props = {
   onError: (message: string) => void;
 };
 type Source = 'brief' | 'view' | 'image';
+type StatusNotice = { message: string; runId?: string };
 
 function modelLabel(model: string) {
   if (model.startsWith('gpt-image-2.5-flare')) return 'GPT Image 2.5 · Flare';
@@ -31,7 +32,7 @@ export default function ImageStudio({ projectId, revision, hasDesign, selectedCo
   const [sourceId, setSourceId] = useState('');
   const [instruction, setInstruction] = useState('');
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState<StatusNotice | null>(null);
   const [preview, setPreview] = useState<ImageStudy | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const actionPending = useRef(false);
@@ -41,6 +42,7 @@ export default function ImageStudio({ projectId, revision, hasDesign, selectedCo
   const activeRuns = runs.filter(run => ['queued', 'in_progress'].includes(run.status));
   const imageRuns = activeRuns.filter(run => run.kind === 'image');
   const lastImageRun = runs.find(run => run.kind === 'image');
+  const statusMessage = status && (!status.runId || runs.some(run => run.id === status.runId && run.status === 'queued')) ? status.message : '';
   const canGenerate = imageEnabled && !busy && !activeRuns.length && (source !== 'view' || hasDesign) && (source !== 'image' || Boolean(editImage));
   const artifactURL = (id: string) => `/api/studio/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(id)}?inline=1`;
 
@@ -50,13 +52,14 @@ export default function ImageStudio({ projectId, revision, hasDesign, selectedCo
     return () => { if (dialog?.open) dialog.close(); };
   }, [preview]);
 
-  async function action(work: () => Promise<string>) {
+  async function action(work: () => Promise<string | StatusNotice>) {
     if (actionPending.current) return;
     actionPending.current = true;
     setBusy(true);
-    setStatus('');
+    setStatus(null);
     try {
-      setStatus(await work());
+      const result = await work();
+      setStatus(typeof result === 'string' ? { message: result } : result);
       await onRefresh().catch(() => onError('Your request was saved, but the panel could not refresh. Reopen the project to see its progress.'));
     } catch (error) {
       onError(error instanceof Error ? error.message : 'The image request could not be completed.');
@@ -79,8 +82,8 @@ export default function ImageStudio({ projectId, revision, hasDesign, selectedCo
         if (!editImage) throw new Error('Choose an image from the current design revision.');
         sourceArtifactId = editImage.id;
       }
-      await api<{ runId: string }>(`/projects/${projectId}/images`, 'POST', { operationId: crypto.randomUUID(), baseRevision: revision, instruction: instruction.trim(), sourceArtifactId });
-      return 'Your designer’s image study is queued. The result will appear here.';
+      const { runId } = await api<{ runId: string }>(`/projects/${projectId}/images`, 'POST', { operationId: crypto.randomUUID(), baseRevision: revision, instruction: instruction.trim(), sourceArtifactId });
+      return { runId, message: 'Your designer’s image study is queued. The result will appear here.' };
     });
   }
 
@@ -110,7 +113,7 @@ export default function ImageStudio({ projectId, revision, hasDesign, selectedCo
       <button className="button full" type="submit" disabled={!canGenerate || instruction.trim().length < 2}><ImagePlus size={15} />{busy ? 'Saving request…' : source === 'brief' ? 'Generate concept' : 'Generate image edit'}</button>
       {!imageEnabled && <p className="image-studio-hint">Image generation is unavailable for this studio connection. Check your connection in Settings.</p>}
     </form>
-    <div className="image-studio-status" role="status">{status}</div>
+    <div className="image-studio-status" role="status">{statusMessage}</div>
     {!imageRuns.length && lastImageRun?.status === 'failed' && <p className="image-studio-hint" role="status">The last image study failed. Check Activity for details, then try again.</p>}
     {imageRuns.map(run => <div className="image-studio-run" key={run.id}><span><span className="status-dot" />{run.status === 'queued' ? 'Image study queued' : 'Designer is generating an image'}</span><button className="text-button" disabled={busy} onClick={() => void action(async () => { await api(`/projects/${projectId}/runs/${run.id}`, 'DELETE'); return 'Image work cancelled. Saved studies remain available.'; })}><Square size={11} />Cancel</button></div>)}
     {images.length > 0 && <div className="image-studio-gallery">{images.map((image, index) => {

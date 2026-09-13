@@ -10,6 +10,7 @@ import { exampleDesign } from '../shared/example';
 import { recolor, type AgentId, type Design } from '../shared/design';
 import { DesignMergeConflict, mergeDesignProposal, type CollaborationPlan } from '../shared/collaboration';
 import type { Bindings, ProjectRow, RunParams } from '../worker/src/types';
+import { HttpError } from '../worker/src/security';
 
 vi.mock('cloudflare:workers', () => ({
   WorkflowEntrypoint: class {
@@ -132,7 +133,9 @@ async function fixture(kind: RunParams['kind'], revision = 0, referenceArtifactI
   const step = {
     do: async (name: string, ...args: unknown[]) => {
       steps.push(name);
-      if (!cached.has(name)) cached.set(name, (args.at(-1) as () => Promise<unknown>)().then(result => structuredClone(result)));
+      // Real WorkflowStep serializes both values and thrown exceptions; custom
+      // Error subclasses lose their prototypes at the checkpoint boundary.
+      if (!cached.has(name)) cached.set(name, (args.at(-1) as () => Promise<unknown>)().then(result => structuredClone(result), error => { throw structuredClone(error); }));
       return cached.get(name);
     },
     sleep: vi.fn().mockRejectedValue(new Error('Unexpected desktop queue wait')),
@@ -220,6 +223,82 @@ describe('visual references across the real workflow branch', () => {
     expect(task.commit).not.toHaveBeenCalled();
     expect(await task.row()).toEqual(original);
     expect(task.scheduleChanges).toHaveBeenCalledWith(task.params.projectId, task.params.userId);
+  });
+
+  it.each(['image', 'generate'] as const)('preserves a trusted image rejection through serialized %s checkpoints without retrying generation', async kind => {
+    const task = await fixture(kind);
+    const message = 'OpenAI could not generate this image under its content rules. Revise the concept instructions before trying again.';
+    const rejection = new HttpError(422, message);
+    expect(structuredClone(rejection)).not.toBeInstanceOf(HttpError);
+    study.mockRejectedValueOnce(rejection);
+    task.step.do = vi.fn(task.step.do);
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    expect((await task.events()).filter(event => event.type === 'error')).toEqual([{ type: 'error', message }]);
+    const imageStep = vi.mocked(task.step.do).mock.calls.find(([name]) => name === (kind === 'image' ? 'image-study' : 'visual-reference'));
+    expect(imageStep?.[1]).toMatchObject({ retries: { limit: 0 } });
+    // Replaying a completed failure envelope must not purchase another image.
+    await task.run();
+    expect(study).toHaveBeenCalledTimes(1);
+    expect(createDesktop).not.toHaveBeenCalled();
+    expect(Sandbox.connect).not.toHaveBeenCalled();
+    expect(specialistCalls()).toHaveLength(0);
+    expect(task.commit).not.toHaveBeenCalled();
+    expect(await task.design()).toBeNull();
+  });
+
+  it.each([
+    { kind: 'image', error: new Error('private-provider-detail secret-token') },
+    { kind: 'generate', error: new Error('private-provider-detail secret-token') },
+    { kind: 'image', error: { name: 'HttpError', status: 422, message: 'private-provider-detail secret-token' } },
+    { kind: 'generate', error: { name: 'HttpError', status: 422, message: 'private-provider-detail secret-token' } },
+  ] as const)('keeps untrusted errors private across a serialized $kind checkpoint ($error.name)', async ({ kind, error }) => {
+    const task = await fixture(kind);
+    study.mockRejectedValueOnce(error);
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    const errors = (await task.events()).filter(event => event.type === 'error');
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('The run stopped before completion.');
+    expect(JSON.stringify(await task.events())).not.toContain('private-provider-detail');
+    expect(JSON.stringify(await task.events())).not.toContain('secret-token');
+    expect(study).toHaveBeenCalledTimes(1);
+    expect(createDesktop).not.toHaveBeenCalled();
+    expect(task.commit).not.toHaveBeenCalled();
+  });
+
+  it('preserves a trusted missing-reference error before starting specialist work', async () => {
+    const task = await fixture('change', 1, 'unavailable-reference.png');
+    loadReference.mockRejectedValueOnce(new HttpError(404, 'The selected visual reference is unavailable.'));
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    expect((await task.events()).filter(event => event.type === 'error')).toEqual([{ type: 'error', message: 'The selected visual reference is unavailable.' }]);
+    expect(study).not.toHaveBeenCalled();
+    expect(createDesktop).not.toHaveBeenCalled();
+    expect(task.commit).not.toHaveBeenCalled();
+  });
+
+  it('treats a Blender Python exception as render failure and retains completed source artifacts', async () => {
+    const task = await fixture('render', 1);
+    const desktop = {
+      commands: { run: vi.fn() }, files: { read: vi.fn() }, open: vi.fn(),
+    };
+    desktop.commands.run = vi.fn(async (command: string) => {
+      // Blender normally exits 0 after a Python exception unless this option
+      // occurs before the script. Model that real CLI behavior in the stub.
+      const args = command.split(' '), flag = args.indexOf('--python-exit-code');
+      return { exitCode: flag >= 0 && args[flag + 1] === '1' && flag < args.indexOf('--python') ? 1 : 0, stdout: '', stderr: 'Traceback: compiler failed' };
+    });
+    desktop.files.read = vi.fn(async (path: string) => path.endsWith('.py') ? '# Completed compiler source' : new Uint8Array([1, 2, 3]));
+    vi.mocked(Sandbox.connect).mockResolvedValue(desktop as never);
+    await task.run();
+    expect(await task.status()).toBe('failed');
+    expect(desktop.commands.run).toHaveBeenCalledTimes(1);
+    expect(desktop.open).not.toHaveBeenCalled();
+    expect(checkpointDesktop).not.toHaveBeenCalled();
+    expect((await task.tasks()).some(value => value.status === 'completed')).toBe(false);
+    const artifacts = await storage.DB.prepare('SELECT name FROM artifacts WHERE project_id = ?').bind(task.params.projectId).all<{ name: string }>();
+    expect(artifacts.results.map(value => value.name)).toContain('blender-source.py');
   });
 });
 

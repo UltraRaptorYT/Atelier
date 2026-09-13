@@ -30,8 +30,17 @@ Verified by reading the scene, creating and reading a temporary object, then
 removing that object. Telemetry was read back as disabled. The Pikachu house
 was subsequently compiled through `execute_blender_code` on this connection.
 
-For the house, the source of truth is `project/design.json`. The Blender
-compiler reads the optional per-element `blender` geometry extension; the
-application's existing box renderer is unchanged. Run
+For the locally authored house, the source of truth is `project/design.json`.
+The project-specific [Pikachu renderer](../scripts/render_pikachu_house.py)
+reads its optional per-element `blender` geometry extension. Run
 `python3 scripts/author_pikachu_house.py` to recreate the original V1/V2 design
 inputs, or edit the canonical JSON directly for incremental changes.
+
+This local MCP connection and its richer house-authoring metadata are separate
+from the application's [concurrent specialist workflow](concurrent-agents.md).
+That workflow publishes validated canonical revisions through the coordinator;
+its E2B presentation-render task uses
+[blender_compile.py](../scripts/blender_compile.py), which compiles the supported
+box-and-stair contract. The browser does not load the local Blender scene or
+interpret its extra geometry automatically. See [walkthrough requirements](walkthrough.md)
+before expecting a Blender or Spline result to be explorable inside Atelier.

@@ -9,6 +9,20 @@ import { createDesktop, idleDesktop, syncDesktop, checkpointDesktop } from './de
 import { ownedProject, HttpError } from './security';
 import { runTeam } from './team';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
+type ImageStepResult = { ok: true; value: string | null } | { ok: false; status: number; message: string };
+async function imageStepResult(work: () => Promise<string | null>): Promise<ImageStepResult> {
+  try { return { ok: true, value: await work() }; }
+  catch (error) {
+    // Workflow checkpoints erase exception prototypes. Only application-created
+    // public errors may cross that boundary as data; unknown errors stay private.
+    if (error instanceof HttpError) return { ok: false, status: error.status, message: error.message };
+    throw error;
+  }
+}
+function imageStepValue(result: ImageStepResult): string | null {
+  if (!result.ok) throw new HttpError(result.status, result.message);
+  return result.value;
+}
 export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
   async run(event: WorkflowEvent<RunParams>, step: WorkflowStep) {
     const p = event.payload;
@@ -38,11 +52,11 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
     try {
       await step.do('start', async () => { await checkCancelled(); await this.env.DB.prepare("UPDATE runs SET status = 'in_progress' WHERE id = ? AND status = 'queued'").bind(p.runId).run(); });
       if (p.kind === 'image') {
-        await step.do('image-study', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, async () => {
+        imageStepValue(await step.do('image-study', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, () => imageStepResult(async () => {
           await checkCancelled();
           const row = await ownedProject(this.env, p.projectId, p.userId);
           return generateStudy(this.env, p, 'study', BriefSchema.parse(JSON.parse(row.brief)));
-        });
+        })));
       } else if (p.kind === 'render') {
         const sandboxId = await desktopFor('designer', 'render');
         await step.do('blender-render', { retries: { limit: 0, delay: '1 second' }, timeout: '15 minutes' }, async () => {
@@ -51,7 +65,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await syncDesktop(desktop, design, this.env, p.projectId);
           await emit(this.env, p.projectId, 'tool_started', 'Compiling the canonical design and rendering a presentation image in Blender.', 'designer');
           let completed = false;
-          try { const result = await desktop.commands.run(`timeout 780s blender --background --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision ${row.revision}`, { timeoutMs: 790000 }); completed = result.exitCode === 0; }
+          try { const result = await desktop.commands.run(`timeout 780s blender --background --python-exit-code 1 --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision ${row.revision}`, { timeoutMs: 790000 }); completed = result.exitCode === 0; }
           catch { /* Retain any model/source files completed before the renderer stopped. */ }
           for (const [name, mime, kind] of [['design.blend', 'application/octet-stream', 'blender'], ['design.glb', 'model/gltf-binary', 'model'], ['presentation.png', 'image/png', 'render']]) {
             try { await artifact(this.env, p.projectId, p.runId, name, kind, row.revision, await desktop.files.read(`/home/user/project/output/${name}`, { format: 'bytes' }), mime); }
@@ -80,7 +94,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           return { needsClarification: true };
         }
         // A workflow checkpoint freezes one reference for all specialist stages.
-        const referenceId = await step.do('visual-reference', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, async () => {
+        const referenceId = imageStepValue(await step.do('visual-reference', { retries: { limit: 0, delay: '1 second' }, timeout: '4 minutes' }, () => imageStepResult(async () => {
           await checkCancelled();
           if (p.referenceArtifactId) {
             await loadImageReference(this.env, p.projectId, p.referenceArtifactId, p.baseRevision);
@@ -94,7 +108,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
             this.env.DB.prepare("INSERT OR IGNORE INTO decisions(id,project_id,run_id,topic,decision,created_at) SELECT ?,project_id,id,'Initial visual direction',?,? FROM runs WHERE id = ? AND status = 'in_progress'").bind(`${p.runId}-concept`, `Use ${id} as a visual reference; the brief and editable geometry remain authoritative.`, new Date().toISOString(), p.runId),
           ]);
           return id;
-        });
+        })));
         let local: { color: string; elementId: string } | null = null;
         if (p.kind === 'change' && p.elementId && !referenceId) {
           const route = await step.do('route-change', { retries: { limit: 0, delay: '1 second' }, timeout: '3 minutes' }, async () => {
