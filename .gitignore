@@ -13,3 +13,4 @@ test-results/
 playwright-report/
 .atelier/
 worker/env.d.ts
+.DS_Store

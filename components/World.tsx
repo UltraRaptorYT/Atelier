@@ -80,12 +80,20 @@ function Building({ design, selected, onSelect, cutaway, clickToWalk }: { design
     return collision ? <RigidBody key={e.id} type="fixed" colliders="cuboid">{shapes}</RigidBody> : <group key={e.id}>{shapes}</group>;
   })}<Box p={[0, -.4, 0]} s={[80, .1, 80]} color="#b8bbaa" collision surface /></group>;
 }
+const PLAYER_EYE_HEIGHT = 1.7;
+const PLAYER_CAPSULE_HALF_HEIGHT = .45;
+const PLAYER_CAPSULE_RADIUS = .24;
+// Rapier positions the body at the capsule centre, not at the feet.
+const PLAYER_CAMERA_OFFSET = PLAYER_EYE_HEIGHT - PLAYER_CAPSULE_HALF_HEIGHT - PLAYER_CAPSULE_RADIUS;
+
 function Player({ target, onRoom, office, revision, design }: { target: [number, number, number]; onRoom: Props['onRoom']; office: boolean; revision: number; design: Design | null }) {
   const body = useRef<RapierRigidBody>(null);
   const { camera } = useThree();
   const keys = useRef(new Set<string>());
+  const spawn = { x: target[0], y: target[1] - PLAYER_CAMERA_OFFSET, z: target[2] };
   useEffect(() => {
-    body.current?.setTranslation({ x: target[0], y: target[1], z: target[2] }, true);
+    body.current?.setTranslation(spawn, true);
+    body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
     camera.position.set(...target); camera.lookAt(target[0], target[1], target[2] - 5);
   }, [target[0], target[1], target[2], camera]);
   useEffect(() => {
@@ -96,7 +104,7 @@ function Player({ target, onRoom, office, revision, design }: { target: [number,
       const dx=p.x-e.position[0], dz=p.z-e.position[2], c=Math.cos(e.rotation), s=Math.sin(e.rotation);
       return Math.abs(dx*c-dz*s)<=e.size[0]/2 && Math.abs(dx*s+dz*c)<=e.size[2]/2 && p.y>=e.position[1]-e.size[1]/2 && p.y-e.position[1]-e.size[1]/2<2;
     });
-    if (!supported) { body.current.setTranslation({ x:target[0],y:target[1],z:target[2] },true); body.current.setLinvel({x:0,y:0,z:0},true); }
+    if (!supported) { body.current.setTranslation(spawn,true); body.current.setLinvel({x:0,y:0,z:0},true); }
   }, [revision,design,office]);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -123,11 +131,15 @@ function Player({ target, onRoom, office, revision, design }: { target: [number,
     if (keys.current.has('KeyD')) move.add(right); if (keys.current.has('KeyA')) move.sub(right);
     move.normalize().multiplyScalar(3.5);
     body.current.setLinvel({ x: move.x, y: body.current.linvel().y, z: move.z }, true);
-    const p = body.current.translation();
-    if (p.y < -3) body.current.setTranslation({ x: target[0], y: target[1], z: target[2] }, true);
-    camera.position.set(p.x, p.y + .5, p.z);
+    let p = body.current.translation();
+    if (p.y < -3) {
+      body.current.setTranslation(spawn, true);
+      body.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      p = spawn;
+    }
+    camera.position.set(p.x, p.y + PLAYER_CAMERA_OFFSET, p.z);
   });
-  return <RigidBody ref={body} colliders={false} enabledRotations={[false, false, false]} position={target} friction={0}><CapsuleCollider args={[.45, .24]} /></RigidBody>;
+  return <RigidBody ref={body} colliders={false} enabledRotations={[false, false, false]} position={[spawn.x, spawn.y, spawn.z]} friction={0}><CapsuleCollider args={[PLAYER_CAPSULE_HALF_HEIGHT, PLAYER_CAPSULE_RADIUS]} /></RigidBody>;
 }
 function CameraRig({ walking, mode, captureRef }: Pick<Props, 'walking' | 'mode' | 'captureRef'>) {
   const { camera, gl, scene } = useThree();
