@@ -48,16 +48,17 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
         await step.do('blender-render', { retries: { limit: 0, delay: '1 second' }, timeout: '15 minutes' }, async () => {
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); const design = await designFromRow(this.env, row); if (!design) throw new Error('Generate a design first.');
           const desktop = await connect(sandboxId); await task('designer', 'Render presentation', `Rendering design revision ${row.revision} in Blender.`);
-          await syncDesktop(desktop, design);
+          await syncDesktop(desktop, design, this.env, p.projectId);
           await emit(this.env, p.projectId, 'tool_started', 'Compiling the canonical design and rendering a presentation image in Blender.', 'designer');
           let completed = false;
-          try { const result = await desktop.commands.run('timeout 780s blender --background --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render', { timeoutMs: 790000 }); completed = result.exitCode === 0; }
+          try { const result = await desktop.commands.run(`timeout 780s blender --background --python /home/user/project/blender_compile.py -- --design /home/user/project/design.json --output /home/user/project/output --render --revision ${row.revision}`, { timeoutMs: 790000 }); completed = result.exitCode === 0; }
           catch { /* Retain any model/source files completed before the renderer stopped. */ }
           for (const [name, mime, kind] of [['design.blend', 'application/octet-stream', 'blender'], ['design.glb', 'model/gltf-binary', 'model'], ['presentation.png', 'image/png', 'render']]) {
             try { await artifact(this.env, p.projectId, p.runId, name, kind, row.revision, await desktop.files.read(`/home/user/project/output/${name}`, { format: 'bytes' }), mime); }
             catch { if (completed) throw new Error('A completed render artifact could not be saved.'); }
           }
           await artifact(this.env, p.projectId, p.runId, 'blender-source.py', 'source', row.revision, await desktop.files.read('/home/user/project/blender_compile.py'), 'text/x-python');
+          await artifact(this.env, p.projectId, p.runId, 'furniture.json', 'asset-library', row.revision, await desktop.files.read('/home/user/project/furniture.json'), 'application/json');
           if (!completed) throw new HttpError(408,'The render did not finish within its allowance. Any completed model and source files have been saved; retry the render from this revision.');
           await desktop.open('/home/user/project/output/design.blend');
           await checkpointDesktop(this.env, desktop, p.projectId, p.runId, row.revision, 'designer');

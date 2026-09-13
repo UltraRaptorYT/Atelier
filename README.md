@@ -2,45 +2,42 @@
 
 An AI architecture studio with four specialists, observable tool work, persistent design revisions and an explorable 3D office and building. The Principal plans tasks and dependencies; independent specialists can work concurrently. The Architect develops layout and structure, the Interior Designer handles materials, furniture and lighting, and the Critic reviews the combined result.
 
-The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.
+The local preview needs no external keys. Live generation uses the configured OpenAI account and an E2B sandbox; see [the setup and cost guide](docs/FREE-MODE.md).
+
+A Next.js architecture studio with a walkable Three.js office, four specialist roles, persistent Cloudflare project state, E2B workstations, and OpenAI conversation/design integrations.
 
 The [collaboration guide](docs/concurrent-agents.md) explains concurrent tasks, proposal merging, coordination meetings and bounded correction rounds. Apply the new task-dependency migration with `npm run db:local` when updating an existing local checkout. Activity now shows the current task graph, dependencies and actual active specialists.
 
 ## Run the local preview
 
-Install the locked dependencies and start Next.js:
+## Run locally
+
+Requires Node.js 22+ and Python 3 for compiler-contract tests.
 
 ```sh
 npm ci
-npm run dev
+npm run setup:local
 ```
 
-Open [127.0.0.1:3000](http://127.0.0.1:3000). The sample office/building can be explored without provider credentials. Sample geometry is illustrative; it does not represent live agent activity.
-
-For local saved projects and backend routes, initialize local storage and start the Worker in another terminal:
+In separate terminals:
 
 ```sh
-npm run setup:local
 npm run worker:dev
 ```
 
-`setup:local` creates a local credential-encryption key in `worker/.dev.vars.local` only if that file does not exist, generates Worker types, and applies local database migrations. It does not supply external service credentials. The development frontend defaults to the Worker at `http://127.0.0.1:8787`. See [.env.local.example](.env.local.example) for frontend settings and [worker/.dev.vars.example](worker/.dev.vars.example) for Worker secrets; preserve existing local files when adding values.
+```sh
+npm run dev
+```
 
-## Explore and steer
+Open **http://127.0.0.1:3000**. Without Clerk configuration, loopback development uses one local owner. This bypass is disabled in production. Projects are saved in the local Wrangler database; the initial courtyard model is clearly marked as a sample. Create a project, edit its brief, and reconnect without losing it.
 
-- **Studio / Design** switches between the office and the current building.
-- **Orbit** lets you drag to rotate and scroll to zoom.
-- **Click to walk** shows a visitor in both views. Click/tap a clear floor to follow a path around obstacles; another click replaces the route. Drag to orbit, and press Escape to stop. Routes follow connected rendered slab/stair surfaces with enough clearance; unreachable targets display a message. Use Cutaway to expose interior floors.
-- **Walk inside** explores at eye level using WASD and mouse look; Escape releases the mouse. The help dialog describes controls.
-- Choose a room or specialist to inspect their task, send a contextual change, or open an available live workstation. Room controls select the workspace and reset the walking start; they do not automatically walk the visitor there.
-- In the design view, select an element to give steering a precise target. **Cutaway** exposes the interior for inspection.
-- **Files** provides canonical JSON, GLB export, floor plans, saved artifacts and comparison with the previous saved revision when available.
+WASD moves, mouse capture or dragging changes view, E selects the nearby room, and Escape releases capture. Room shortcuts and the project panel provide a conventional interface. Mobile uses orbit inspection and the project/conversation panel.
 
-WASD and E interaction belong to **Walk inside**. Click walking stops for dialogs/workstations or when the window loses focus; click a new destination to continue. Geometry or cutaway changes reset its starting point safely. Routes allow steps up/down of at most 0.2 m, so a raised floor needs a connected step or staircase to reach lower ground.
+## Connect live services
 
-Start with a brief such as “Design a futuristic Pokémon-inspired home for four people, with two floors, a generous living room and a yellow exterior.” Then select an exterior element and ask the Designer to make it red. The sample and your saved project are distinct; actual generation and steering require the live services below.
+Copy `.env.local.example` to `.env.local` and configure Clerk. Keep Worker secrets in the ignored `worker/.dev.vars.local`; `setup:local` generates its local AES key without printing it. Configure the Clerk verification key/secret and E2B API key there. Users connect their own OpenAI key through Settings; do not place user OpenAI keys in E2B.
 
-## Live services
+The application defaults to `gpt-6-astra` for the design specialists and `gpt-live-1` for native speech, with Astra handling delegated voice tools. It uses the Live JSON/WebRTC protocol and native captions, with no separate Whisper or transcription model. Actual account access and live audio still require verification. See [the exact env files and setup instructions](docs/ENVIRONMENT.md).
 
 The code contains a Cloudflare Worker backend with D1 metadata, R2 artifacts, Durable Object coordination and Workflow execution. Clerk provides deployed authentication. OpenAI calls use a personal key saved through Settings, falling back to the server's `OPENAI_API_KEY`. Agent desktops use E2B, and Blender rendering runs on those desktops.
 
@@ -56,9 +53,12 @@ The browser exchanges SDP through the authenticated backend. GPT-Live 1 handles 
 
 Provider access, real microphone/audio behavior and a full paid design run still need a live smoke test after the key is added. Protocol and persistence tests use mocked provider responses/local storage.
 
-Generation and rendering are disabled in the checked-in [Worker configuration](worker/wrangler.jsonc). Configure the appropriate deployment's bindings, authentication, encryption secrets and E2B template before enabling its `GENERATION_ENABLED` and `RENDER_ENABLED` settings. `npm run desktop:build` builds the `atelier-desktop` template when `E2B_API_KEY` is supplied. Local previews do not establish that provider calls, desktop execution or rendering have been verified.
+```sh
+npm run desktop:build
+npm run desktop:benchmark
+```
 
-Current canonical schema limits are four floors, 40 spaces and 1,200 elements. [shared/design.ts](shared/design.ts) defines these limits and the brief/change contracts. Simple review helpers do not establish complete traversability, engineering or regulatory compliance.
+These commands consume remote resources. The benchmark writes actual outputs and timing data to `.atelier/benchmark/`; it never fabricates successful renders. Keep production generation OFF until the release checks pass.
 
 ## Image concepts and edits
 
@@ -89,7 +89,21 @@ npm run worker:types
 npm run typecheck
 npm test
 npm run build
-npm run worker:check
 ```
 
-These are the available verification commands, not a record that this checkout or a live deployment has passed them.
+Tests run real local D1, R2 and Durable Objects through Miniflare, verify signed Clerk-style JWT ownership, concurrent commits, cancellation fences, budget admission, credential encryption, and shared browser/Python geometry. They do not make paid AI or E2B calls.
+
+## Code map
+
+| Location | Responsibility |
+|---|---|
+| `components/Studio.tsx`, `World.tsx`, `Voice.tsx` | Project UI, walking world, explicit voice controls |
+| `app/api/studio/[...path]/route.ts` | Same-origin authenticated streaming proxy |
+| `shared/` | Canonical schema, geometry, furniture and budget limits |
+| `worker/src/index.ts` | Authenticated public operations |
+| `worker/src/coordinator.ts` | Revision publication and voice sideband control |
+| `worker/src/workflow.ts`, `ai.ts` | Persistent specialist jobs and real tools |
+| `worker/src/budget.ts`, `desktop.ts` | Compute admission, leases and private desktops |
+| `scripts/blender_compile.py`, `blender_asset.py` | Canonical compilation and custom mesh publication |
+
+Spline remains optional asset authoring. The walking world is implemented directly in React Three Fiber/Rapier; no Spline subscription or exported interaction runtime is required.

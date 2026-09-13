@@ -6,13 +6,22 @@ from pathlib import Path
 
 def parts(element):
     w, h, length = element['size']
+    asset = element.get('assetId')
+    if asset and asset.startswith('atelier-'):
+        local = Path(__file__).with_name('furniture.json')
+        library_path = local if local.exists() else Path(__file__).parent.parent/'shared'/'furniture.json'
+        library = json.loads(library_path.read_text())
+        if asset[8:] not in library:
+            raise ValueError('Unknown furniture asset: '+asset)
+        return [([n*element['size'][i] for i,n in enumerate(p['position'])],
+                 [n*element['size'][i] for i,n in enumerate(p['size'])]) for p in library[asset[8:]]]
     if element['kind'] != 'stair':
         return [([0, 0, 0], [w, h, length])]
     count = max(2, math.ceil(h / 0.18))
     return [([0, -h/2 + h*(i+1)/count/2, -length/2 + length*(i+0.5)/count],
              [w, h*(i+1)/count, length/count]) for i in range(count)]
 
-def compile_design(design, output, render=False):
+def compile_design(design, output, render=False, revision=0):
     import bpy
     from mathutils import Vector
     bpy.ops.object.select_all(action='SELECT')
@@ -37,6 +46,19 @@ def compile_design(design, output, render=False):
         parent.rotation_euler.z = -element['rotation']
         parent['atelier_element_id'] = element['id']
         parent['atelier_name'] = element['name']
+        if element.get('assetId') and not element['assetId'].startswith('atelier-'):
+            asset_path=Path(__file__).parent/'assets'/(element['assetId']+'.glb')
+            previous=set(bpy.data.objects)
+            bpy.ops.import_scene.gltf(filepath=str(asset_path))
+            imported=set(bpy.data.objects)-previous
+            for obj in imported:
+                if obj.parent not in imported:
+                    obj.parent=parent
+                if obj.type=='MESH':
+                    obj.data.materials.clear()
+                    obj.data.materials.append(materials[element['materialId']])
+            parent.scale=(element['size'][0],element['size'][2],element['size'][1])
+            continue
         for index, (offset, dims) in enumerate(parts(element)):
             bpy.ops.mesh.primitive_cube_add(size=1)
             obj = bpy.context.object
@@ -56,6 +78,7 @@ def compile_design(design, output, render=False):
     scene = bpy.context.scene
     scene['atelier_schema_version'] = design['schemaVersion']
     scene['atelier_design_title'] = design['title']
+    scene['atelier_design_revision'] = revision
     scene.world.use_nodes = True
     scene.world.node_tree.nodes['Background'].inputs[0].default_value = (0.72, 0.78, 0.85, 1)
     scene.world.node_tree.nodes['Background'].inputs[1].default_value = 0.5
@@ -104,5 +127,6 @@ if __name__ == '__main__':
     parser.add_argument('--design', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--render', action='store_true')
+    parser.add_argument('--revision', type=int, default=0)
     opts = parser.parse_args(args)
-    compile_design(json.loads(Path(opts.design).read_text()), opts.output, opts.render)
+    compile_design(json.loads(Path(opts.design).read_text()), opts.output, opts.render, opts.revision)

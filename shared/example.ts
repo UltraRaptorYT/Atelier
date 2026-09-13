@@ -16,11 +16,12 @@ export function exampleDesign(): Design {
   add('glazing', 'window', 'Garden glazing', [0, 1.5, -4.88], [7, 2.4, .05], 'glass');
   add('sofa', 'furniture', 'Living room sofa', [-3.8, .45, 0], [3.2, .9, 1.1], 'linen');
   add('coffee-table', 'furniture', 'Coffee table', [-3.8, .24, 1.5], [1.6, .48, .8], 'oak');
-  add('dining-table', 'furniture', 'Dining table', [3, .75, -1], [2.4, .14, 1.2], 'oak');
+  add('dining-table', 'furniture', 'Dining table', [3, .4, -1], [2.4, .8, 1.2], 'oak');
   for (let i = 0; i < 4; i++) add(`chair-${i}`, 'furniture', 'Dining chair', [2.3 + (i % 2) * 1.4, .45, -1 + (i < 2 ? -1.2 : 1.2)], [.55, .9, .55], 'linen');
   add('roof', 'roof', 'Flat roof', [0, 3.15, 0], [14.5, .25, 10.5], 'concrete');
+  for (const e of elements) { if (e.id==='sofa') e.assetId='atelier-sofa'; else if (e.id.includes('table')) e.assetId='atelier-table'; else if (e.id.startsWith('chair')) e.assetId='atelier-chair'; }
   return {
-    schemaVersion: 1, units: 'meters', title: 'The Courtyard House', buildingType: 'residential', floors: 1,
+    schemaVersion: 1, units: 'meters', title: 'The Courtyard House', buildingType: 'residential', floors: 1, assets:[],
     materials: [
       { id: 'exterior', name: 'Ochre plaster', color: '#c7a764', roughness: .8, metalness: 0 },
       { id: 'concrete', name: 'Warm concrete', color: '#bfb9aa', roughness: .85, metalness: 0 },

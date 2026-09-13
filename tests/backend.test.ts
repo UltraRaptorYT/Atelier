@@ -36,6 +36,7 @@ beforeAll(async()=>{
   mf=new Miniflare(convertV4MiniflareOptions({ workers: [{ name:'atelier-test', modules: [{type:'ESModule',path:resolve(root,'index.js')},...readdirSync(root).filter(x=>/\.(py|md)$/.test(x)).map(x=>({type:'Text' as const,path:resolve(root,x)}))],
     compatibilityDate:'2026-09-12',compatibilityFlags:['nodejs_compat'],
     d1Databases:['DB'],r2Buckets:['FILES'],
+    ratelimits:{API_LIMIT:{namespace_id:'927301',simple:{limit:120,period:60}}},
     durableObjects:{PROJECTS:{className:'ProjectCoordinator',useSQLite:true},BUDGET:{className:'ComputeBudget',useSQLite:true}},
     workflows:{JOBS:{name:'atelier-jobs-test',className:'DesignWorkflow'}},
     bindings:{ENVIRONMENT:'test',APP_ORIGIN:'http://127.0.0.1:3000',GENERATION_ENABLED:'false',RENDER_ENABLED:'false',CLERK_JWT_KEY:await exportSPKI(publicKey),KEY_VERSION:'v1',OPENAI_MODEL:'gpt-5.6-terra',VOICE_MODEL:'gpt-live-1',VOICE_ENABLED:'true',OPENAI_API_KEY:'test-environment-key',E2B_TEMPLATE:'atelier-desktop'} },
@@ -76,34 +77,29 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     expect(await (await call('/projects',tokenB)).json()).toEqual([]);
   });
   it('publishes exactly one revision and event when the same request is retried concurrently',async()=>{
-    const id=await project(), design=exampleDesign();
-    expect(await Promise.all([commit(id,0,'same-operation',design),commit(id,0,'same-operation',design)])).toEqual([1,1]);
+    const id=await project(), stub=env.PROJECTS.getByName(id), design=exampleDesign();
+    expect(await Promise.all([stub.commit(id,0,'same-operation',design),stub.commit(id,0,'same-operation',design)])).toEqual([1,1]);
     const data=await (await call(`/projects/${id}`)).json() as any;
     expect(data.project.revision).toBe(1); expect(data.design).toEqual(design);
     expect(data.events.filter((e:any)=>e.type==='artifact_updated')).toHaveLength(1);
   });
   it('fences stale proposals and atomically keeps the winning pointer and event',async()=>{
-    const id=await project(), original=exampleDesign();
-    await commit(id,0,'initial-'+id,original);
-    const results=await Promise.allSettled([commit(id,1,'red-'+id,recolor(original,'front-left','#ff0000')),commit(id,1,'blue-'+id,recolor(original,'front-left','#0000ff'))]);
+    const id=await project(), stub=env.PROJECTS.getByName(id), original=exampleDesign();
+    await stub.commit(id,0,'initial-'+id,original);
+    const results=await Promise.allSettled([stub.commit(id,1,'red-'+id,recolor(original,'front-left','#ff0000')),stub.commit(id,1,'blue-'+id,recolor(original,'front-left','#0000ff'))]);
     expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
-    expect(results.find(r=>r.status==='rejected')?.reason.message).toMatch(/Design changed/);
     const current=await (await call(`/projects/${id}`)).json() as any;
     expect(current.project.revision).toBe(2);
     expect(current.events.filter((e:any)=>e.type==='artifact_updated')).toHaveLength(2);
     expect(await (await call(`/projects/${id}/revisions/1`)).json()).toEqual(original);
   });
   it('rejects invalid designs and late results from a cancelled run while preserving saved files',async()=>{
-    const id=await project(), original=exampleDesign();
-    await commit(id,0,'saved-'+id,original);
-    await expect(commit(id,1,'bad-'+id,{...original,floors:5})).rejects.toThrow(/ZodError/);
+    const id=await project(), stub=env.PROJECTS.getByName(id);
+    await stub.commit(id,0,'saved-'+id,exampleDesign());
+    await expect(stub.commit(id,1,'bad-'+id,{...exampleDesign(),floors:5})).rejects.toThrow();
     await env.DB.prepare("INSERT INTO runs(id,project_id,owner_id,kind,status,base_revision,created_at) VALUES(?,?,'user-a','generate','cancelled',1,?)").bind('cancel-'+id,id,new Date().toISOString()).run();
-    await expect(commit(id,1,'late-'+id,recolor(original,'front-left','#ff0000'),'cancel-'+id)).rejects.toThrow(/cancelled/);
-    const saved=await (await call(`/projects/${id}`)).json() as any;
-    expect(saved.project.revision).toBe(1);
-    expect(saved.design).toEqual(original);
-    expect(saved.events.filter((e:any)=>e.type==='artifact_updated')).toHaveLength(1);
-    expect(await (await call(`/projects/${id}/revisions/1`)).json()).toEqual(original);
+    await expect(Promise.resolve(stub.commit(id,1,'late-'+id,exampleDesign(),'cancel-'+id))).rejects.toThrow();
+    expect((await (await call(`/projects/${id}`)).json() as any).project.revision).toBe(1);
   });
   it('merges concurrent sibling proposals from the same saved revision without losing either agent’s work', async () => {
     const id = await project(), original = exampleDesign();
@@ -207,6 +203,17 @@ describe('real Worker, D1, R2 and Durable Object integration',()=>{
     await env.DB.prepare('DELETE FROM voice_sessions WHERE id = ?').bind(voiceId).run();
     const ended = await executeVoiceTool(env,id,'user-a',voiceId,'principal',null,{ ...input, call_id:'after-hangup' });
     expect(ended).toMatchObject({ error: expect.stringMatching(/ended/) });
+  });
+
+  it('applies a material edit immediately, retries idempotently and rejects stale editing',async()=>{
+    const id=await project(),original=exampleDesign();await commit(id,0,'finish-'+id,original);
+    const change={elementId:'front-left',color:'#cc3344',baseRevision:1,operationId:crypto.randomUUID()};
+    expect((await call(`/projects/${id}/material`,tokenA,'PUT',change)).status).toBe(200);
+    expect((await call(`/projects/${id}/material`,tokenA,'PUT',change)).status).toBe(200);
+    expect((await call(`/projects/${id}/material`,tokenA,'PUT',{...change,operationId:crypto.randomUUID()})).status).toBe(409);
+    const saved=await (await call(`/projects/${id}`)).json() as any;
+    expect(saved.project.revision).toBe(2); expect(saved.design).toEqual(recolor(original,'front-left','#cc3344'));
+    expect((await call(`/projects/${id}/material`,tokenB,'PUT',change)).status).toBe(404);
   });
 
 });

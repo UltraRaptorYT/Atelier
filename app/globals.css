@@ -47,3 +47,5 @@
 .image-studio-lightbox>img{display:block;width:100%;max-height:66dvh;object-fit:contain;background:#e9eedf;border-radius:6px}
 .image-studio-lightbox-prompt{font-size:12px;color:#6c7e5d;line-height:1.75;margin:15px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:800px){.topbar .project-switch{min-width:0}.image-studio textarea,.image-studio select{font-size:16px}.image-studio-gallery{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}.image-studio-lightbox{padding:14px}.image-studio-lightbox h3{font-size:21px}}
+.finish-editor{display:flex;align-items:center;gap:10px;margin:14px 0}.finish-editor input{width:45px;height:38px;padding:3px;cursor:pointer}
+.monitor-stamp{font-size:9px;background:#f4f4e9;color:#526248;padding:3px 5px;border-radius:3px;white-space:nowrap}.fps-indicator{font-variant-numeric:tabular-nums;color:#738367}.element-picker{font-size:12px;padding:0 20px}.element-picker select{padding:8px;background:#f9faf4;border:1px solid var(--line);border-radius:5px;color:var(--ink);width:100%}

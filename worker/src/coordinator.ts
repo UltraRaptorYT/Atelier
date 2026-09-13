@@ -9,6 +9,12 @@ import { DesignMergeConflict, mergeDesignProposal } from '../../shared/collabora
 export class ProjectCoordinator extends DurableObject<Bindings> {
   private voices = new Map<string, WebSocket>();
   private closingVoices = new Set<string>();
+  async publish(projectId: string, baseRevision: number, operationId: string, design: Design) {
+    try { return { ok: true as const, revision: await this.commit(projectId, baseRevision, operationId, design) }; }
+    catch (error) {
+      return { ok: false as const, status: error instanceof HttpError ? error.status : 500, message: error instanceof HttpError ? error.message : 'The revision could not be saved. The previous design remains available.' };
+    }
+  }
   async scheduleChanges(projectId: string, owner: string) {
     await this.ctx.storage.put('pending-project', { projectId,owner });
     await this.ctx.storage.setAlarm(Date.now()+1000);
@@ -139,7 +145,18 @@ export class ProjectCoordinator extends DurableObject<Bindings> {
   async commit(projectId: string, baseRevision: number, operationId: string, design: Design, runId?: string, agent: AgentId = 'architect'): Promise<number> {
     const duplicate = await this.env.DB.prepare('SELECT project_id, revision FROM revisions WHERE operation_id = ?').bind(operationId).first<{ project_id: string; revision: number }>();
     if (duplicate) { if (duplicate.project_id !== projectId) throw new HttpError(409, 'Operation belongs to another project.'); return duplicate.revision; }
+    if (baseRevision>=100) throw new HttpError(429,'This project has reached its 100-revision beta storage allowance. Saved revisions remain available.');
+    const current=await this.env.DB.prepare('SELECT revision FROM projects WHERE id = ?').bind(projectId).first<{revision:number}>();
+    if(!current || current.revision!==baseRevision) {
+      const retried=await this.env.DB.prepare('SELECT revision FROM revisions WHERE project_id = ? AND operation_id = ?').bind(projectId,operationId).first<{revision:number}>();
+      if(retried)return retried.revision;
+      throw new HttpError(409,'The design changed. Refresh and reconcile your edit against the current revision.');
+    }
     const validated = DesignSchema.parse(design), revision = baseRevision + 1;
+    for(const asset of validated.assets){
+      const stored=await this.env.DB.prepare("SELECT object_key FROM artifacts WHERE id = ? AND project_id = ? AND kind = 'model-asset'").bind(asset.artifactId,projectId).first<{object_key:string}>();
+      if(!stored || !await this.env.FILES.head(stored.object_key)) throw new HttpError(409,'A geometry asset must be uploaded to this project before committing its design.');
+    }
     // Unique immutable object name: racing proposals never overwrite one another.
     const key = `${projectId}/revisions/${revision}-${operationId}-${crypto.randomUUID()}/design.json`;
     await this.env.FILES.put(key, JSON.stringify(validated), { httpMetadata: { contentType: 'application/json' } });

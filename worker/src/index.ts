@@ -1,7 +1,7 @@
 import { z, ZodError } from 'zod';
-import { BriefSchema, ChangeSchema, AgentIdSchema } from '../../shared/design';
+import { BriefSchema, ChangeSchema, AgentIdSchema, recolor } from '../../shared/design';
 import { credential, encryptCredential, userId, ownedProject, bodyJSON, HttpError } from './security';
-import { eventsAfter, projectFromRow, snapshot, emit } from './store';
+import { designFromRow, eventsAfter, projectFromRow, snapshot, emit } from './store';
 import { openDesktopStream } from './desktop';
 import { queueChange } from './steering';
 import { startVoice } from './voice';
@@ -43,12 +43,18 @@ async function route(request: Request, env: Bindings): Promise<Response> {
   const path = new URL(request.url).pathname.split('/').filter(Boolean).map(decodeURIComponent), method = request.method;
   if (path[0] === 'health') return Response.json({ service: 'atelier', status: 'ok', generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', imageGeneration: String(env.IMAGE_GENERATION_ENABLED) === 'true' });
   const owner = await userId(request, env);
+  const allowance = env.API_LIMIT ? await env.API_LIMIT.limit({ key: owner }) : { success: true };
+  if (!allowance.success) throw new HttpError(429, 'Too many requests. Wait a minute and retry.');
   if (path[0] === 'capabilities') {
     const key = await env.DB.prepare('SELECT owner_id FROM credentials WHERE owner_id = ?').bind(owner).first();
     return Response.json({ configured: true, generation: String(env.GENERATION_ENABLED) === 'true', render: String(env.RENDER_ENABLED) === 'true', local: env.ENVIRONMENT === 'local', keyConnected: Boolean(key || env.OPENAI_API_KEY?.trim()), keySource: key ? 'saved' : env.OPENAI_API_KEY?.trim() ? 'environment' : 'none', voice: String(env.VOICE_ENABLED) === 'true', voiceModel: env.VOICE_MODEL, images: String(env.IMAGE_GENERATION_ENABLED) === 'true', imageModel: env.OPENAI_IMAGE_CONCEPT_MODEL, imageEditModel: env.OPENAI_IMAGE_EDIT_MODEL });
   }
   if (path[0] === 'credentials') {
-    if (method === 'DELETE') { await env.DB.prepare('DELETE FROM credentials WHERE owner_id = ?').bind(owner).run(); return Response.json({ removed: true }); }
+    if (method === 'DELETE') {
+      const sessions=await env.DB.prepare('SELECT id,project_id FROM voice_sessions WHERE owner_id = ?').bind(owner).all<{id:string;project_id:string}>();
+      for(const session of sessions.results) await env.PROJECTS.getByName(session.project_id).closeVoice(session.id);
+      await env.DB.prepare('DELETE FROM credentials WHERE owner_id = ?').bind(owner).run(); return Response.json({ removed: true });
+    }
     if (method === 'PUT') {
       const { apiKey } = z.object({ apiKey: z.string().trim().min(20).max(512) }).parse(await bodyJSON(request, 2048));
       const check = await fetch('https://api.openai.com/v1/models', { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(15000) });
@@ -66,13 +72,22 @@ async function route(request: Request, env: Bindings): Promise<Response> {
       const count = await env.DB.prepare('SELECT COUNT(*) as count FROM projects WHERE owner_id = ?').bind(owner).first<{ count: number }>();
       if ((count?.count || 0) >= 10) throw new HttpError(429, 'The beta allows ten projects per account.');
       const id = crypto.randomUUID(), now = new Date().toISOString();
-      await env.DB.prepare('INSERT INTO projects(id,owner_id,name,brief,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id, owner, data.name, JSON.stringify(data.brief), now, now).run();
+      const saved=await env.DB.prepare('INSERT INTO projects(id,owner_id,name,brief,created_at,updated_at) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM projects WHERE owner_id = ?) < 10').bind(id, owner, data.name, JSON.stringify(data.brief), now, now,owner).run();
+      if(!saved.meta.changes) throw new HttpError(429,'The beta allows ten projects per account.');
       await emit(env, id, 'project_created', 'Project created. Your brief is ready for the principal.');
       return Response.json(projectFromRow(await ownedProject(env, id, owner)), { status: 201 });
     }
   }
   const id = path[1], row = await ownedProject(env, id, owner);
   if (path.length === 2 && method === 'GET') return Response.json(await snapshot(env, row));
+  if (path[2] === 'material' && method === 'PUT') {
+    const data=z.object({elementId:z.string().max(80),color:z.string().regex(/^#[0-9a-fA-F]{6}$/),baseRevision:z.number().int().min(1),operationId:z.string().uuid()}).parse(await bodyJSON(request));
+    const current=await designFromRow(env,row); if(!current) throw new HttpError(409,'Generate a design before editing a finish.');
+    if(!current.elements.some(e=>e.id===data.elementId)) throw new HttpError(404,'Element not found.');
+    const result=await env.PROJECTS.getByName(id).publish(id,data.baseRevision,data.operationId,recolor(current,data.elementId,data.color));
+    if(!result.ok) throw new HttpError(result.status,result.message);
+    return Response.json({revision:result.revision});
+  }
   if (path[2] === 'brief' && method === 'PUT') {
     const data = CreateSchema.parse(await bodyJSON(request));
     const active = await env.DB.prepare("SELECT id FROM runs WHERE project_id = ? AND status IN ('queued','in_progress')").bind(id).first();

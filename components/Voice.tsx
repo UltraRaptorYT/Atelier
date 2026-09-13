@@ -9,8 +9,8 @@ export default function Voice({ projectId, agent, elementId = null, onTranscript
   projectId: string | null;
   agent: AgentId;
   elementId?: string | null;
-  onTranscript: (s: string) => void;
-  onError: (s: string) => void;
+  onTranscript: (text: string) => void;
+  onError: (message: string) => void;
 }) {
   const [status, setStatus] = useState<VoiceStatus>('off');
   const active = useRef<LiveVoiceSession | null>(null);
@@ -30,7 +30,10 @@ export default function Voice({ projectId, agent, elementId = null, onTranscript
     if (active.current) return;
     if (!projectId) return onError('Create a project to start a live voice conversation.');
     const call = new LiveVoiceSession({
-      projectId, agent, elementId, agentName: agents[agent].name.split(' ')[0],
+      projectId,
+      agent,
+      elementId,
+      agentName: agents[agent].name.split(' ')[0],
       onStatus: next => {
         if (active.current !== call) return;
         setStatus(next);
@@ -43,10 +46,13 @@ export default function Voice({ projectId, agent, elementId = null, onTranscript
     void call.start();
   }
 
-  return <button type="button" className={`voice-button ${status === 'live' ? 'live' : ''}`}
+  return <button
+    type="button"
+    className={`voice-button ${status === 'live' ? 'live' : ''}`}
     onClick={() => status === 'off' ? start() : active.current?.stop()}
     aria-pressed={status !== 'off'}
-    title={status === 'off' ? 'Start live voice with GPT-Live 1' : status === 'connecting' ? 'Cancel connecting to GPT-Live 1' : 'End GPT-Live 1 conversation'}>
+    title={status === 'off' ? 'Start live voice with GPT-Live 1' : status === 'connecting' ? 'Cancel connecting to GPT-Live 1' : 'End GPT-Live 1 conversation'}
+  >
     {status === 'off' ? <Mic size={17} /> : <PhoneOff size={17} />}
     {status === 'connecting' ? 'Cancel connection' : status === 'live' ? 'End call' : 'Live voice'}
   </button>;

@@ -5,6 +5,8 @@ import { HttpError } from './security';
 import { artifact, emit } from './store';
 import compiler from '../../scripts/blender_compile.py';
 import { limits } from '../../shared/budget';
+import furniture from '../../shared/furniture.json';
+import assetCompiler from '../../scripts/blender_asset.py';
 type DesktopRow = { sandbox_id: string; lease_id: string; expires_at: number };
 export async function connectDesktop(env: Bindings, projectId: string, agent: AgentId): Promise<Sandbox | null> {
   if (!env.E2B_API_KEY) return null;
@@ -13,6 +15,7 @@ export async function connectDesktop(env: Bindings, projectId: string, agent: Ag
   try { return await Sandbox.connect(row.sandbox_id, { apiKey: env.E2B_API_KEY }); } catch { return null; }
 }
 export async function createDesktop(env: Bindings, projectId: string, owner: string, agent: AgentId, leaseId: string): Promise<Sandbox> {
+  if (String(env.GENERATION_ENABLED)!=='true') throw new HttpError(503,'Generation is paused.');
   if (!env.E2B_API_KEY) throw new HttpError(503, 'Remote computers are not configured.');
   const budget = env.BUDGET.getByName('desktop-budget');
   const previous = await env.DB.prepare('SELECT sandbox_id,lease_id,expires_at FROM desktop_sessions WHERE project_id = ? AND agent = ?').bind(projectId,agent).first<DesktopRow>();
@@ -35,6 +38,8 @@ export async function createDesktop(env: Bindings, projectId: string, owner: str
     await env.DB.prepare('INSERT OR REPLACE INTO desktop_sessions(project_id,agent,sandbox_id,lease_id,expires_at,viewed_at) VALUES(?,?,?,?,?,?)').bind(projectId, agent, desktop.sandboxId, leaseId, Date.now()+limits.leaseSeconds * 1000, Date.now()).run();
     await desktop.commands.run('mkdir -p /home/user/project/output', { timeoutMs: 10000 });
     await desktop.files.write('/home/user/project/blender_compile.py', compiler);
+    await desktop.files.write('/home/user/project/furniture.json', JSON.stringify(furniture));
+    await desktop.files.write('/home/user/project/blender_asset.py', assetCompiler);
     await emit(env, projectId, 'tool_completed', 'Remote workstation connected.', agent);
     return desktop;
   } catch (e) {
@@ -63,8 +68,15 @@ export async function releaseDesktop(env: Bindings, projectId: string, agent: Ag
   await env.DB.prepare('DELETE FROM desktop_sessions WHERE project_id = ? AND agent = ? AND lease_id = ?').bind(projectId, agent, row.lease_id).run();
   return true;
 }
-export async function syncDesktop(desktop: Sandbox, design: Design) {
+export async function syncDesktop(desktop: Sandbox, design: Design, env:Bindings, projectId:string) {
   await desktop.files.write('/home/user/project/design.json', JSON.stringify(design, null, 2));
+  if(design.assets.length) await desktop.commands.run('mkdir -p /home/user/project/assets');
+  for(const asset of design.assets){
+    const row=await env.DB.prepare("SELECT object_key FROM artifacts WHERE id = ? AND project_id = ? AND kind = 'model-asset'").bind(asset.artifactId,projectId).first<{object_key:string}>();
+    const file=row && await env.FILES.get(row.object_key);
+    if(!file) throw new HttpError(409,'A versioned geometry asset is unavailable.');
+    await desktop.files.write(`/home/user/project/assets/${asset.id}.glb`,await file.arrayBuffer());
+  }
   const html = `<!doctype html><html><meta charset="utf-8"><title>Atelier design workspace</title><style>body{background:#eeeee5;color:#36432f;font:16px system-ui;margin:40px}h1{font:36px Georgia}pre{background:white;padding:20px;border-radius:8px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}td,th{padding:12px;text-align:left;border-bottom:1px solid #ccc}small{color:#75856c}</style><h1>Atelier / live design workspace</h1><small>Canonical file: /home/user/project/design.json</small><h2 id="title"></h2><table id="spaces"><tr><th>Space</th><th>Floor</th><th>Size (m)</th></tr></table><h2>Design source</h2><pre id="source"></pre><script>const design=${JSON.stringify(design).replaceAll('<', '\\u003c')};document.getElementById('title').textContent=design.title;document.getElementById('source').textContent=JSON.stringify(design,null,2);for(const space of design.spaces){const tr=document.createElement('tr');for(const value of [space.name,space.floor+1,space.size.join(' × ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}document.getElementById('spaces').append(tr)}</script></html>`;
   await desktop.files.write('/home/user/project/studio.html', html);
   await desktop.open('/home/user/project/studio.html');

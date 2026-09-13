@@ -3,6 +3,7 @@ import { DesignSchema, recolor, reviewDesign } from '../shared/design';
 import { exampleDesign } from '../shared/example';
 import { geometryParts } from '../shared/geometry';
 import { admission, limits } from '../shared/budget';
+import { execFileSync } from 'node:child_process';
 describe('canonical design', () => {
   it('validates the sample and enforces the floor/space boundary', () => {
     expect(DesignSchema.safeParse(exampleDesign()).success).toBe(true);
@@ -24,6 +25,7 @@ describe('canonical design', () => {
     expect(DesignSchema.safeParse(duplicate).success).toBe(false);
     expect(()=>recolor(exampleDesign(),'missing','#ff0000')).toThrow();
     expect(()=>recolor(exampleDesign(),'roof','javascript:alert(1)')).toThrow();
+    const asset=exampleDesign(); asset.elements[0].assetId='unknown-asset';expect(DesignSchema.safeParse(asset).success).toBe(false);
   });
   it('builds stair parts with bounded rises and exact total height', () => {
     const e={...exampleDesign().elements[0],kind:'stair' as const,size:[1.5,3,5] as [number,number,number]};
@@ -31,6 +33,12 @@ describe('canonical design', () => {
     expect(parts[0].size[1]).toBeLessThanOrEqual(.18);
   });
   it('flags multi-floor designs with no stair connection', () => { expect(reviewDesign({...exampleDesign(),floors:2})).toContain('Multiple floors need a connected staircase.'); });
+  it('compiles the same stairs and curated furniture in Python and the browser',()=>{
+    const elements=[...exampleDesign().elements,{...exampleDesign().elements[0],kind:'stair' as const,size:[1.5,3,5] as [number,number,number]}];
+    const output=execFileSync(process.platform==='win32'?'python':'python3',['-c',"import json,sys; from scripts.blender_compile import parts; print(json.dumps([parts(e) for e in json.load(sys.stdin)]))"],{input:JSON.stringify(elements),encoding:'utf8'});
+    const python=JSON.parse(output);
+    elements.forEach((e,i)=>geometryParts(e).forEach((p,j)=>{p.position.forEach((v,k)=>expect(v).toBeCloseTo(python[i][j][0][k],10));p.size.forEach((v,k)=>expect(v).toBeCloseTo(python[i][j][1][k],10));}));
+  });
 });
 describe('compute admission', () => {
   it('queues when both computers are in use',()=>expect(admission({active:2,dailySeconds:0,monthlySeconds:0},900)).toBe('queue'));

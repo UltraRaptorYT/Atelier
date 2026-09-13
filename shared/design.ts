@@ -14,24 +14,26 @@ const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const position = z.tuple([z.number().min(-500).max(500), z.number().min(-5).max(50), z.number().min(-500).max(500)]);
 const size = z.tuple([z.number().min(.01).max(150), z.number().min(.01).max(20), z.number().min(.01).max(150)]);
 export const MaterialSchema = z.object({ id, name: z.string().max(80), color, roughness: z.number().min(0).max(1), metalness: z.number().min(0).max(1) });
+export const AssetSchema = z.object({id,name:z.string().max(100),artifactId:z.string().max(200),author:z.string().max(100),license:z.string().max(100)});
 export const ElementSchema = z.object({
   id, kind: z.enum(['slab', 'wall', 'roof', 'door', 'window', 'stair', 'furniture', 'light', 'asset']),
   name: z.string().min(1).max(100), position, size, rotation: z.number().min(-Math.PI * 2).max(Math.PI * 2),
   materialId: id, floor: z.number().int().min(0).max(3),
-  assetId: z.string().nullable(),
+  assetId: id.nullable(),
 });
 export const SpaceSchema = z.object({ id, name: z.string().min(1).max(100), floor: z.number().int().min(0).max(3), position, size });
 export const DesignSchema = z.object({
   schemaVersion: z.literal(1), units: z.literal('meters'), title: z.string().min(1).max(120),
   buildingType: z.string().min(1).max(80), floors: z.number().int().min(1).max(4),
   materials: z.array(MaterialSchema).min(1).max(80),
+  assets: z.array(AssetSchema).max(30).default([]),
   spaces: z.array(SpaceSchema).min(1).max(40),
   elements: z.array(ElementSchema).min(1).max(1200),
   spawn: position,
   notes: z.array(z.string().max(500)).max(30),
 }).superRefine((d, ctx) => {
   const ids = new Set<string>();
-  for (const x of [...d.materials, ...d.spaces, ...d.elements]) {
+  for (const x of [...d.materials, ...d.spaces, ...d.elements, ...d.assets]) {
     if (ids.has(x.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ID: ${x.id}` });
     ids.add(x.id);
   }
@@ -39,8 +41,10 @@ export const DesignSchema = z.object({
   for (const el of d.elements) {
     if (!mats.has(el.materialId)) ctx.addIssue({ code: 'custom', message: `Unknown material: ${el.materialId}` });
     if (el.floor >= d.floors) ctx.addIssue({ code: 'custom', message: 'Element exceeds floor count' });
+    if(el.assetId && !['atelier-chair','atelier-table','atelier-sofa','atelier-bed','atelier-shelf'].includes(el.assetId) && !d.assets.some(a=>a.id===el.assetId)) ctx.addIssue({code:'custom',message:`Unknown asset: ${el.assetId}`});
   }
   if (d.spaces.some(s => s.floor >= d.floors)) ctx.addIssue({ code: 'custom', message: 'Space exceeds floor count' });
+  if(new Set(d.spaces.map(s=>s.floor)).size!==d.floors) ctx.addIssue({code:'custom',message:'Each declared floor needs at least one space.'});
 });
 export type Design = z.infer<typeof DesignSchema>;
 export type DesignElement = z.infer<typeof ElementSchema>;

@@ -1,4 +1,6 @@
-# Local-only secrets. Copy to .dev.vars.local; never commit real values.
+# Worker-only secrets. Run npm run setup:local to create .dev.vars.local safely.
+# Add these values to the existing file; preserve its generated encryption key.
+# Use the same Clerk application as .env.local. JWT key is optional when secret is set.
 CLERK_SECRET_KEY=
 CLERK_JWT_KEY=
 OPENAI_API_KEY=
@@ -10,6 +12,9 @@ VOICE_ENABLED=true
 IMAGE_GENERATION_ENABLED=true
 OPENAI_IMAGE_CONCEPT_MODEL=gpt-image-2.5-flare
 OPENAI_IMAGE_EDIT_MODEL=gpt-image-2.5-sunburst
+# Optional PAID compute integration. Leave empty for the local free preview.
 E2B_API_KEY=
 # Base64-encoded 32 random bytes. Store historical keys until all credentials are rotated.
-KEY_ENCRYPTION_KEYS={"v1":"REPLACE_WITH_RANDOM_BASE64_32_BYTES"}
+KEY_ENCRYPTION_KEYS='{"v1":"REPLACE_WITH_RANDOM_BASE64_32_BYTES"}'
+# Users may alternatively connect their own OpenAI key in Atelier Settings.
+# Models and feature gates belong to worker/wrangler.jsonc environment vars.

@@ -89,7 +89,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
         if (sandboxId) {
           const { Sandbox } = await import('@e2b/desktop');
           desktop = await Sandbox.connect(sandboxId, { apiKey: env.E2B_API_KEY });
-          if (base.design) await syncDesktop(desktop, base.design);
+          if (base.design) await syncDesktop(desktop, base.design, env, p.projectId);
           else await desktop.files.write('/home/user/project/design.json', JSON.stringify({ brief }));
         }
         const communications: { target: z.infer<typeof AgentIdSchema>; message: string }[] = [];
@@ -111,7 +111,7 @@ Use dependency outputs to coordinate your work. Preserve unrelated elements and 
           mergeDesignProposal(base.design, base.design, result.proposal, task.agent);
           result.summary = `${task.title}: design proposal prepared from revision ${base.revision}.`;
           if (desktop) {
-            await syncDesktop(desktop, result.proposal);
+            await syncDesktop(desktop, result.proposal, env, p.projectId);
             const validation = await desktop.commands.run('python3 -m json.tool /home/user/project/design.json /home/user/project/validated-design.json', { timeoutMs: 10000 });
             if (validation.exitCode !== 0) throw new HttpError(422, 'The workstation could not validate its design proposal.');
           }
