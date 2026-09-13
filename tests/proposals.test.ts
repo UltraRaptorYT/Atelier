@@ -53,6 +53,24 @@ beforeEach(() => {
 });
 
 describe('validated file proposals', () => {
+  it('preserves bounded invalid authoring bytes as an unpublished recovery artifact', async () => {
+    const ctx = setup(), draft = bytes('{"unfinished":');
+    ctx.files.set(PROPOSAL_PATH, draft);
+    await ctx.session.saveDraft();
+    expect(mocks.artifact).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'project-1', 'run-1', 'team-0-task-0-unsubmitted-proposal.json', 'proposal-draft', 3, draft, 'application/json');
+    expect(ctx.session.submitted).toBeNull();
+    expect(ctx.run).not.toHaveBeenCalled();
+    expect(ctx.prepare).not.toHaveBeenCalled();
+  });
+
+  it('does not persist an oversized or cancelled draft', async () => {
+    const ctx = setup();
+    ctx.files.set(PROPOSAL_PATH, new Uint8Array(MAX_PROPOSAL_BYTES + 1));
+    await expect(ctx.session.saveDraft()).rejects.toThrow('exceeds');
+    ctx.checkActive.mockRejectedValue(new Error('cancelled'));
+    await expect(ctx.session.saveDraft()).rejects.toThrow('cancelled');
+    expect(mocks.artifact).not.toHaveBeenCalled();
+  });
   it('accepts and preserves camera metadata from the actual Python compiler for every view', () => {
     const design = exampleDesign();
     design.floors = 2;

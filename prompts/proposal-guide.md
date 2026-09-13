@@ -10,6 +10,8 @@ This guide is installed at `/home/user/project/proposal-guide.md`; the exact inv
 
 Helpers enforce their own assembly preconditions. Server schema and ownership validation remain authoritative; no helper establishes complete room connectivity, clearance or code compliance.
 
+Authoring has 24 tool turns and a shared 12-minute work clock. Each Python call accepts at most 12,000 code characters; split larger scripts into saved files or smaller calls. Save `proposal.json` incrementally, finish essential geometry first, and begin inspection with at least 180 seconds and three tool turns left. Inspection, image review and submission are part of the work allowance. If authoring fails, the runtime attempts to preserve the bounded file as an explicitly unpublished draft; that artifact is not an accepted design revision.
+
 ## Construction helpers
 
 `from design_authoring import ...` exposes these functions (keyword arguments are recommended):

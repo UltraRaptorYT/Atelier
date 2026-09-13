@@ -2,10 +2,10 @@ import { DurableObject } from 'cloudflare:workers';
 import { Sandbox } from '@e2b/desktop';
 import { z } from 'zod';
 import type { Bindings } from './types';
-import { admission, limits } from '../../shared/budget';
+import { admission, limits, MAX_LOCAL_ADDITIONAL_SECONDS } from '../../shared/budget';
 type Lease = { id: string; owner: string; seconds: number; expires: number; sandbox: string | null; idle_since: number; busy: number; released: number; started_at: number | null };
 const LocalVerificationAllowanceSchema = z.object({
-  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), runId: z.string().uuid(), additionalSeconds: z.number().int().min(1).max(1800),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), runId: z.string().uuid(), additionalSeconds: z.number().int().min(1).max(MAX_LOCAL_ADDITIONAL_SECONDS),
 }).strict();
 
 /** One explicit local run/day may use a bounded extra allowance; normal ledger charges still apply. */

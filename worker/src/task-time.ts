@@ -1,12 +1,13 @@
 import { HttpError } from './security';
 
-// Specialist work has a ten-minute Workflow checkpoint. Keep its last minute
-// for persisting the result; the existing fifteen-minute workstation lease and
-// compute reservations are unchanged.
-export const TASK_WORK_MS = 9 * 60_000;
+// Keep one minute for result persistence inside the Workflow checkpoint and
+// two more for allocation within the existing fifteen-minute workstation lease.
+export const TASK_WORK_MS = 12 * 60_000;
+export const TASK_STEP_TIMEOUT = '13 minutes' as const;
+export const PROPOSAL_MODEL_ROUNDS = 24;
 export const PROPOSAL_FINISH_MS = 60_000;
 // Design reasoning can legitimately take several minutes. Its request ceiling
-// stays below the shared nine-minute task clock and ten-minute checkpoint.
+// stays below the shared task clock and checkpoint.
 // Interactive questions retain their existing two-minute transport policy.
 export const DESIGN_MODEL_REQUEST_MS = 8 * 60_000;
 export const INTERACTIVE_MODEL_REQUEST_MS = 2 * 60_000;

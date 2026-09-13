@@ -76,7 +76,7 @@ describe('one-run local verification allowance', () => {
     {name:'future day',value:JSON.stringify({...grant,day:'2026-09-14'})},
     {name:'wrong run',value:JSON.stringify({...grant,runId:'aa7c5696-5268-423a-980c-d1183d4c28fb'})},
     {name:'invalid UUID',value:JSON.stringify({...grant,runId:'all'})},
-    {name:'oversized grant',value:JSON.stringify({...grant,additionalSeconds:1801})},
+    {name:'oversized grant',value:JSON.stringify({...grant,additionalSeconds:3601})},
     {name:'zero grant',value:JSON.stringify({...grant,additionalSeconds:0})},
     {name:'fractional grant',value:JSON.stringify({...grant,additionalSeconds:1.5})},
     {name:'string grant',value:JSON.stringify({...grant,additionalSeconds:'1800'})},
@@ -106,7 +106,18 @@ describe('one-run local verification allowance', () => {
     expect((await f.budget.reserve(`${runId}-monthly`,'local-developer')).reason).toMatch(/monthly/);
     expect((await f.budget.reserve(`${runId}-invalid`,'local-developer',901)).reason).toMatch(/Invalid/);
     expect(admission({active:0,dailySeconds:3600,monthlySeconds:3600},900)).toMatch(/daily/);
-    for(const limit of [Infinity,5401,NaN])expect(admission({active:0,dailySeconds:3600,monthlySeconds:3600},900,limit)).toMatch(/Invalid/);
+    for(const limit of [Infinity,7201,NaN])expect(admission({active:0,dailySeconds:3600,monthlySeconds:3600},900,limit)).toMatch(/Invalid/);
+  });
+  it('allows the authorized local retry an extra hour without resetting previous charges', async () => {
+    const f=fixture();f.env.ENVIRONMENT='local';f.env.LOCAL_VERIFICATION_ALLOWANCE=JSON.stringify({...grant,additionalSeconds:3600});usedDaily(f);
+    for (const task of ['interior','review','correction','final-review']) {
+      const id=`${runId}-${task}`;
+      expect(await f.budget.reserve(id,'local-developer')).toEqual({allowed:true});
+      advance(901);await f.budget.release(id);
+    }
+    expect((await f.budget.reserve(`${runId}-extra`,'local-developer')).reason).toMatch(/daily/);
+    expect(f.db.prepare('SELECT SUM(seconds) AS charged FROM leases').get()!.charged).toBe(7200);
+    expect(f.lease('previous-local-developer')).toMatchObject({seconds:3600,released:1});
   });
 });
 

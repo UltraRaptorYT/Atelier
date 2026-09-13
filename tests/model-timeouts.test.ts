@@ -49,7 +49,7 @@ describe('bounded reasoning request deadlines',()=>{
     expect(mocks.create).toHaveBeenCalledTimes(1);expect(vi.getTimerCount()).toBe(0);
   });
   it('clips a later request to the remaining shared task clock and reports task exhaustion',async()=>{
-    const timeBudget=new TaskTimeBudget();await vi.advanceTimersByTimeAsync(500000);slowResponse(80000);
+    const timeBudget=new TaskTimeBudget(540000);await vi.advanceTimersByTimeAsync(500000);slowResponse(80000);
     const running=modelJSON(env,'owner','architect',longBrief,schema,undefined,[],'max',timeBudget);
     const rejected=expect(running).rejects.toBeInstanceOf(TaskTimeError);
     await vi.advanceTimersByTimeAsync(40000);await rejected;

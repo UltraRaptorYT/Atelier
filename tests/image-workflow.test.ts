@@ -566,7 +566,7 @@ describe('bounded model work through serialized Workflow checkpoints', () => {
     expect((await task.tasks()).filter(item => item.status === 'failed').every(item => item.detail === timeout.message)).toBe(true);
     const stepName = stage === 'brief' ? 'principal-brief' : stage === 'plan' ? 'team-0-plan' : 'team-0-task-0-work';
     const receipt = vi.mocked(task.step.do).mock.calls.find(([name]) => name === stepName);
-    expect(receipt?.[1]).toMatchObject({ retries: { limit: 0 }, timeout: '10 minutes' });
+    expect(receipt?.[1]).toMatchObject({ retries: { limit: 0 }, timeout: '13 minutes' });
     if (stage === 'plan') expect(model.mock.calls.find(call => call[3].startsWith('Create a dependency plan'))?.[7]).toBe('max');
     if (stage === 'specialist') {
       expect(releaseDesktop).toHaveBeenCalled();

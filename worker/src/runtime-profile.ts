@@ -9,11 +9,12 @@ import assetCompiler from '../../scripts/blender_asset.py';
 import proposalGuide from '../../prompts/proposal-guide.md';
 import { agentInstructions } from './prompts';
 import { designReasoningEffort, MODEL_MAX_OUTPUT_TOKENS } from './model-settings';
+import { TASK_WORK_MS, PROPOSAL_MODEL_ROUNDS } from './task-time';
 import { artifact } from './store';
 import type { Bindings, RunParams } from './types';
 
 export type RuntimeProfileSources = { schema: unknown; prompts: unknown; authoring: string; compiler: unknown };
-const profileVersion = 2;
+const profileVersion = 3;
 
 function stableJSON(value: unknown): string {
   return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
@@ -55,7 +56,7 @@ export async function runtimeProfile(env: Bindings, input?: RuntimeProfileSource
   const configuration = {
     models: { design: identifier(env.OPENAI_MODEL), voice: identifier(env.VOICE_MODEL), conceptImage: identifier(env.OPENAI_IMAGE_CONCEPT_MODEL), imageEdit: identifier(env.OPENAI_IMAGE_EDIT_MODEL) },
     reasoning: { design: effort },
-    limits: { modelOutputTokens: MODEL_MAX_OUTPUT_TOKENS },
+    limits: { modelOutputTokens: MODEL_MAX_OUTPUT_TOKENS, taskWorkSeconds: TASK_WORK_MS / 1000, proposalModelRounds: PROPOSAL_MODEL_ROUNDS },
     features: { generation: enabled(env.GENERATION_ENABLED), render: enabled(env.RENDER_ENABLED), voice: enabled(env.VOICE_ENABLED), imageGeneration: enabled(env.IMAGE_GENERATION_ENABLED) },
     workstation: { template: identifier(env.E2B_TEMPLATE) },
   };
@@ -74,7 +75,7 @@ export async function runtimeProfile(env: Bindings, input?: RuntimeProfileSource
       projectServicesBound: Boolean(env.DB && env.FILES && env.PROJECTS && env.BUDGET && env.JOBS),
       providerConnectivityChecked: false,
     },
-    scope: 'Configured models, reasoning effort and model output allowance, feature flags, workstation template, serialized schema contracts, bundled prompts, authoring helpers and compilers. Matching fingerprints do not prove identical code, provider availability, workstation software, stochastic output or design quality.',
+    scope: 'Configured models, reasoning effort, model output and task allowances, feature flags, workstation template, serialized schema contracts, bundled prompts, authoring helpers and compilers. Matching fingerprints do not prove identical code, provider availability, workstation software, stochastic output or design quality.',
   };
 }
 export type RuntimeProfile = Awaited<ReturnType<typeof runtimeProfile>>;

@@ -14,7 +14,7 @@ import { readEffectiveRequirements } from './requirements';
 import { changeStartedStatement, changeFailedStatement } from './changes';
 import { requestClarification } from './clarifications';
 import { saveRuntimeProfile } from './runtime-profile';
-import { TaskTimeBudget } from './task-time';
+import { TaskTimeBudget, TASK_STEP_TIMEOUT } from './task-time';
 import { checkedWorkflowStep } from './workflow-errors';
 const RouteSchema = z.object({ scope: z.enum(['local', 'global']), color: z.string().nullable(), elementId: z.string().nullable(), explanation: z.string() });
 type ImageStepResult = { ok: true; value: string | null } | { ok: false; status: number; message: string };
@@ -47,7 +47,7 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
     };
     const desktopFor = async (agent: AgentId, index: string) => {
       for (let attempt = 0; attempt < 60; attempt++) {
-        const result = await step.do(`${index}-desktop-${attempt}`, { retries: { limit: 0, delay: '1 second' }, timeout: '2 minutes' }, async () => {
+        const result = await checkedWorkflowStep(step, `${index}-desktop-${attempt}`, { retries: { limit: 0, delay: '1 second' }, timeout: '2 minutes' }, async () => {
           await checkCancelled();
           try { const desktop = await createDesktop(this.env, p.projectId, p.userId, agent, `${p.runId}-${index}-${attempt}`); return { sandboxId: desktop.sandboxId }; }
           catch (e) { if (e instanceof HttpError && e.status === 425) return { sandboxId: null }; throw e; }
@@ -100,8 +100,8 @@ export class DesignWorkflow extends WorkflowEntrypoint<Bindings, RunParams> {
           await task('designer', 'Render presentation', `Presentation files for revision ${row.revision} are ready.`, 'completed');
         });
       } else {
-        const perspectives = p.kind === 'generate' && !p.resumesRunId && !p.instruction?.startsWith('[VOICE_START]') ? await checkedWorkflowStep(step, 'team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' }, async () => { const timeBudget = new TaskTimeBudget(); await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief)), timeBudget); }) : [];
-        const brief = await checkedWorkflowStep(step, 'principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' }, async () => {
+        const perspectives = p.kind === 'generate' && !p.resumesRunId && !p.instruction?.startsWith('[VOICE_START]') ? await checkedWorkflowStep(step, 'team-listens', { retries: { limit: 0, delay: '1 second' }, timeout: TASK_STEP_TIMEOUT }, async () => { const timeBudget = new TaskTimeBudget(); await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId); return reviewMeeting(this.env, p.projectId, p.userId, BriefSchema.parse(JSON.parse(row.brief)), timeBudget); }) : [];
+        const brief = await checkedWorkflowStep(step, 'principal-brief', { retries: { limit: 0, delay: '1 second' }, timeout: TASK_STEP_TIMEOUT }, async () => {
           const timeBudget = new TaskTimeBudget();
           await checkCancelled(); const row = await ownedProject(this.env, p.projectId, p.userId);
           const original = BriefSchema.parse(JSON.parse(row.brief));

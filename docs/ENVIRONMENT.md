@@ -4,6 +4,8 @@ The local preview needs no external keys. Live generation uses existing OpenAI A
 
 Use two local files. They already exist in this workspace; edit them without replacing the generated encryption key. Both are git-ignored. Restart Next.js and the Worker after editing.
 
+For an explicitly authorized local retry, `LOCAL_VERIFICATION_ALLOWANCE` in `worker/.dev.vars.local` accepts a JSON object with `day` (current UTC date), `runId` (the exact retry UUID), and `additionalSeconds` (1–3,600). It adds at most one hour to the normal daily computer allowance only for that run and `local-developer` in the local environment. Existing charges, the two-computer limit, 15-minute leases and monthly caps remain enforced. It has no effect in staging or production and expires at UTC midnight. Reload the Worker before starting the matching run.
+
 ## 1. Next.js: `.env.local` in the project root
 
 ```dotenv

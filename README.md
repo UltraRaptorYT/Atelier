@@ -2,6 +2,8 @@
 
 An AI architecture studio with four specialists, observable tool work, persistent design revisions and an explorable 3D office and building. The Principal plans tasks and dependencies; independent specialists can work concurrently. The Architect develops layout and structure, the Interior Designer handles materials, furniture and lighting, and the Critic reviews the combined result.
 
+Proposal specialists have 24 tool turns and 12 minutes of shared model/tool time inside a 13-minute checkpoint. Inspection and submission remain mandatory; failed authoring saves a bounded, unpublished draft when available. The normal computer budget remains one hour per user/day, with an explicit local run/day override supporting up to one additional hour. See the [runtime guide](docs/concurrent-agents.md) and [local allowance configuration](docs/ENVIRONMENT.md).
+
 The local preview needs no external keys. Live generation uses the configured OpenAI account and an E2B sandbox; see [the setup and cost guide](docs/FREE-MODE.md).
 
 The canonical design is `project/design.json`. Three.js renders it in the browser; isolated E2B workstations compile Blender and GLB artifacts. Steering updates the existing project rather than creating an unrelated design.

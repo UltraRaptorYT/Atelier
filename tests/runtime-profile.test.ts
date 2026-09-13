@@ -45,7 +45,7 @@ describe('safe runtime generation fingerprint',()=>{
     const env=environment(),profile=await runtimeProfile(env,fixtureSources()),raw=JSON.stringify(profile);
     expect(profile.models).toEqual({design:'gpt-6-astra',voice:'gpt-live-1',conceptImage:'gpt-image-2.5-flare',imageEdit:'gpt-image-2.5-sunburst'});
     expect(profile.reasoning).toEqual({design:'max'});
-    expect(profile.limits).toEqual({modelOutputTokens:64000});
+    expect(profile.limits).toEqual({modelOutputTokens:64000,taskWorkSeconds:720,proposalModelRounds:24});
     expect(profile.readiness).toEqual({designModelConfigured:true,designReasoningConfigured:true,desktopKeyConfigured:true,environmentModelKeyConfigured:true,savedKeyEncryptionConfigured:true,projectServicesBound:true,providerConnectivityChecked:false});
     for(const secret of [env.OPENAI_API_KEY!,env.E2B_API_KEY!,env.KEY_ENCRYPTION_KEYS!,env.CLERK_SECRET_KEY!,env.SITES_PROXY_SECRET!,'private-encryption-value'])expect(raw).not.toContain(secret);
     expect(raw).not.toContain('OPENAI_API_KEY');expect(raw).not.toContain('CLERK_SECRET_KEY');

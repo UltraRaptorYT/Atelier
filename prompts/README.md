@@ -18,7 +18,7 @@ File names retain their Draftroom counterparts to make comparison easy; `directo
 
 ## Runtime contract
 
-The complete shared and role instructions are retained with a 64,000-token allowance per structured agent response, including reasoning. Existing reasoning settings and task deadlines remain in force; the limit lives in [model-settings.ts](../worker/src/model-settings.ts) and is recorded in each new run's generation profile.
+The complete shared and role instructions are retained with a 64,000-token allowance per structured agent response, including reasoning. Reasoning settings remain unchanged. Task work has 12 minutes within a 13-minute checkpoint, and proposal authoring has 24 tool turns with submission available on the last turn. The output limit lives in [model-settings.ts](../worker/src/model-settings.ts), task limits in [task-time.ts](../worker/src/task-time.ts), and each new run's generation profile records both.
 
 [worker/src/prompts.ts](../worker/src/prompts.ts) composes the active Markdown as Worker text imports; [worker/src/ai.ts](../worker/src/ai.ts) supplies the strict response schema for each invocation. Return that schema directly. Draftroom's historical JSON envelope and richer handoff fields are review guidance, not additional output fields.
 

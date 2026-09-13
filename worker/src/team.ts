@@ -9,7 +9,7 @@ import { artifact, designFromRow, emit } from './store';
 import { ownedProject, HttpError } from './security';
 import { createDesktop, releaseDesktop, syncDesktop, checkpointDesktop, prepareProposalAuthoring, prepareProposalDesktop } from './desktop';
 import { ProposalSession, PreviewCameraSchema, type ProposalEvidence, type ProposalView } from './proposals';
-import { TaskTimeBudget } from './task-time';
+import { TaskTimeBudget, TASK_STEP_TIMEOUT } from './task-time';
 import { designReasoningEffort } from './model-settings';
 import { designContext } from './design-context';
 import { checkedWorkflowStep } from './workflow-errors';
@@ -47,7 +47,7 @@ const DirectionSchema = z.object({
   coordination: z.array(z.object({ target: AgentIdSchema, message: z.string().max(1000) })).max(6),
 });
 const DecisionSchema = z.object({ decision: z.string().max(3000), instruction: z.string().min(1).max(4000) });
-const options = { retries: { limit: 0, delay: '1 second' }, timeout: '10 minutes' } as const;
+const options = { retries: { limit: 0, delay: '1 second' }, timeout: TASK_STEP_TIMEOUT } as const;
 type Base = { revision: number; design: Design | null };
 type Result = { artifactId: string; baseRevision: number; proposal: Design | null; summary: string; findings: string[]; recommendations: string[]; coordination: { target: string; message: string }[]; proposalEvidence?: ProposalEvidence; visualReview?: { evidence: VisualEvidence; landmarks?: z.infer<typeof VisualReviewSchema>['landmarks'] } };
 type LocalColor = { color: string; elementId: string };
@@ -57,7 +57,12 @@ export async function runTeam(env: Bindings, p: RunParams, step: WorkflowStep, b
   // The full design team uses the configured quality setting. Conversational
   // routing and voice delegation keep their separate latency-oriented paths.
   const teamModel = <T>(agent: z.infer<typeof AgentIdSchema>, prompt: string, schema: z.ZodType<T>, context?: Parameters<typeof modelJSON>[5], images: string[] = [], timeBudget?: TaskTimeBudget) =>
-    modelJSON(env, p.userId, agent, prompt, schema, context, images, designReasoningEffort(env), timeBudget);
+    modelJSON(env, p.userId, agent, prompt, schema, context, images, designReasoningEffort(env), timeBudget).catch(async error => {
+      // Preserve bounded, explicitly unpublished authoring work before its
+      // workstation is released, without masking the original failure.
+      await context?.proposal?.saveDraft().catch(() => {});
+      throw error;
+    });
   const coordinator = env.PROJECTS.getByName(p.projectId);
   const checkCancelled = async () => {
     const row = await env.DB.prepare('SELECT status FROM runs WHERE id = ?').bind(p.runId).first<{ status: string }>();
@@ -97,7 +102,7 @@ export async function runTeam(env: Bindings, p: RunParams, step: WorkflowStep, b
     : undefined);
   async function desktopFor(task: PlannedTask, key: string, rowId: string) {
     for (let attempt = 0; attempt < 60; attempt++) {
-      const sandboxId = await step.do(`${key}-computer-${attempt}`, { ...options, timeout: '2 minutes' }, async () => {
+      const sandboxId = await checkedWorkflowStep(step, `${key}-computer-${attempt}`, { ...options, timeout: '2 minutes' }, async () => {
         await checkCancelled();
         try { return (await createDesktop(env, p.projectId, p.userId, task.agent, `${p.runId}-${key}-${attempt}`)).sandboxId; }
         catch (error) {

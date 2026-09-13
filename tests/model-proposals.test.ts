@@ -6,6 +6,7 @@ import { DesignSchema, type Design } from '../shared/design';
 import { applyDesignEdits, DesignEditsSchema, type DesignEdits } from '../shared/design-edits';
 import { exampleDesign } from '../shared/example';
 import type { Bindings } from '../worker/src/types';
+import { PROPOSAL_MODEL_ROUNDS, TaskTimeBudget } from '../worker/src/task-time';
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), emit: vi.fn(), artifact: vi.fn() }));
 vi.mock('openai', () => ({ default: class { responses = { create: mocks.create }; } }));
@@ -22,7 +23,7 @@ const round = (...names: string[]) => ({ status: 'completed', output: names.map(
 const toolRound = (name: string, args: unknown) => ({ status: 'completed', output: [{ ...call(name), arguments: JSON.stringify(args) }], output_text: '' });
 const final = { status: 'completed', output: [], output_text: JSON.stringify({ summary: 'Inspected the roof, plans and interior; submitted the saved proposal.' }) };
 
-function fixture(baseDesign: Design | null = null, fixtureEnv = env) {
+function fixture(baseDesign: Design | null = null, fixtureEnv = env, timeBudget?: TaskTimeBudget) {
   const design = baseDesign || exampleDesign(), baseRevision = baseDesign ? 3 : 0;
   const registeredAssets: Design['assets'] = [];
   const files = new Map<string, Uint8Array>();
@@ -57,8 +58,8 @@ function fixture(baseDesign: Design | null = null, fixtureEnv = env) {
     }) },
   };
   const checkActive = vi.fn(async () => {});
-  const session = new ProposalSession({ env: fixtureEnv, desktop: desktop as never, projectId: 'project-1', runId: 'run-1', taskId: 'run-1-architect', key: 'team-0-task-0', baseRevision, baseDesign, agent: 'architect', registeredAssets: () => registeredAssets, prepare: async () => {}, checkActive });
-  const context = { desktop, projectId: 'project-1', taskId: 'run-1-architect', design: baseDesign, proposal: session, registeredAssets, checkActive };
+  const session = new ProposalSession({ env: fixtureEnv, desktop: desktop as never, projectId: 'project-1', runId: 'run-1', taskId: 'run-1-architect', key: 'team-0-task-0', baseRevision, baseDesign, agent: 'architect', registeredAssets: () => registeredAssets, prepare: async () => {}, checkActive, timeBudget });
+  const context = { desktop, projectId: 'project-1', taskId: 'run-1-architect', design: baseDesign, proposal: session, registeredAssets, checkActive, timeBudget };
   return {
     design, files, put, session, context, desktop, checkActive,
     run: () => modelJSON(fixtureEnv, 'owner', 'architect', 'Build the home from the brief.', DesignSchema, context as never),
@@ -120,7 +121,7 @@ describe('file proposals through the actual model tool loop', () => {
     mocks.create.mockResolvedValue({ status: 'completed', output: [], output_text: JSON.stringify(f.design) });
     await expect(f.run()).rejects.toMatchObject({ status: 422, message: expect.stringContaining('did not submit an inspected proposal') });
     expect(f.session.submitted).toBeNull();
-    expect(mocks.create).toHaveBeenCalledTimes(12);
+    expect(mocks.create).toHaveBeenCalledTimes(PROPOSAL_MODEL_ROUNDS);
     expect(mocks.artifact).not.toHaveBeenCalled();
   });
 
@@ -183,12 +184,35 @@ describe('file proposals through the actual model tool loop', () => {
 
   it('returns a proposal submitted on the last permitted tool round without another paid response', async () => {
     const f = fixture();
-    // Rounds 0–10 permit tools; round 11 was formerly a paid summary-only call.
-    for (let index = 0; index < 9; index++) mocks.create.mockResolvedValueOnce(round('read_design'));
+    for (let index = 0; index < PROPOSAL_MODEL_ROUNDS - 2; index++) mocks.create.mockResolvedValueOnce(round('read_design'));
     mocks.create.mockResolvedValueOnce(round('inspect_proposal')).mockResolvedValueOnce(round('submit_proposal'));
     expect(await f.run()).toEqual(f.design);
     expect(f.session.submitted).not.toBeNull();
-    expect(mocks.create).toHaveBeenCalledTimes(11);
+    expect(mocks.create).toHaveBeenCalledTimes(PROPOSAL_MODEL_ROUNDS);
     expect(mocks.create.mock.calls.at(-1)![0].tool_choice).toBe('auto');
+  });
+
+  it('can inspect after eight minutes of authoring and submit on a later turn', async () => {
+    let now = 0;
+    const f = fixture(null, env, new TaskTimeBudget(undefined, () => now));
+    mocks.create.mockResolvedValueOnce(round('read_design')).mockImplementationOnce(async () => {
+      now = 8 * 60000;
+      return round('inspect_proposal');
+    }).mockResolvedValueOnce(round('submit_proposal'));
+    expect(await f.run()).toEqual(f.design);
+    expect(f.session.submitted).not.toBeNull();
+  });
+
+  it('explains oversized Python arguments and lets the model recover without running them', async () => {
+    const f = fixture();
+    mocks.create.mockResolvedValueOnce(round('read_design'))
+      .mockResolvedValueOnce(toolRound('execute_python', { code: 'x'.repeat(12001) }))
+      .mockImplementationOnce(async request => {
+        expect(request.input.some((item: { output?: string }) => item.output?.includes('at most 12000 characters'))).toBe(true);
+        expect(f.desktop.files.write).not.toHaveBeenCalled();
+        return round('inspect_proposal');
+      }).mockResolvedValueOnce(round('submit_proposal'));
+    expect(await f.run()).toEqual(f.design);
+    expect(mocks.emit.mock.calls.some(call => String(call[3]).includes('Python arguments are invalid'))).toBe(true);
   });
 });

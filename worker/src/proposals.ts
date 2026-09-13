@@ -6,7 +6,7 @@ import { DesignScopeError, mergeDesignProposal } from '../../shared/collaboratio
 import type { Bindings } from './types';
 import { artifact } from './store';
 import { validatePNG } from './images';
-import { PROPOSAL_FINISH_MS, TaskTimeError, type TaskTimeBudget } from './task-time';
+import { PROPOSAL_FINISH_MS, TaskTimeError, TaskTimeBudget } from './task-time';
 
 export const PROPOSAL_PATH = '/home/user/project/proposal.json';
 export const MAX_PROPOSAL_BYTES = 1024 * 1024;
@@ -177,6 +177,14 @@ export class ProposalSession {
     this.options = { ...options, baseDesign: options.baseDesign ? DesignSchema.parse(options.baseDesign) : null };
   }
   get submitted(): SubmittedProposal | null { return this.accepted ? structuredClone(this.accepted) : null; }
+  async saveDraft(): Promise<void> {
+    if (this.accepted) return;
+    await this.options.checkActive();
+    // The work clock may have expired. Use only a short part of the checkpoint's
+    // persistence margin, and never validate or publish this recovery artifact.
+    const bytes = await readBounded(this.options.desktop, PROPOSAL_PATH, MAX_PROPOSAL_BYTES, new TaskTimeBudget(5000));
+    await this.save(`${this.options.key}-unsubmitted-proposal.json`, 'proposal-draft', bytes, 'application/json');
+  }
   private async readCandidate() {
     const o = this.options;
     await o.checkActive();

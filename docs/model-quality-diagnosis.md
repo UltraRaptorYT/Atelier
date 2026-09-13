@@ -28,7 +28,7 @@ The subsequent implementation adds validated 1 MiB file proposals, a small final
 summary response contract, hash-bound proposal previews and submission in a later
 model turn. Once the file is submitted, its validated receipt completes the task
 without another paid summary call. Model, Python and preview work share a
-nine-minute time allowance inside the ten-minute task checkpoint; optional
+twelve-minute time allowance inside the thirteen-minute task checkpoint; optional
 workstation screenshots use a separate bounded checkpoint after result storage.
 It adds reusable wall/opening, stair/void, roof/gable and rod helpers;
 bounded canonical meshes with browser/Blender/navigation support; explicit
@@ -89,7 +89,7 @@ check showed the empty meeting table, all agents at their desks and the explicit
 failure state.
 
 Bounded design requests now allow up to eight minutes, clipped to the same
-nine-minute task clock inside a ten-minute Workflow checkpoint. Interactive
+twelve-minute task clock inside a thirteen-minute Workflow checkpoint. Interactive
 questions keep their two-minute policy. Bounded design requests do not retry
 automatically; Astra/max and the full brief are preserved. Trusted application
 errors cross checkpoints as tagged results, preserving actionable timeout
